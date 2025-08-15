@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
+import { ResizeMode, Video } from 'expo-av';
 import React, { useEffect, useRef, useState } from 'react';
-import { Video, ResizeMode } from 'expo-av';
 import {
   Animated,
   Dimensions,
@@ -10,21 +11,29 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-<<<<<<< ours
-import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-=======
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
->>>>>>> theirs
-import { ANIM_FAST } from '../animations';
 import { auth, firestore, storage } from '../firebase/firebase';
+import { ANIM_FAST } from '../utils/animations';
+
+type Story = {
+  id: string;
+  url: string;
+  type: 'video' | 'image';
+  timestamp: number;
+};
+
+interface StoriesViewerProps {
+  visible: boolean;
+  userId: string;
+  onClose: () => void;
+  initialIndex?: number;
+}
 
 const { width, height } = Dimensions.get('window');
 
-export default function StoriesViewer({ visible, userId, onClose, initialIndex = 0 }) {
-  const [stories, setStories] = useState([]);
-  const [idx, setIdx] = useState(initialIndex);
+export default function StoriesViewer({ visible, userId, onClose, initialIndex = 0 }: StoriesViewerProps) {
+  const [stories, setStories] = useState<Story[]>([]);
+  const [idx, setIdx] = useState<number>(initialIndex);
   const currentUserId = auth().currentUser?.uid;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
@@ -57,32 +66,40 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
   }, [visible, fadeAnim]);
 
   useEffect(() => {
-  if (!userId || !visible) return;
-  const now = Date.now();
-  firestore()
-    .collection('stories').doc(userId).collection('storyMedia')
-    .orderBy('timestamp', 'asc')
-    .get().then(snap => {
-      const filtered = [];
-      snap.docs.forEach(doc => {
-        const s = doc.data();
-        if (now - s.timestamp > 24 * 60 * 60 * 1000) {
-          // Delete expired
-          firestore().collection('stories').doc(userId).collection('storyMedia').doc(doc.id).delete();
-          if (s.url) {
-            try {
-              const ref = storage().refFromURL(s.url);
-              ref.delete();
-            } catch {}
+    if (!userId || !visible) return;
+    const now = Date.now();
+    firestore()
+      .collection('stories')
+      .doc(userId)
+      .collection('storyMedia')
+      .orderBy('timestamp', 'asc')
+      .get()
+      .then((snap: any) => {
+        const filtered: Story[] = [];
+        snap.docs.forEach((doc: any) => {
+          const s = doc.data() as any;
+          if (now - s.timestamp > 24 * 60 * 60 * 1000) {
+            // Delete expired
+            firestore()
+              .collection('stories')
+              .doc(userId)
+              .collection('storyMedia')
+              .doc(doc.id)
+              .delete();
+            if (s.url) {
+              try {
+                const ref = storage().refFromURL(s.url);
+                ref.delete();
+              } catch {}
+            }
+          } else {
+            filtered.push({ id: doc.id, ...s });
           }
-        } else {
-          filtered.push({ id: doc.id, ...s });
-        }
+        });
+        setStories(filtered);
+        setIdx(0);
       });
-      setStories(filtered);
-      setIdx(0);
-    });
-}, [userId, visible]);
+  }, [userId, visible]);
 
 
   const handleNext = () => {
