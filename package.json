@@ -1,16 +1,10 @@
 {
   "name": "expomassmonsterapp",
   "version": "1.0.0",
-<<<<<<< ours
   "description": "Custom MASS Monster fitness and commerce app built with Expo and React Native.",
-  "main": "expo-router/entry",
-  "scripts": {
-=======
-  "description": "This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).",
   "main": "expo/AppEntry",
   "scripts": {
     "start": "expo start",
->>>>>>> theirs
     "test": "echo \"No tests specified\""
   },
   "repository": {
