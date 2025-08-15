@@ -14,9 +14,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts } from '../theme';
 import { useAppContext } from '../firebase/AppContext';
 
+interface WorkoutEntry {
+  ts?: number;
+  homeWorkout?: boolean;
+  gymName?: string;
+}
+
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-function WorkoutRow({ item }: { item: any }) {
+function WorkoutRow({ item }: { item: WorkoutEntry }) {
   const scale = React.useRef(new Animated.Value(1)).current;
   const [pressed, setPressed] = React.useState(false);
 
@@ -84,8 +90,10 @@ export default function WorkoutHistoryScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { workoutHistory } = useAppContext();
-  const history = Array.isArray(workoutHistory)
-    ? [...workoutHistory].sort((a, b) => (b.ts || 0) - (a.ts || 0))
+  const history: WorkoutEntry[] = Array.isArray(workoutHistory)
+    ? [...(workoutHistory as WorkoutEntry[])].sort(
+        (a, b) => (b.ts || 0) - (a.ts || 0),
+      )
     : [];
 
   return (
