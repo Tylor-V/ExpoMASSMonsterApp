@@ -1,6 +1,6 @@
-import firestore from '@react-native-firebase/firestore';
-import storage from '@react-native-firebase/storage';
-import auth from '@react-native-firebase/auth';
+import { firestore } from './firebase';
+import { storage } from './firebase';
+import { auth } from './firebase';
 
 // Generates the full user profile doc for new users
 export const getDefaultUserProfile = ({

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import firestore from '@react-native-firebase/firestore';
+import { firestore } from '../firebase/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export function useNews() {

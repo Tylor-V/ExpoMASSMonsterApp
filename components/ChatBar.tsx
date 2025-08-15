@@ -1,7 +1,7 @@
 import { FontAwesome, Ionicons as Icon } from '@expo/vector-icons';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
-import storage from '@react-native-firebase/storage';
+import { auth } from '../firebase/firebase';
+import { firestore } from '../firebase/firebase';
+import { storage } from '../firebase/firebase';
 import { launchImageLibrary } from 'expo-image-picker';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {

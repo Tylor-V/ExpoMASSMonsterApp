@@ -1,5 +1,5 @@
-import firestore from '@react-native-firebase/firestore';
-import { Timestamp } from '@react-native-firebase/firestore';
+import { firestore } from './firebase';
+import { Timestamp } from 'firebase/firestore';
 import { Alert } from 'react-native';
 
 function notifyLevelUp(level: number) {

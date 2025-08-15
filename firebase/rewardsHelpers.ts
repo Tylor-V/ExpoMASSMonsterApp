@@ -1,5 +1,5 @@
-import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
+import { firestore } from './firebase';
+import { auth } from './firebase';
 
 export type RewardInfo = {
   id: string;

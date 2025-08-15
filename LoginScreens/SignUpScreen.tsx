@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import {useNavigation, StackActions} from '@react-navigation/native';
-import auth from '@react-native-firebase/auth';
+import { auth } from '../firebase/firebase';
 import { fonts, colors, radius } from '../theme';
 import BackgroundWrapper from '../components/BackgroundWrapper';
 import ResponsivePressable from '../components/ResponsivePressable';

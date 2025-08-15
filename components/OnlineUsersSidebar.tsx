@@ -12,8 +12,8 @@ import {
   Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
-import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
+import { firestore } from '../firebase/firebase';
+import { auth } from '../firebase/firebase';
 import ProfileImage from './ProfileImage';
 import { useChatInputBarHeight } from '../MainScreens/ChatScreen';
 import UserPreviewModal from './UserPreviewModal';

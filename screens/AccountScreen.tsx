@@ -12,8 +12,8 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import { auth } from '../firebase/firebase';
+import { firestore } from '../firebase/firebase';
 import { colors, fonts } from '../theme';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 

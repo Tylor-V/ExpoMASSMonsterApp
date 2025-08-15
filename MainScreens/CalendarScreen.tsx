@@ -42,8 +42,8 @@ import useCarousel from '../hooks/useCarousel';
 import CarouselNavigator from '../components/CarouselNavigator';
 import { useAppContext } from '../firebase/AppContext';
 import { getTodayKey } from '../firebase/dateHelpers';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import { auth } from '../firebase/firebase';
+import { firestore } from '../firebase/firebase';
 import {
   saveCustomSplit,
   saveShowWorkout,

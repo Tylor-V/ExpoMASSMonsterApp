@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
+import { firestore } from '../firebase/firebase';
+import { auth } from '../firebase/firebase';
 
 export default function usePresence() {
   useEffect(() => {

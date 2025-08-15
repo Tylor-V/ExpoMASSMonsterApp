@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import { auth } from '../firebase/firebase';
+import { firestore } from '../firebase/firebase';
 
 interface UserDataState {
   user: any | null;

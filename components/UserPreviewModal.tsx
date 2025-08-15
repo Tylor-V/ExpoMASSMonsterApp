@@ -1,6 +1,6 @@
 import { Ionicons as Icon } from '@expo/vector-icons';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
+import { auth } from '../firebase/firebase';
+import { firestore } from '../firebase/firebase';
 import { useNavigation } from '@react-navigation/native';
 import React, { useEffect, useRef, useState } from 'react';
 import {

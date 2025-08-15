@@ -1,5 +1,5 @@
 import { useAppContext } from '../firebase/AppContext';
-import firestore from '@react-native-firebase/firestore';
+import { firestore } from '../firebase/firebase';
 
 export function useInitializeUser() {
   const { setAppStatus } = useAppContext();

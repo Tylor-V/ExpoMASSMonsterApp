@@ -1,6 +1,6 @@
 const fsMocks: any = {};
 
-jest.mock('@react-native-firebase/firestore', () => {
+jest.mock('@react../firebase', () => {
   const get = jest.fn();
   const set = jest.fn(() => Promise.resolve());
   fsMocks.get = get;
@@ -13,7 +13,7 @@ jest.mock('@react-native-firebase/firestore', () => {
   return firestoreFn;
 });
 
-import firestore from '@react-native-firebase/firestore';
+import firestore from '@react../firebase';
 import { createOrUpdateUserProfile } from '../firebaseUserProfile';
 
 describe('createOrUpdateUserProfile', () => {

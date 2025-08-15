@@ -1,6 +1,6 @@
 const fsMocks: any = {};
 
-jest.mock('@react-native-firebase/firestore', () => {
+jest.mock('@react../firebase', () => {
   const get = jest.fn();
   const set = jest.fn(() => Promise.resolve());
   const update = jest.fn(() => Promise.resolve());
@@ -24,11 +24,11 @@ jest.mock('@react-native-firebase/firestore', () => {
   return firestoreFn;
 });
 
-jest.mock('@react-native-firebase/auth', () => () => ({
+jest.mock('@react../firebase', () => () => ({
   currentUser: { uid: 'test-user' },
 }));
 
-import firestore from '@react-native-firebase/firestore';
+import firestore from '@react../firebase';
 import { addAccountabilityPoint, updateSocialLink } from '../userProfileHelpers';
 
 describe('addAccountabilityPoint', () => {

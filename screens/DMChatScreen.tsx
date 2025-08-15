@@ -1,39 +1,37 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  LayoutAnimation,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-  ActivityIndicator,
-  Pressable,
-  Alert,
-  Modal,
-  LayoutAnimation,
   UIManager,
+  View
 } from 'react-native';
-import ProfileImage from '../components/ProfileImage';
-import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
-import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
-import { colors, fonts } from '../theme';
-import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
-import WhiteBackgroundWrapper from '../components/WhiteBackgroundWrapper';
-import UserPreviewModal from '../components/UserPreviewModal';
-import { useLastReadDM } from '../firebase/userChatReadHelpers';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { formatDisplayName } from '../utils/displayName';
-import { dedupeById } from '../utils/dedupeById';
+import Icon from 'react-native-vector-icons/Ionicons';
 import {
-  useChatInputBarHeight,
   chatStyles,
   JUMP_BUTTON_OFFSET,
+  useChatInputBarHeight,
 } from '../channels/AllChannels';
+import ProfileImage from '../components/ProfileImage';
+import UserPreviewModal from '../components/UserPreviewModal';
+import WhiteBackgroundWrapper from '../components/WhiteBackgroundWrapper';
+import { auth, firestore } from '../firebase/firebase';
+import { useLastReadDM } from '../firebase/userChatReadHelpers';
+import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
+import { colors } from '../theme';
+import { dedupeById } from '../utils/dedupeById';
+import { formatDisplayName } from '../utils/displayName';
 
 const EMOJI_LIST = ['💪', '🔥', '😂', '👏', '😎', '🥇', '😍'];
 

@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
+import { firestore } from '../firebase/firebase';
+import { auth } from '../firebase/firebase';
 import { CartItem } from '../firebase/cartHelpers';
 
 type CartState = {

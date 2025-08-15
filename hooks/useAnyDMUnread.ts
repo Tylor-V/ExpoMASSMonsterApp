@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
+import { firestore } from '../firebase/firebase';
+import { auth } from '../firebase/firebase';
 
 export default function useAnyDMUnread() {
   const [hasUnread, setHasUnread] = useState(false);

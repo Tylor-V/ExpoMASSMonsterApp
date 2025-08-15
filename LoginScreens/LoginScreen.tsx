@@ -11,7 +11,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import auth from '@react-native-firebase/auth';
+import { auth } from '../firebase/firebase';
 import {createOrUpdateUserProfile} from '../firebase/firebaseUserProfile';
 import {clearUserCache} from '../utils/clearUserCache';
 import {fixUserLevel} from '../firebase/chatXPHelpers';
