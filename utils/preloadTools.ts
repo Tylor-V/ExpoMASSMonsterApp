@@ -1,5 +1,5 @@
 import {Image} from 'react-native';
-import * as Anim from '../animations';
+import * as Anim from './animations';
 import {colors, fonts, gradients, radius} from '../theme';
 import {getBadgeAsset, BadgeKey} from '../badges/UnlockableBadges';
 
