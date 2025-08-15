@@ -1,13 +1,11 @@
+import { Video } from 'expo-av';
+import * as ImagePicker from 'expo-image-picker';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, FlatList, Alert, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Video from 'react-native-video';
 import Icon from 'react-native-vector-icons/Ionicons';
-import LinearGradient from 'react-native-linear-gradient';
-import { firestore } from '../firebase/firebase';
-import { storage } from '../firebase/firebase';
-import { auth } from '../firebase/firebase';
-import { launchImageLibrary } from 'react-native-image-picker';
+import { auth, firestore, storage } from '../firebase/firebase';
 
 const { height, width } = Dimensions.get('window');
 
@@ -55,35 +53,42 @@ export default function GymVideoFeed({ navigation }) {
   }, [currentUserId]);
 
   const handleUpload = async () => {
-  const res = await launchImageLibrary({ mediaType: 'video' });
-  if (res.didCancel || !res.assets?.length) return;
-  const file = res.assets[0];
-  if (!file.uri) return;
-
-  // File size check (warn if > 150MB, for example)
-  if (file.fileSize && file.fileSize > 150 * 1024 * 1024) {
-    Alert.alert('File too large', 'Please upload a video less than 150MB.');
-    return;
-  }
-    setUploading(true);
-  try {
-    const filename = `${currentUserId}_${Date.now()}.mp4`;
-    const ref = storage().ref(`/gymVideos/${filename}`);
-    await ref.putFile(file.uri);
-    const url = await ref.getDownloadURL();
-    await firestore().collection('videos').doc('gym-feed').collection('gym-feed').add({
-      userId: currentUserId,
-      url,
-      timestamp: Date.now(),
-      reactions: [],
-      hiddenBy: [],
-      reportedBy: [],
+  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permission.status !== 'granted') {
+      Alert.alert('Permission needed', 'We need access to your library to upload videos.');
+      return;
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
     });
-    Alert.alert('Success', 'Video uploaded!');
-  } catch (e) {
-    Alert.alert('Error', e.message || 'Could not upload video.');
-  }
-  setUploading(false);
+    if (res.canceled || !res.assets?.length) return;
+    const file = res.assets[0];
+    if (!file.uri) return;
+
+    // File size check (warn if > 150MB, for example)
+    if (file.fileSize && file.fileSize > 150 * 1024 * 1024) {
+      Alert.alert('File too large', 'Please upload a video less than 150MB.');
+      return;
+    }
+    setUploading(true);
+    try {
+      const filename = `${currentUserId}_${Date.now()}.mp4`;
+      const ref = storage().ref(`/gymVideos/${filename}`);
+      await ref.putFile(file.uri);
+      const url = await ref.getDownloadURL();
+      await firestore().collection('videos').doc('gym-feed').collection('gym-feed').add({
+        userId: currentUserId,
+        url,
+        timestamp: Date.now(),
+        reactions: [],
+        hiddenBy: [],
+        reportedBy: [],
+      });
+      Alert.alert('Success', 'Video uploaded!');
+    } catch (e) {
+      Alert.alert('Error', e.message || 'Could not upload video.');
+    }
+    setUploading(false);
   };
 
   const handleReact = async (id) => {
@@ -155,9 +160,10 @@ export default function GymVideoFeed({ navigation }) {
             <Video
               source={{ uri: item.url }}
               style={styles.video}
-              resizeMode="cover"
-              repeat
-              paused={activeIndex !== index}
+              resizeMode={ResizeMode.COVER}
+              isLooping
+              shouldPlay={activeIndex === index}
+              onError={(e) => console.error('Video playback error', e)}
             />
             <LinearGradient
               colors={["transparent", "rgba(13,13,13,0.85)"]}

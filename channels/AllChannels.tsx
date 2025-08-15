@@ -21,7 +21,7 @@ import { firestore } from '../firebase/firebase';
 import { auth } from '../firebase/firebase';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import LinearGradient from 'react-native-linear-gradient';
+import { LinearGradient } from 'expo-linear-gradient';
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

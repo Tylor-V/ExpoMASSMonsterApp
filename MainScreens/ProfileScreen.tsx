@@ -24,7 +24,7 @@ import { colors, fonts } from '../theme';
 import ProfileImage from '../components/ProfileImage';
 import { ANIM_INSTANT, ANIM_MEDIUM } from '../animations';
 import { levelThresholds } from '../firebase/chatXPHelpers';
-import { launchImageLibrary } from 'react-native-image-picker';
+import * as ImagePicker from 'expo-image-picker';
 import {
   updateProfileField,
   updateSocialLink,
@@ -327,8 +327,19 @@ const ProfileScreen = () => {
   };
 
   const selectProfileImage = async () => {
-    const result = await launchImageLibrary({ mediaType: 'photo' });
-    if (result.assets && result.assets.length) {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permission.status !== 'granted') {
+      Alert.alert(
+        'Permission needed',
+        'Please allow photo library access to update your profile picture.',
+      );
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 1,
+    });
+    if (!result.canceled && result.assets?.length) {
       setDraftPic(result.assets[0].uri);
     }
   };

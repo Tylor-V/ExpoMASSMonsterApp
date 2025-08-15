@@ -1,21 +1,19 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { ResizeMode, Video } from 'expo-av';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  Modal,
-  View,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  Dimensions,
-  PanResponder,
   Animated,
+  Dimensions,
+  Image,
+  Modal,
+  PanResponder,
+  StyleSheet,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { firestore } from '../firebase/firebase';
-import { storage } from '../firebase/firebase';
-import { auth } from '../firebase/firebase';
-import Icon from 'react-native-vector-icons/Ionicons';
-import Video from 'react-native-video';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Icon from 'react-native-vector-icons/Ionicons';
 import { ANIM_FAST } from '../animations';
+import { auth, firestore, storage } from '../firebase/firebase';
 
 const { width, height } = Dimensions.get('window');
 
@@ -133,10 +131,11 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
           <Video
             source={{ uri: story.url }}
             style={styles.img}
-            resizeMode="cover"
-            controls
-            paused={false}
-            repeat
+            resizeMode={ResizeMode.COVER}
+            useNativeControls
+            shouldPlay
+            isLooping
+            onError={(e) => console.error('Video playback error', e)}
           />
         ) : (
           <Image source={{ uri: story.url }} style={styles.img} resizeMode="cover" />

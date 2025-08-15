@@ -1,7 +1,20 @@
 import { Ionicons as Icon } from '@expo/vector-icons';
-import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
-import PagerView from 'react-native-pager-view';
+import React, {
+  forwardRef,
+  useImperativeHandle,
+  useRef,
+  useState,
+  useEffect,
+} from 'react';
+import {
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  ViewStyle,
+  ScrollView,
+  useWindowDimensions,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface CoursePagerProps {
@@ -51,29 +64,37 @@ const CoursePager = forwardRef<CoursePagerHandle, CoursePagerProps>(function Cou
   progressColor = '#FFCC00',
   fullScreenPages,
 }, ref) {
-  const pagerRef = useRef<PagerView>(null);
+  const scrollRef = useRef<ScrollView>(null);
   const [page, setPage] = useState(0);
+  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
   const goToPage = (idx: number) => {
-    pagerRef.current?.setPage(idx);
+    scrollRef.current?.scrollTo({x: width * idx, animated: true});
     setPage(idx);
     onPageChange?.(idx);
   };
 
   const goToPageWithoutAnimation = (idx: number) => {
-    pagerRef.current?.setPageWithoutAnimation(idx);
+    scrollRef.current?.scrollTo({x: width * idx, animated: false});
     setPage(idx);
     onPageChange?.(idx);
   };
 
   useImperativeHandle(ref, () => ({goToPage, goToPageWithoutAnimation}));
 
-  const handlePageSelected = (e: any) => {
-    const pos = e.nativeEvent.position;
-    setPage(pos);
-    onPageChange?.(pos);
+  const handleMomentumEnd = (e: any) => {
+    const offsetX = e.nativeEvent.contentOffset.x;
+    const pos = Math.round(offsetX / width);
+    if (pos !== page) {
+      setPage(pos);
+      onPageChange?.(pos);
+    }
   };
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({x: width * page, animated: false});
+  }, [width, page]);
 
   const isFullScreen = fullScreenPages?.includes(page);
   
@@ -98,19 +119,21 @@ const CoursePager = forwardRef<CoursePagerHandle, CoursePagerProps>(function Cou
             )}
           </>
         )}
-      <PagerView
+      <ScrollView
         style={{flex: 1}}
-        initialPage={0}
-        ref={pagerRef}
-        onPageSelected={handlePageSelected}
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
         scrollEnabled={false}
-        orientation="horizontal">
+        onMomentumScrollEnd={handleMomentumEnd}
+      >
         {pages.map((content, idx) => (
-          <View key={idx} style={{flex: 1}}>
+          <View key={idx} style={{width, flex: 1}}>
             {typeof content === 'string' ? <Text>{content}</Text> : content}
           </View>
         ))}
-      </PagerView>
+      </ScrollView>
       {!hideDots && !isFullScreen && (
         <View style={[styles.dots, {top: insets.top + 14}]}>
           {(dotsCount ? Array.from({length: dotsCount}) : pages).map((_, i) => (

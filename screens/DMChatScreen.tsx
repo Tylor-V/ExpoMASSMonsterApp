@@ -1,3 +1,4 @@
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,7 +16,6 @@ import {
   UIManager,
   View
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {
