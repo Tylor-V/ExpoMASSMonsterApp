@@ -15,7 +15,7 @@ import CoursePager, {CoursePagerHandle} from '../components/CoursePager';
 import CourseNav from '../components/CourseNav';
 import {colors} from '../theme';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import Slider from '@react-native-community/slider';
+import { Slider } from 'expo-slider';
 import {WebView} from 'react-native-webview';
 import {updateCourseProgress} from '../firebase/userProfileHelpers';
 
