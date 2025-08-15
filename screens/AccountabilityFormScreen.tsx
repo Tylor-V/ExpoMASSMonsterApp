@@ -13,8 +13,8 @@ import {
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MapView, {Marker} from 'react-native-maps';
-import Geolocation from '@react-native-community/geolocation';
-import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
+import * as Location from 'expo-location';
+import * as Permissions from 'expo-permissions';
 import Icon from 'react-native-vector-icons/Ionicons';
 import {addAccountabilityPoint} from '../firebase/userProfileHelpers';
 import {colors} from '../theme';
@@ -45,14 +45,8 @@ export function distanceMiles(lat1, lng1, lat2, lng2) {
 }
 
 async function ensureLocationPermission() {
-  const perm =
-    Platform.OS === 'ios'
-      ? PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
-      : PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
-  const status = await check(perm);
-  if (status === RESULTS.GRANTED || status === RESULTS.LIMITED) return true;
-  const req = await request(perm);
-  return req === RESULTS.GRANTED || req === RESULTS.LIMITED;
+  const {status} = await Permissions.askAsync(Permissions.LOCATION_FOREGROUND);
+  return status === 'granted';
 }
 
 async function geocodeAddress(address: string) {
@@ -105,21 +99,20 @@ const AccountabilityFormScreen = ({navigation}) => {
         }
         return;
       }
-      Geolocation.getCurrentPosition(
-        position => {
-          if (!didCancel) {
-            const {latitude, longitude} = position.coords;
-            setUserLoc({lat: latitude, lng: longitude});
-            // Optionally, setCoords here if you want to default to user location
-          }
-        },
-        err => {
-          if (!didCancel) {
-            Alert.alert('Location Error', 'Could not get location. Please enable location services.');
-          }
-        },
-        {enableHighAccuracy: true}
-      );
+      try {
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+        if (!didCancel) {
+          const {latitude, longitude} = position.coords;
+          setUserLoc({lat: latitude, lng: longitude});
+          // Optionally, setCoords here if you want to default to user location
+        }
+      } catch (err) {
+        if (!didCancel) {
+          Alert.alert('Location Error', 'Could not get location. Please enable location services.');
+        }
+      }
     }
     fetchLocation();
     return () => { didCancel = true; };
@@ -189,22 +182,21 @@ const AccountabilityFormScreen = ({navigation}) => {
       return;
     }
     setLoading(true);
-    Geolocation.getCurrentPosition(
-      position => {
+      try {
+        const position = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
         const {latitude, longitude} = position.coords;
         setUserLoc({lat: latitude, lng: longitude});
         setCoords({lat: latitude, lng: longitude});
-        setLoading(false);
-      },
-      err => {
-        setLoading(false);
+      } catch (err) {
         Alert.alert(
           'Location Error',
           'Could not get location. Please enable location services.',
         );
-      },
-      {enableHighAccuracy: true},
-    );
+      } finally {
+        setLoading(false);
+      }
   };
 
   const handleSubmit = async () => {
