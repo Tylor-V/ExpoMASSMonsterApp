@@ -7,7 +7,6 @@
     "icon": "./assets/app-icon.png",
     "scheme": "expomassmonsterapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
     "ios": {
       "supportsTablet": true
     },
@@ -24,7 +23,6 @@
       "favicon": "./assets/app-icon.png"
     },
     "plugins": [
-      "expo-router",
       [
         "expo-splash-screen",
         {
@@ -34,9 +32,6 @@
           "backgroundColor": "#ffffff"
         }
       ]
-    ],
-    "experiments": {
-      "typedRoutes": true
-    }
+    ]
   }
 }

@@ -1,0 +1,85 @@
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React, { useCallback, useState } from 'react';
+import ForgotPasswordScreen from './LoginScreens/ForgotPasswordScreen';
+import LoginScreen from './LoginScreens/LoginScreen';
+import SignUpScreen from './LoginScreens/SignUpScreen';
+import MainAppScreen from './MainScreens/MainAppScreen';
+import { AppContextProvider } from './firebase/AppContext';
+import AccountScreen from './screens/AccountScreen';
+import AccountabilityFormScreen from './screens/AccountabilityFormScreen';
+import DMChatScreen from './screens/DMChatScreen';
+import DMInboxScreen from './screens/DMInboxScreen';
+import DonateSupportScreen from './screens/DonateSupportScreen';
+import GymVideoFeed from './screens/GymVideoFeed';
+import HelpFaqScreen from './screens/HelpFaqScreen';
+import NotificationsScreen from './screens/NotificationsScreen';
+import OnlineStatusScreen from './screens/OnlineStatusScreen';
+import RewardsScreen from './screens/RewardsScreen';
+import SettingsScreen from './screens/SettingsScreen';
+import SplashScreen from './screens/SplashScreen';
+import SplitEditorScreen from './screens/SplitEditorScreen';
+import TermsPrivacyScreen from './screens/TermsPrivacyScreen';
+import WorkoutHistoryScreen from './screens/WorkoutHistoryScreen';
+
+const RootStack = createNativeStackNavigator();
+const AuthStack = createNativeStackNavigator();
+const AppStack = createNativeStackNavigator();
+
+function AuthStackScreen() {
+  return (
+    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="SignUp" component={SignUpScreen} />
+      <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+    </AuthStack.Navigator>
+  );
+}
+
+function AppStackScreen() {
+  const [news, setNews] = useState<any[]>([]);
+  const handleNewsAdded = useCallback((item: any) => setNews((prev) => [item, ...prev]), []);
+
+  return (
+    <AppStack.Navigator screenOptions={{ headerShown: false }}>
+      <AppStack.Screen name="MainApp">
+        {(props) => (
+          <MainAppScreen
+            {...props}
+            news={news}
+            newsLoaded={true}
+            onNewsAdded={handleNewsAdded}
+          />
+        )}
+      </AppStack.Screen>
+      <AppStack.Screen name="DMInbox" component={DMInboxScreen} />
+      <AppStack.Screen name="DMChat" component={DMChatScreen} />
+      <AppStack.Screen name="GymVideoFeed" component={GymVideoFeed} />
+      <AppStack.Screen name="Rewards" component={RewardsScreen} />
+      <AppStack.Screen name="Settings" component={SettingsScreen} />
+      <AppStack.Screen name="Account" component={AccountScreen} />
+      <AppStack.Screen name="OnlineStatus" component={OnlineStatusScreen} />
+      <AppStack.Screen name="WorkoutHistory" component={WorkoutHistoryScreen} />
+      <AppStack.Screen name="NotificationsScreen" component={NotificationsScreen} />
+      <AppStack.Screen name="HelpFAQ" component={HelpFaqScreen} />
+      <AppStack.Screen name="TermsPrivacy" component={TermsPrivacyScreen} />
+      <AppStack.Screen name="DonateSupport" component={DonateSupportScreen} />
+      <AppStack.Screen name="SplitEditor" component={SplitEditorScreen} />
+      <AppStack.Screen name="AccountabilityForm" component={AccountabilityFormScreen} />
+    </AppStack.Navigator>
+  );
+}
+
+export default function App() {
+  return (
+    <AppContextProvider>
+      <NavigationContainer>
+        <RootStack.Navigator screenOptions={{ headerShown: false }}>
+          <RootStack.Screen name="Splash" component={SplashScreen} />
+          <RootStack.Screen name="AuthStack" component={AuthStackScreen} />
+          <RootStack.Screen name="AppStack" component={AppStackScreen} />
+        </RootStack.Navigator>
+      </NavigationContainer>
+    </AppContextProvider>
+  );
+}
