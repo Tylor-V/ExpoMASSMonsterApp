@@ -8,7 +8,7 @@ import {
   LayoutAnimation,
   Linking,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts } from '../theme';
@@ -120,7 +120,7 @@ export default function HelpFaqScreen() {
           accessibilityLabel="Back"
           style={styles.backBtn}
         >
-          <Icon name="chevron-back" size={26} color={colors.white} />
+          <Ionicons name="chevron-back" size={26} color={colors.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>HELP & FAQ</Text>
       </View>
@@ -133,9 +133,9 @@ export default function HelpFaqScreen() {
               accessibilityLabel={`${section.title} section`}
             >
               <View style={styles.row}>
-                <Icon name={section.icon} size={22} color="#333" />
+                <Ionicons name={section.icon} size={22} color="#333" />
                 <Text style={styles.rowLabel}>{section.title}</Text>
-                <Icon
+                <Ionicons
                   name="chevron-forward"
                   size={19}
                   color="#B3B3B3"
@@ -163,7 +163,7 @@ export default function HelpFaqScreen() {
           accessibilityRole="button"
           accessibilityLabel="Contact Support"
         >
-          <Icon name="mail-outline" size={21} color="#000" style={{ marginRight: 8 }} />
+          <Ionicons name="mail-outline" size={21} color="#000" style={{ marginRight: 8 }} />
           <Text style={styles.contactText}>Contact Support</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => openLink('/privacy')} accessibilityRole="link">

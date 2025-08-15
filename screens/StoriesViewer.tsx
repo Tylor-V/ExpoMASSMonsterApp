@@ -10,6 +10,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+<<<<<<< ours
+=======
+import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
+import auth from '@react-native-firebase/auth';
+import { Ionicons } from '@expo/vector-icons';
+import Video from 'react-native-video';
+>>>>>>> theirs
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { ANIM_FAST } from '../animations';
@@ -160,7 +168,7 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
             style={[styles.deleteBtn, { top: insets.top + 40 }]}
             onPress={handleDelete}
           >
-            <Icon name="trash-outline" size={20} color="#fff" />
+            <Ionicons name="trash-outline" size={20} color="#fff" />
           </TouchableOpacity>
         )}
         <TouchableOpacity
@@ -168,7 +176,7 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
           onPress={onClose}
           activeOpacity={0.8}
         >
-          <Icon name="close" size={20} color="#0D0D0D" />
+          <Ionicons name="close" size={20} color="#0D0D0D" />
         </TouchableOpacity>
       </Animated.View>
     </Modal>

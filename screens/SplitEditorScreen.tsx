@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme';
 import SplitBuilder, { WorkoutPlan } from '../components/SplitBuilder';
@@ -35,7 +35,7 @@ const SplitEditorScreen = () => {
           onPress={() => navigation.goBack()}
           style={styles.backBtn}
         >
-          <Icon name="chevron-back" size={28} color={colors.black} />
+          <Ionicons name="chevron-back" size={28} color={colors.black} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>CUSTOM SPLIT</Text>
       </View>

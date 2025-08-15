@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppContext } from '../firebase/AppContext';
@@ -33,13 +33,13 @@ const OnlineStatusScreen = () => {
           onPress={() => navigation.goBack()}
           style={styles.backBtn}
         >
-          <Icon name="chevron-back" size={24} color={colors.white} />
+          <Ionicons name="chevron-back" size={24} color={colors.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ONLINE STATUS</Text>
       </View>
       <TouchableOpacity onPress={toggle} activeOpacity={1}>
         <View style={styles.row}>
-          <Icon name="globe-outline" size={24} color={colors.black} />
+          <Ionicons name="globe-outline" size={24} color={colors.black} />
           <Text style={styles.rowLabel}>Show my Online Status</Text>
           <Switch
             testID="online-status-switch"

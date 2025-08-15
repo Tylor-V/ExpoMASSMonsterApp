@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { colors, fonts, radius } from '../theme';
 import { useAppContext } from '../firebase/AppContext';
@@ -81,10 +81,10 @@ export default function RewardsScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.headerRow}>
         <Pressable onPress={() => navigation.goBack()} style={styles.iconBtn}>
-          <Icon name="chevron-back" size={28} color={colors.white} />
+          <Ionicons name="chevron-back" size={28} color={colors.white} />
         </Pressable>
         <View style={styles.headerTitleWrap}>
-          <Icon name="gift" size={26} color={colors.gold} />
+          <Ionicons name="gift" size={26} color={colors.gold} />
           <Text style={styles.headerTitle}>Rewards</Text>
         </View>
         <View style={styles.iconPlaceholder} />

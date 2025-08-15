@@ -8,7 +8,7 @@ import {
   Pressable,
   Animated,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fonts } from '../theme';
@@ -54,7 +54,7 @@ function WorkoutRow({ item }: { item: any }) {
       style={{ transform: [{ scale }], width: '100%' }}
     >
       <View style={[styles.row, pressed && styles.rowPressed]}>
-        <Icon
+        <Ionicons
           name="location-outline"
           size={23}
           color={colors.gray}
@@ -69,7 +69,7 @@ function WorkoutRow({ item }: { item: any }) {
             <Text style={styles.time}> {timeStr}</Text>
           </View>
         </View>
-        <Icon
+        <Ionicons
           name="checkmark-circle"
           size={18}
           color={colors.accent}
@@ -97,13 +97,13 @@ export default function WorkoutHistoryScreen() {
           onPress={() => navigation.goBack()}
           style={styles.backBtn}
         >
-          <Icon name="chevron-back" size={24} color={colors.white} />
+          <Ionicons name="chevron-back" size={24} color={colors.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>WORKOUT HISTORY</Text>
       </View>
       {history.length === 0 ? (
         <View style={styles.emptyWrap}>
-          <Icon name="time-outline" size={36} color={colors.gray} />
+          <Ionicons name="time-outline" size={36} color={colors.gray} />
           <Text style={styles.emptyText}>
             No workout history yet. Complete an Accountability Check-In to see your workouts here!
           </Text>

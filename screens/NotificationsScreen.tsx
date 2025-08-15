@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Switch,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -23,7 +23,7 @@ const NotificationRow = ({ icon, label, value, onValueChange }) => {
       style={{ width: '100%' }}
     >
       <View style={[styles.row, { backgroundColor: pressed ? '#F5F5F5' : '#FFFFFF' }]}> 
-        <Icon name={icon} size={24} color={'#232323'} />
+        <Ionicons name={icon} size={24} color={'#232323'} />
         <Text style={styles.rowLabel}>{label}</Text>
         <Switch
           value={value}
@@ -52,7 +52,7 @@ const NotificationsScreen = () => {
           onPress={() => navigation.goBack()}
           style={styles.backBtn}
         >
-          <Icon name="chevron-back" size={24} color="#FFFFFF" />
+          <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>NOTIFICATIONS</Text>
       </View>
