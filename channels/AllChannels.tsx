@@ -17,11 +17,18 @@ import {
   UIManager,
   Dimensions,
 } from 'react-native';
+<<<<<<< ours
 import { firestore } from '../firebase/firebase';
 import { auth } from '../firebase/firebase';
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { LinearGradient } from 'expo-linear-gradient';
+=======
+import firestore from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import LinearGradient from 'react-native-linear-gradient';
+>>>>>>> theirs
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -941,7 +948,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                   </Pressable>
                 )}
                 <Pressable onPress={() => confirmDelete(item.id)} style={chatStyles.actionBtn}>
-                  <Icon name="trash-outline" size={22} color={colors.delete} />
+                  <Ionicons name="trash-outline" size={22} color={colors.delete} />
                 </Pressable>
               </View>
             </>
@@ -983,7 +990,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                 onPress={() => setReactionTargetId(item.id)}
                 style={[chatStyles.reactionBubble, chatStyles.reactionAddBtn]}
               >
-                <Icon name="add-circle-outline" size={18} color="#888" />
+                <Ionicons name="add-circle-outline" size={18} color="#888" />
               </TouchableOpacity>
             )}
           </Animated.View>
@@ -1035,7 +1042,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                 onPress={handleJumpToBottom}
                 activeOpacity={0.88}
               >
-                 <Icon name="arrow-down" size={28} color={colors.background} />
+                 <Ionicons name="arrow-down" size={28} color={colors.background} />
               </TouchableOpacity>
             )}
             {reactionTargetId && (
@@ -1099,7 +1106,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                   colors={[colors.accent, colors.accent]}
                   style={chatStyles.sendBtnGradient}
                 >
-                  <Icon name="arrow-up" size={22} color={colors.white} />
+                  <Ionicons name="arrow-up" size={22} color={colors.white} />
                 </LinearGradient>
               </TouchableOpacity>
             </View>

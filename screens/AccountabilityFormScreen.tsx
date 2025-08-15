@@ -13,9 +13,15 @@ import {
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MapView, {Marker} from 'react-native-maps';
+<<<<<<< ours
 import * as Location from 'expo-location';
 import * as Permissions from 'expo-permissions';
 import Icon from 'react-native-vector-icons/Ionicons';
+=======
+import Geolocation from '@react-native-community/geolocation';
+import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
+import { Ionicons } from '@expo/vector-icons';
+>>>>>>> theirs
 import {addAccountabilityPoint} from '../firebase/userProfileHelpers';
 import {colors} from '../theme';
 import {GOOGLE_PLACES_API_KEY} from '@env';
@@ -277,7 +283,7 @@ const AccountabilityFormScreen = ({navigation}) => {
         contentContainerStyle={{flexGrow: 1, paddingBottom: insets.bottom}}
         keyboardShouldPersistTaps="handled">
         <View style={[styles.headerRow, {paddingTop: insets.top + 16}]}>
-          <Icon
+          <Ionicons
             name="shield-checkmark"
             color="#FFCC00"
             size={27}
@@ -287,12 +293,12 @@ const AccountabilityFormScreen = ({navigation}) => {
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={{marginLeft: 'auto'}}>
-            <Icon name="close-circle-outline" size={29} color="#FFCC00" />
+            <Ionicons name="close-circle-outline" size={29} color="#FFCC00" />
           </TouchableOpacity>
         </View>
 
         <View style={styles.rewardsCard}>
-          <Icon name="flame-outline" color="#FFCC00" size={32} />
+          <Ionicons name="flame-outline" color="#FFCC00" size={32} />
           <Text style={styles.cardTitle}>Discipline = Rewards</Text>
           <Text style={styles.cardText}>
             Earn points by completing this check-in once per day.
@@ -333,7 +339,7 @@ const AccountabilityFormScreen = ({navigation}) => {
             ]}
             onPress={() => !submitting && setHomeWorkout(hw => !hw)}
             disabled={submitting}>
-            <Icon
+            <Ionicons
               name={homeWorkout ? 'checkbox' : 'square-outline'}
               size={18}
               color={homeWorkout ? '#232323' : '#FFCC00'}
@@ -393,7 +399,7 @@ const AccountabilityFormScreen = ({navigation}) => {
                 style={styles.locBtn}
                 onPress={handleGetLocation}
                 disabled={submitting}>
-                <Icon name="navigate-outline" size={16} color="#FFCC00" />
+                <Ionicons name="navigate-outline" size={16} color="#FFCC00" />
                 <Text style={styles.locBtnTxt}>Share Live Location</Text>
               </TouchableOpacity>
               {userLoc && (
@@ -415,7 +421,7 @@ const AccountabilityFormScreen = ({navigation}) => {
               <ActivityIndicator color="#232323" size="small" />
             ) : (
               <>
-                <Icon name="checkmark-circle-outline" size={21} color="#232323" />
+                <Ionicons name="checkmark-circle-outline" size={21} color="#232323" />
                 <Text
                   style={[
                     styles.submitBtnTxt,

@@ -12,7 +12,7 @@ import useCourseTopPad from "../hooks/useCourseTopPad";
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import CoursePager, {CoursePagerHandle} from '../components/CoursePager';
 import CourseNav from '../components/CourseNav';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import {updateCourseProgress} from '../firebase/userProfileHelpers';
 import {colors} from '../theme';
 
@@ -191,7 +191,7 @@ export default function WelcomeCourse({onBack}) {
         {p.image ? (
           <Image source={p.image} style={styles.heroImg} resizeMode="cover" />
         ) : (
-          <Icon
+          <Ionicons
             name={p.icon}
             size={66}
             color="#FFCC00"

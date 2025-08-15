@@ -22,8 +22,7 @@ import {
   DeviceEventEmitter,
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import Icon from 'react-native-vector-icons/Ionicons';
-import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { getUserBadgeProgress } from '../badges/progressHelpers';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -57,7 +56,7 @@ import {
 import { LIFT_RATINGS, type RatingMap } from '../constants/liftRatings';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(Pressable);
-const AnimatedIcon = Animated.createAnimatedComponent(Icon);
+const AnimatedIcon = Animated.createAnimatedComponent(Ionicons);
 
 const CAROUSEL_INDEX_KEY = 'calendarCarouselIndex';
 // Persist carousel position across component unmounts
@@ -1183,7 +1182,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const renderEvent = ({ item }: { item: typeof dayEvents[0] }) => (
     <View style={[styles.eventCard, styles.eventCardCompact]}
     >
-      <Icon
+      <Ionicons
         name="calendar-outline"
         size={24}
         color={colors.purple}
@@ -1276,7 +1275,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       >
         <View style={styles.chooseSplitContent}>
           <View style={styles.chooseSplitRow}>
-            <Icon
+            <Ionicons
               name="barbell-outline"
               size={22}
               color={colors.purple}
@@ -1362,7 +1361,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             ]}
           >
             <View style={[styles.massTileHeader, ev.isWorkout && styles.massWorkoutHeader]}>
-              <Icon name={ev.icon} size={22} color={colors.yellow} style={{ marginRight: 8 }} />
+              <Ionicons name={ev.icon} size={22} color={colors.yellow} style={{ marginRight: 8 }} />
               <Text style={styles.massTileTitle}>{ev.name.toUpperCase()}</Text>
               {ev.isWorkout && (
                 <AnimatedTouchable
@@ -1392,7 +1391,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                   onPress={() => setShowWorkoutDrawer(true)}
                   style={styles.zoomBtn}
                 >
-                  <Icon
+                  <Ionicons
                     name="information-circle-outline"
                     size={26}
                     color="#407BFF"
@@ -1410,7 +1409,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                     onPress={() => Linking.openURL(ev.link)}
                     style={styles.zoomBtn}
                   >
-                    <MaterialIcon name="north-east" size={26} color="#407BFF" />
+                    <MaterialIcons name="north-east" size={26} color="#407BFF" />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -1478,7 +1477,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             style={styles.addNewsBtn}
             testID="add-news-btn"
           >
-            <Icon name="add-circle-outline" size={24} color={colors.accent} />
+            <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
           </TouchableOpacity>
         )}
       </View>
@@ -1547,7 +1546,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           idx !== 0 && styles.compTileSpacing,
         ]}>
           <View style={styles.massTileHeader}>
-            <Icon name="flame-outline" size={22} color={colors.purple} style={{ marginRight: 8 }} />
+            <Ionicons name="flame-outline" size={22} color={colors.purple} style={{ marginRight: 8 }} />
             <Text style={styles.compTileTitle}>{c.name}</Text>
           </View>
           <Text style={styles.compComingSoon}>{c.status}</Text>
@@ -1672,7 +1671,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           style={styles.addBtn}
           onPress={() => setShowScheduler(true)}
         >
-          <Icon name="add-circle" size={24} color="#fff" />
+          <Ionicons name="add-circle" size={24} color="#fff" />
           <Text style={styles.addBtnTxt}>Schedule 1-on-1</Text>
         </TouchableOpacity>
         <View style={styles.workoutToggleRow}>
@@ -2019,7 +2018,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                         {Object.entries(headRatings).map(([head, rating]) => (
                           <View key={head} style={styles.headRatingItem}>
                             <Text style={styles.headRatingText}>{head} {rating}</Text>
-                            <Icon
+                            <Ionicons
                               name="star"
                               size={14}
                               color={colors.gold}
@@ -2039,7 +2038,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                           accessibilityRole="checkbox"
                           accessibilityState={{ checked: !!liftChecks[l] }}
                         >
-                          {liftChecks[l] && <Icon name="checkmark" size={16} color="#fff" />}
+                          {liftChecks[l] && <Ionicons name="checkmark" size={16} color="#fff" />}
                         </Pressable>
                         <Pressable
                           onPress={() =>
@@ -2047,7 +2046,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                           }
                           style={styles.helpBtn}
                         >
-                          <Icon name="help-circle-outline" size={22} color="#407BFF" />
+                          <Ionicons name="help-circle-outline" size={22} color="#407BFF" />
                         </Pressable>
                         <Text style={styles.workoutName}>{l}</Text>
                       </View>

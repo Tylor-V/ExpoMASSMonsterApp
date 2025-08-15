@@ -9,7 +9,7 @@ import {
   TextInput,
   ActivityIndicator,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth } from '../firebase/firebase';
@@ -29,9 +29,9 @@ const Row = ({ icon, label, onPress }: { icon: string; label: string; onPress: (
   return (
     <TouchableOpacity activeOpacity={1} onPress={handlePress}>
       <View style={[styles.row, { backgroundColor: pressed ? '#F5F5F5' : colors.white }]}>
-        <Icon name={icon} size={24} color={colors.textDark} />
+        <Ionicons name={icon} size={24} color={colors.textDark} />
         <Text style={styles.rowLabel}>{label}</Text>
-        <Icon name="chevron-forward" size={20} color="#B0B0B0" style={{ marginLeft: 'auto' }} />
+        <Ionicons name="chevron-forward" size={20} color="#B0B0B0" style={{ marginLeft: 'auto' }} />
       </View>
     </TouchableOpacity>
   );
@@ -115,7 +115,7 @@ export default function AccountScreen() {
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.headerBar}>
         <TouchableOpacity testID="account-back" onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Icon name="chevron-back" size={24} color={colors.white} />
+          <Ionicons name="chevron-back" size={24} color={colors.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ACCOUNT</Text>
       </View>

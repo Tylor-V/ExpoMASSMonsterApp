@@ -1,6 +1,6 @@
 import React, { useMemo, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, View, Text, ViewStyle } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts } from '../theme';
 import { useCart } from '../hooks/useCart';
 import { addToCart, sanitizeId, CartItem } from '../firebase/cartHelpers';
@@ -40,7 +40,7 @@ function AddCartButton({ item, style }: Props) {
   return (
     <Animated.View style={[styles.container, style, { transform: [{ scale }] }]}>
       <Pressable onPress={handlePress} style={styles.button} accessibilityRole="button">
-        <Icon name="cart" size={24} color={colors.black} />
+        <Ionicons name="cart" size={24} color={colors.black} />
       </Pressable>
       {qty > 0 && (
         <View style={styles.badge} accessibilityLabel={`quantity-${qty}`}>\

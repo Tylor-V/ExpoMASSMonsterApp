@@ -15,7 +15,7 @@ import {
     View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { ANIM_BUTTON_POP, ANIM_DRAWER, ANIM_MEDIUM } from '../animations';
 import AddToCartControl from '../components/AddToCartControl';
 import BackgroundWrapper from '../components/BackgroundWrapper';
@@ -339,7 +339,7 @@ function StoreScreen({ navigation }) {
           style={styles.iconBtn}
           onPress={() => navigation.navigate('Rewards')}
         >
-          <Icon name="gift-outline" size={28} color={colors.gold} />
+          <Ionicons name="gift-outline" size={28} color={colors.gold} />
         </Pressable>
       </View>
       {loadingCollections ? (
@@ -439,18 +439,18 @@ function StoreScreen({ navigation }) {
               style={[styles.modalCard, { transform: [{ translateY: slideAnim }] }]}
             >
               <Pressable style={styles.closeBtn} onPress={closeModal}>
-                <Icon name="close" size={32} color={colors.gray} />
+                <Ionicons name="close" size={32} color={colors.gray} />
               </Pressable>
               <View style={styles.carouselWrap}>
                 <Pressable onPress={prevImg} style={styles.carouselArrow}>
-                  <Icon name="chevron-back" size={28} color={colors.black} />
+                  <Ionicons name="chevron-back" size={28} color={colors.black} />
                 </Pressable>
                 <Image
                   source={{ uri: modalItem.images?.[imgIndex]?.url }}
                   style={styles.modalImg}
                 />
                 <Pressable onPress={nextImg} style={styles.carouselArrow}>
-                  <Icon name="chevron-forward" size={28} color={colors.black} />
+                  <Ionicons name="chevron-forward" size={28} color={colors.black} />
                 </Pressable>
               </View>
               <Text style={styles.modalTitle}>{modalItem.title}</Text>
@@ -500,7 +500,7 @@ function StoreScreen({ navigation }) {
         onPress={() => setCartOpen(true)}
       >
         <Animated.View style={{ transform: [{ scale: cartAnim }] }}>
-          <Icon name="cart-outline" size={26} color={colors.black} />
+          <Ionicons name="cart-outline" size={26} color={colors.black} />
           {cartQuantity > 0 && (
             <Animated.View
               style={[styles.cartDot, { transform: [{ scale: dotAnim }] }]}

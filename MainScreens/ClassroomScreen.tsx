@@ -21,7 +21,7 @@ import MindsetBanner from '../assets/mindset-banner.jpg';
 import MassUniversityLogo from '../assets/mass-univeristy-logo.png';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import { colors } from '../theme';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -109,7 +109,7 @@ function ClassroomScreen({ onRequestTabChange, onCourseOpenChange }) {
                 <View style={styles.titleRow}>
                   <Text style={styles.courseTitle} numberOfLines={1}>{item.title}</Text>
                   {progress >= 1 && (
-                    <Icon name="star" size={20} color={colors.accent} />
+                    <Ionicons name="star" size={20} color={colors.accent} />
                   )}
                 </View>
                 <Image

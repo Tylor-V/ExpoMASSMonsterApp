@@ -25,10 +25,16 @@ import {
 } from '../firebase/userProfileHelpers';
 import { LIFT_CATEGORIES, LIFT_CATEGORY_ORDER } from '../constants/liftCategories';
 import { LIFT_RATINGS } from '../constants/liftRatings';
+<<<<<<< ours
 import Icon from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import { auth } from '../firebase/firebase';
 import { firestore } from '../firebase/firebase';
+=======
+import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+>>>>>>> theirs
 import { colors, fonts } from '../theme';
 import { ANIM_INSTANT, ANIM_BUTTON_PRESS, ANIM_WIGGLE } from '../animations';
 import useCarousel from '../hooks/useCarousel';
@@ -182,7 +188,7 @@ const SplitShareBubble = ({
                             {Object.entries(headRatings).map(([head, rating]) => (
                               <View key={head} style={styles.headRatingItem}>
                                 <Text style={styles.headRatingText}>{head} {rating}</Text>
-                                <Icon name="star" size={14} color={colors.accent} style={{ marginLeft: 3 }} />
+                                <Ionicons name="star" size={14} color={colors.accent} style={{ marginLeft: 3 }} />
                               </View>
                             ))}
                           </View>
@@ -241,7 +247,7 @@ const SplitShareBubble = ({
             ]}
             hitSlop={8}
           >
-            <Icon
+            <Ionicons
               name={saved ? 'bookmark' : 'bookmark-outline'}
               size={26}
               color={saved ? colors.accent: colors.accent}
@@ -521,7 +527,7 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
               ]}
             >
               <View style={styles.saveCountWrap}>
-                <Icon name="bookmark" size={14} color={colors.accent} />
+                <Ionicons name="bookmark" size={14} color={colors.accent} />
                 <Text style={styles.saveCountText}>{item.saveCount ?? 0}</Text>
               </View>
                 {Array.from(new Set((item.reactions || []).map(r => r.emoji))).map(emoji => {
@@ -546,7 +552,7 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
                 })}
                 {!isOwnMessage && !(item.reactions || []).some(r => r.userId === currentUserId) && (
                   <TouchableOpacity onPress={openReactionPicker} style={[styles.reactionBubble, styles.reactionAddBtn]}>
-                    <Icon name="add-circle-outline" size={18} color="#888" />
+                    <Ionicons name="add-circle-outline" size={18} color="#888" />
                   </TouchableOpacity>
                 )}
               </View>
@@ -565,7 +571,7 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
                     </Pressable>
                   )}
                   <Pressable onPress={() => confirmDelete(item.id)} style={styles.actionBtn}>
-                    <Icon name="trash-outline" size={22} color={colors.delete} />
+                    <Ionicons name="trash-outline" size={22} color={colors.delete} />
                   </Pressable>
                 </View>
               </>

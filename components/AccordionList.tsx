@@ -9,7 +9,7 @@ import {
   UIManager,
   Animated,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { fonts, radius } from '../theme';
 import { ANIM_ROTATE } from '../animations';
 
@@ -81,7 +81,7 @@ const AccordionItem = ({title, description, expanded, onToggle}: AccordionItemPr
         <View style={styles.row}>
           <Text style={styles.title}>{title}</Text>
           <Animated.View style={{transform: [{rotate}]}}>
-            <Icon name="chevron-down-outline" size={20} color="#FFD700" />
+            <Ionicons name="chevron-down-outline" size={20} color="#FFD700" />
           </Animated.View>
         </View>
         {expanded && (

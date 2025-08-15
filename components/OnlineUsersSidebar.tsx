@@ -11,9 +11,15 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
+<<<<<<< ours
 import Icon from 'react-native-vector-icons/Ionicons';
 import { firestore } from '../firebase/firebase';
 import { auth } from '../firebase/firebase';
+=======
+import { Ionicons } from '@expo/vector-icons';
+import firestore from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
+>>>>>>> theirs
 import ProfileImage from './ProfileImage';
 import { useChatInputBarHeight } from '../MainScreens/ChatScreen';
 import UserPreviewModal from './UserPreviewModal';
@@ -264,10 +270,10 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
               }}
               style={{ padding: 4 }}
             >
-              <Icon name="close-circle" size={23} color="#8B5CF6" />
+              <Ionicons name="close-circle" size={23} color="#8B5CF6" />
             </TouchableOpacity>
           ) : (
-            <Icon name="search-outline" size={21} color="#B0B0B0" />
+            <Ionicons name="search-outline" size={21} color="#B0B0B0" />
           )}
         </View>
         {/* Online */}

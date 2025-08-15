@@ -10,7 +10,7 @@ import {
   Image,
 } from 'react-native';
 import ProfileImage from '../components/ProfileImage';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts } from '../theme';
 import ResponsivePressable from '../components/ResponsivePressable';
 import { firestore } from '../firebase/firebase';
@@ -186,7 +186,7 @@ const DMsInboxScreen = ({ navigation }) => {
     <WhiteBackgroundWrapper padTop={false} style={{ flex: 1 }}>
       <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Icon name="chevron-back" size={32} color={colors.accent} />
+          <Ionicons name="chevron-back" size={32} color={colors.accent} />
         </TouchableOpacity>
         <View style={styles.headerRow}>
           <Image
@@ -211,10 +211,10 @@ const DMsInboxScreen = ({ navigation }) => {
               }}
               style={{ padding: 4 }}
             >
-              <Icon name="close-circle" size={23} color={colors.purple} />
+              <Ionicons name="close-circle" size={23} color={colors.purple} />
             </TouchableOpacity>
           ) : (
-            <Icon name="search-outline" size={21} color={colors.textMuted} />
+            <Ionicons name="search-outline" size={21} color={colors.textMuted} />
           )}
         </View>
         {loading && !term ? (

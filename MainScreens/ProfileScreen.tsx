@@ -13,7 +13,7 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import { auth } from '../firebase/firebase';
 import { firestore } from '../firebase/firebase';
@@ -416,7 +416,7 @@ const ProfileScreen = () => {
               }
             }}
           >
-            <Icon
+            <Ionicons
               name={menuOpen ? 'chevron-up' : 'chevron-down'}
               size={20}
               color="#000"
@@ -429,10 +429,10 @@ const ProfileScreen = () => {
             testID="open-map-btn"
             style={{ marginRight: 12 }}
           >
-            <Icon name="map" size={24} color="#000" />
+            <Ionicons name="map" size={24} color="#000" />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
-            <Icon name="menu" size={24} color="#000" />
+            <Ionicons name="menu" size={24} color="#000" />
           </TouchableOpacity>
         </View>
       </View>
@@ -478,7 +478,7 @@ const ProfileScreen = () => {
                   accessibilityRole="button"
                   accessibilityLabel="Badge info"
                 >
-                  <Icon
+                  <Ionicons
                     name="information-circle"
                     size={18}
                     color="#FFCC00"
@@ -573,7 +573,7 @@ const ProfileScreen = () => {
             onPress={handleCheckin}
             disabled={hasCheckinToday}
           >
-            <Icon name="add-circle" size={20} color="#000" style={{ marginRight: 8 }} />
+            <Ionicons name="add-circle" size={20} color="#000" style={{ marginRight: 8 }} />
             <Text
               style={[styles.checkinTxt, hasCheckinToday && styles.checkinTxtDisabled]}
             >
@@ -622,7 +622,7 @@ const ProfileScreen = () => {
             return (
               <View key={s.key} style={styles.socialRow}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                  <Icon name={s.icon} size={24} color={colors.gold} style={{ marginRight: 12 }} />
+                  <Ionicons name={s.icon} size={24} color={colors.gold} style={{ marginRight: 12 }} />
                   {editMode ? (
                     <TextInput
                       style={styles.socialInput}
@@ -654,14 +654,14 @@ const ProfileScreen = () => {
                       }
                     }}
                   >
-                    <Icon
+                    <Ionicons
                       name={val.hidden ? 'eye-off' : 'eye'}
                       size={24}
                       color={val.hidden ? '#B0B0B0' : colors.gold}
                     />
                   </TouchableOpacity>
                 ) : (
-                  <Icon name="eye-off" size={24} color="#B0B0B0" />
+                  <Ionicons name="eye-off" size={24} color="#B0B0B0" />
                 )}
               </View>
             );

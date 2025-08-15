@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { View, Pressable, Text, StyleSheet, Animated, ViewStyle } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts } from '../theme';
 import { ANIM_BUTTON_POP, ANIM_MEDIUM } from '../animations';
 import { useCart } from '../hooks/useCart';
@@ -107,7 +107,7 @@ function AddToCartControl({ item, style }: AddToCartControlProps) {
         style={{ transform: [{ scale: leftScale }], opacity: fadeAnim }}
       >
         <Pressable onPress={handleRemove} hitSlop={6} style={styles.btn}>
-          <Icon
+          <Ionicons
             name={localQty <= 1 ? 'trash' : 'remove'}
             size={20}
             color={colors.black}
@@ -138,7 +138,7 @@ function AddToCartControl({ item, style }: AddToCartControlProps) {
           {inCart ? (
             <Text style={styles.qty}>{localQty}</Text>
           ) : (
-            <Icon name="cart" size={18} color={colors.black} />
+            <Ionicons name="cart" size={18} color={colors.black} />
           )}
         </Pressable>
       </View>
@@ -147,7 +147,7 @@ function AddToCartControl({ item, style }: AddToCartControlProps) {
         style={{ transform: [{ scale: rightScale }], opacity: fadeAnim }}
       >
         <Pressable onPress={handleAdd} hitSlop={6} style={styles.btn}>
-          <Icon name="add" size={18} color={colors.black} />
+          <Ionicons name="add" size={18} color={colors.black} />
         </Pressable>
       </Animated.View>
     </View>
