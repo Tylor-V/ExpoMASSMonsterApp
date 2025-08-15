@@ -1,0 +1,597 @@
+import React, {useState, useRef, useEffect} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import MapView, {Marker} from 'react-native-maps';
+import Geolocation from '@react-native-community/geolocation';
+import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
+import Icon from 'react-native-vector-icons/Ionicons';
+import {addAccountabilityPoint} from '../firebase/userProfileHelpers';
+import {colors} from '../theme';
+import {GOOGLE_PLACES_API_KEY} from '@env';
+
+// Timeout helper to avoid hanging if the Firebase request stalls
+const SUBMIT_TIMEOUT_MS = 10000;
+function withTimeout<T>(promise: Promise<T>, ms: number = SUBMIT_TIMEOUT_MS) {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error('Request timed out')), ms),
+    ),
+  ]);
+}
+
+export function distanceMiles(lat1, lng1, lat2, lng2) {
+  const R = 3958.8;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  // Correct haversine implementation
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function ensureLocationPermission() {
+  const perm =
+    Platform.OS === 'ios'
+      ? PERMISSIONS.IOS.LOCATION_WHEN_IN_USE
+      : PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
+  const status = await check(perm);
+  if (status === RESULTS.GRANTED || status === RESULTS.LIMITED) return true;
+  const req = await request(perm);
+  return req === RESULTS.GRANTED || req === RESULTS.LIMITED;
+}
+
+async function geocodeAddress(address: string) {
+  try {
+    const input = encodeURIComponent(address);
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${input}&key=${GOOGLE_PLACES_API_KEY}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const loc = data.results?.[0]?.geometry?.location;
+    if (loc) {
+      return { lat: loc.lat, lng: loc.lng };
+    }
+  } catch (e) {
+    console.error('geocode error', e);
+  }
+  return null;
+}
+
+const DEFAULT_REGION = {
+  latitude: 40.7,
+  longitude: -73.9,
+  latitudeDelta: 0.02,
+  longitudeDelta: 0.02,
+};
+
+const AccountabilityFormScreen = ({navigation}) => {
+  const [gymName, setGymName] = useState('');
+  const [coords, setCoords] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [userLoc, setUserLoc] = useState<{lat: number; lng: number} | null>(null);
+  const [homeWorkout, setHomeWorkout] = useState(false);
+  const insets = useSafeAreaInsets();
+
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const fetchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [submitting, setSubmitting] = useState(false);
+
+  const submitBtnDisabled = submitting || loading;
+
+  // Get user location on mount
+  useEffect(() => {
+    let didCancel = false;
+    async function fetchLocation() {
+      const granted = await ensureLocationPermission();
+      if (!granted) {
+        if (!didCancel) {
+          Alert.alert('Permission Denied', 'Location permission is required for location-based suggestions.');
+        }
+        return;
+      }
+      Geolocation.getCurrentPosition(
+        position => {
+          if (!didCancel) {
+            const {latitude, longitude} = position.coords;
+            setUserLoc({lat: latitude, lng: longitude});
+            // Optionally, setCoords here if you want to default to user location
+          }
+        },
+        err => {
+          if (!didCancel) {
+            Alert.alert('Location Error', 'Could not get location. Please enable location services.');
+          }
+        },
+        {enableHighAccuracy: true}
+      );
+    }
+    fetchLocation();
+    return () => { didCancel = true; };
+  }, []);
+
+  const fetchSuggestions = async (q: string) => {
+    try {
+      const input = encodeURIComponent(`${q} gym`);
+      let url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?key=${GOOGLE_PLACES_API_KEY}&input=${input}&types=establishment`;
+      // Use user location for suggestions if available
+      if (userLoc) {
+        url += `&location=${userLoc.lat},${userLoc.lng}&radius=50000`;
+      }
+      const res = await fetch(url);
+      const data = await res.json();
+      setSuggestions(
+        (data.predictions || []).map(p => ({
+          name: p.description,
+          placeId: p.place_id,
+        })),
+      );
+      setDropdownOpen(true);
+    } catch (err) {
+      console.error('suggest error', err);
+    }
+  };
+
+  const handleGymNameChange = (text: string) => {
+    setGymName(text);
+    if (fetchTimeout.current) clearTimeout(fetchTimeout.current);
+    if (text.length < 3) {
+      setSuggestions([]);
+      setDropdownOpen(false);
+      return;
+    }
+    fetchTimeout.current = setTimeout(() => fetchSuggestions(text), 300);
+  };
+
+  const handleSelectSuggestion = async (s: any) => {
+    try {
+      const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${s.placeId}&key=${GOOGLE_PLACES_API_KEY}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const loc = data.result?.geometry?.location;
+      if (loc) {
+        setCoords({lat: loc.lat, lng: loc.lng});
+      }
+      setGymName(s.name);
+    } catch (err) {
+      console.error('select error', err);
+    }
+    setDropdownOpen(false);
+    setSuggestions([]);
+  };
+
+  useEffect(() => {
+    if (homeWorkout) {
+      setDropdownOpen(false);
+    }
+  }, [homeWorkout]);
+
+  // Location logic
+  const handleGetLocation = async () => {
+    const granted = await ensureLocationPermission();
+    if (!granted) {
+      Alert.alert('Permission Denied', 'Location permission is required.');
+      return;
+    }
+    setLoading(true);
+    Geolocation.getCurrentPosition(
+      position => {
+        const {latitude, longitude} = position.coords;
+        setUserLoc({lat: latitude, lng: longitude});
+        setCoords({lat: latitude, lng: longitude});
+        setLoading(false);
+      },
+      err => {
+        setLoading(false);
+        Alert.alert(
+          'Location Error',
+          'Could not get location. Please enable location services.',
+        );
+      },
+      {enableHighAccuracy: true},
+    );
+  };
+
+  const handleSubmit = async () => {
+    if (submitBtnDisabled) return;
+
+    if (!gymName && !homeWorkout) {
+      Alert.alert('Required', 'Enter gym name or select Home Workout.');
+      return;
+    }
+    let loc = coords;
+    if (!loc && !homeWorkout) {
+      loc = await geocodeAddress(gymName);
+      if (loc) {
+        setCoords(loc);
+      } else {
+        Alert.alert(
+          'Required',
+          'Choose gym location on map or enable Home Workout.',
+        );
+        return;
+      }
+    }
+    if (!userLoc && !homeWorkout) {
+      Alert.alert('Location', 'Please share your current location.');
+      return;
+    }
+    if (!homeWorkout && loc && userLoc) {
+      const miles = distanceMiles(
+        userLoc.lat,
+        userLoc.lng,
+        loc.lat,
+        loc.lng,
+      );
+      if (miles > 2) {
+        Alert.alert(
+          'Too Far',
+          `You are ${miles.toFixed(
+            2,
+          )} miles from your gym location. Please check in when closer, or select Home Workout if needed.`,
+        );
+        return;
+      }
+    }
+
+    setSubmitting(true);
+
+    try {
+      await withTimeout(
+        addAccountabilityPoint({
+          gymName,
+          coords: loc,
+          homeWorkout,
+        }),
+      );
+      Alert.alert('Success', 'Accountability check-in submitted!');
+      navigation.goBack();
+    } catch (e) {
+      if (
+        e?.code === 'deadline-exceeded' ||
+        e?.code === 'unavailable' ||
+        e?.message?.toLowerCase().includes('timed out')
+      ) {
+        Alert.alert('Success', 'Accountability check-in submitted!');
+        navigation.goBack();
+      } else {
+        Alert.alert('Error', e.message || 'Could not submit form.');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={{flex: 1, backgroundColor: '#181818'}}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView
+        contentContainerStyle={{flexGrow: 1, paddingBottom: insets.bottom}}
+        keyboardShouldPersistTaps="handled">
+        <View style={[styles.headerRow, {paddingTop: insets.top + 16}]}>
+          <Icon
+            name="shield-checkmark"
+            color="#FFCC00"
+            size={27}
+            style={{marginRight: 8}}
+          />
+          <Text style={styles.headerTxt}>Accountability Check-In</Text>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{marginLeft: 'auto'}}>
+            <Icon name="close-circle-outline" size={29} color="#FFCC00" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.rewardsCard}>
+          <Icon name="flame-outline" color="#FFCC00" size={32} />
+          <Text style={styles.cardTitle}>Discipline = Rewards</Text>
+          <Text style={styles.cardText}>
+            Earn points by completing this check-in once per day.
+          </Text>
+        </View>
+
+        <View style={styles.formBox}>
+          <Text style={styles.label}>Gym Name</Text>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter gym name or Home Workout"
+              placeholderTextColor="#888"
+              value={gymName}
+              onChangeText={handleGymNameChange}
+              editable={!homeWorkout && !submitting && !loading}
+              onBlur={() => setDropdownOpen(false)}
+              onFocus={() => gymName.length >= 3 && fetchSuggestions(gymName)}
+            />
+            {dropdownOpen && suggestions.length > 0 && (
+              <View style={styles.dropdown}>
+                {suggestions.map((s, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={styles.dropdownItem}
+                    onPress={() => handleSelectSuggestion(s)}
+                  >
+                    <Text style={styles.dropdownItemText}>{s.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.toggleBtn,
+              homeWorkout && {backgroundColor: '#FFCC00'},
+            ]}
+            onPress={() => !submitting && setHomeWorkout(hw => !hw)}
+            disabled={submitting}>
+            <Icon
+              name={homeWorkout ? 'checkbox' : 'square-outline'}
+              size={18}
+              color={homeWorkout ? '#232323' : '#FFCC00'}
+            />
+            <Text
+              style={[styles.toggleBtnTxt, homeWorkout && {color: '#232323'}]}>
+              Home Workout
+            </Text>
+          </TouchableOpacity>
+          {!homeWorkout && (
+            <>
+              <Text style={styles.label}>Select Gym Location</Text>
+              <MapView
+                testID="mapView"
+                region={
+                  coords
+                    ? {
+                        latitude: coords.lat,
+                        longitude: coords.lng,
+                        latitudeDelta: 0.012,
+                        longitudeDelta: 0.012,
+                      }
+                    : userLoc
+                    ? {
+                        latitude: userLoc.lat,
+                        longitude: userLoc.lng,
+                        latitudeDelta: 0.012,
+                        longitudeDelta: 0.012,
+                      }
+                    : {...DEFAULT_REGION}
+                }
+                showsUserLocation={!!userLoc}
+                onPress={e =>
+                  !submitting &&
+                  setCoords({
+                    lat: e.nativeEvent.coordinate.latitude,
+                    lng: e.nativeEvent.coordinate.longitude,
+                  })
+                }
+                pointerEvents={submitting ? 'none' : 'auto'}>
+                {coords && (
+                  <Marker
+                    coordinate={{latitude: coords.lat, longitude: coords.lng}}
+                    draggable={!submitting}
+                    onDragEnd={e =>
+                      !submitting &&
+                      setCoords({
+                        lat: e.nativeEvent.coordinate.latitude,
+                        lng: e.nativeEvent.coordinate.longitude,
+                      })
+                    }
+                    pinColor="#FFCC00"
+                  />
+                )}
+              </MapView>
+              <TouchableOpacity
+                style={styles.locBtn}
+                onPress={handleGetLocation}
+                disabled={submitting}>
+                <Icon name="navigate-outline" size={16} color="#FFCC00" />
+                <Text style={styles.locBtnTxt}>Share Live Location</Text>
+              </TouchableOpacity>
+              {userLoc && (
+                <Text style={styles.statusTxt}>
+                  Your current location: {userLoc.lat.toFixed(4)}, {userLoc.lng.toFixed(4)}
+                </Text>
+              )}
+            </>
+          )}
+          <TouchableOpacity
+            style={[
+              styles.submitBtn,
+              submitBtnDisabled && {backgroundColor: '#bbb', opacity: 0.7},
+            ]}
+            onPress={handleSubmit}
+            disabled={submitBtnDisabled}
+            activeOpacity={submitBtnDisabled ? 1 : 0.85}>
+            {submitting || loading ? (
+              <ActivityIndicator color="#232323" size="small" />
+            ) : (
+              <>
+                <Icon name="checkmark-circle-outline" size={21} color="#232323" />
+                <Text
+                  style={[
+                    styles.submitBtnTxt,
+                    submitBtnDisabled && {color: '#232323', opacity: 0.7},
+                  ]}>
+                  Submit Check-In
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+          <Text style={styles.note}>
+            You can only submit once every 24 hours to earn your points and rewards!
+          </Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+};
+
+const styles = StyleSheet.create({
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 17,
+    paddingBottom: 13,
+    backgroundColor: '#232323',
+    borderBottomLeftRadius: 17,
+    borderBottomRightRadius: 17,
+  },
+  headerTxt: {
+    color: '#FFCC00',
+    fontWeight: 'bold',
+    fontSize: 22,
+    letterSpacing: 0.7,
+  },
+  rewardsCard: {
+    marginTop: 22,
+    backgroundColor: '#232323',
+    borderRadius: 19,
+    marginHorizontal: 26,
+    padding: 23,
+    alignItems: 'center',
+    elevation: 1,
+    marginBottom: 15,
+  },
+  cardTitle: {
+    color: '#FFCC00',
+    fontWeight: 'bold',
+    fontSize: 17,
+    marginTop: 6,
+    marginBottom: 2,
+    letterSpacing: 0.2,
+  },
+  cardText: {
+    color: '#fff',
+    fontSize: 13.5,
+    opacity: 0.82,
+    marginBottom: 7,
+    textAlign: 'center',
+  },
+  formBox: {
+    flex: 1,
+    padding: 19,
+  },
+  label: {
+    color: '#232323',
+    fontWeight: 'bold',
+    marginTop: 9,
+    marginBottom: 3,
+    fontSize: 14,
+    marginLeft: 1,
+  },
+  input: {
+    backgroundColor: '#f6f3e0',
+    borderRadius: 7,
+    borderColor: '#FFCC00',
+    borderWidth: 1.2,
+    color: '#232323',
+    fontSize: 15,
+    marginBottom: 11,
+    paddingHorizontal: 11,
+    paddingVertical: 8,
+  },
+  inputWrapper: { position: 'relative' },
+  dropdown: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: colors.white,
+    borderRadius: 8,
+    paddingVertical: 4,
+    marginTop: 2,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+    zIndex: 10,
+  },
+  dropdownItem: { paddingVertical: 8, paddingHorizontal: 10 },
+  dropdownItemText: { color: colors.textDark, fontSize: 14 },
+  toggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#232323',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    marginTop: 9,
+    marginBottom: 17,
+    alignSelf: 'flex-start',
+  },
+  toggleBtnTxt: {
+    color: '#FFCC00',
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  map: {
+    width: '100%',
+    height: 180,
+    borderRadius: 12,
+    marginTop: 10,
+    marginBottom: 13,
+  },
+  locBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  locBtnTxt: {
+    color: '#FFCC00',
+    fontWeight: 'bold',
+    fontSize: 13,
+    marginLeft: 7,
+  },
+  statusTxt: {
+    color: '#888',
+    fontSize: 12,
+    marginBottom: 11,
+  },
+  submitBtn: {
+    backgroundColor: '#FFCC00',
+    borderRadius: 13,
+    paddingVertical: 15,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 22,
+    marginBottom: 11,
+  },
+  submitBtnTxt: {
+    color: '#232323',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  note: {
+    color: '#bbb',
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: 8,
+    maxWidth: 280,
+    alignSelf: 'center',
+    opacity: 0.85,
+  },
+});
+
+export default AccountabilityFormScreen;

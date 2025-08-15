@@ -1,25 +1,24 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import { MaterialIcons } from '@expo/vector-icons';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  Pressable,
-  Image,
-  ActivityIndicator,
-  Animated,
-  Dimensions,
-  Linking,
-  ScrollView,
+    ActivityIndicator,
+    Animated,
+    Dimensions,
+    Image,
+    Linking,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TAB_BAR_HEIGHT } from './SwipeableTabs';
-import { colors, fonts, radius } from '../theme';
 import { ANIM_MEDIUM } from '../animations';
 import { useCart } from '../hooks/useCart';
 import { createShopifyCheckout, shopifyFetch } from '../hooks/useShopify'; // add this import
-import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import Toast from 'react-native-simple-toast'; // or your preferred toast lib
+import { colors, fonts } from '../theme';
+import { TAB_BAR_HEIGHT } from './SwipeableTabs';
+// Toast implementation removed in favor of JS fallback or Expo-compatible toast
 import { useFocusEffect } from '@react-navigation/native';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(Pressable);

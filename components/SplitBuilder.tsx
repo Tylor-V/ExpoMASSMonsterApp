@@ -1,20 +1,20 @@
-import React, { useState, useMemo, useRef } from 'react';
+import { Ionicons as Icon } from '@expo/vector-icons';
+import React, { useMemo, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  TouchableOpacity,
-  Pressable,
-  Animated,
-  StyleSheet,
+    Animated,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, fonts } from '../theme';
+import { ANIM_INSTANT } from '../animations';
 import { LIFT_CATEGORIES, LIFT_CATEGORY_ORDER } from '../constants/liftCategories';
 import { LIFT_RATINGS, RatingMap } from '../constants/liftRatings';
-import { ANIM_INSTANT } from '../animations';
+import { colors, fonts } from '../theme';
 
 type SplitDay = {
   title: string;

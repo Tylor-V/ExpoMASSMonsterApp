@@ -1,33 +1,31 @@
-import React, { useEffect, useState, useRef } from 'react';
-import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  Alert,
-  Animated,
-  Pressable,
-  TextInput,
-  Linking,
-  Image,
-} from 'react-native';
-import firestore from '@react-native-firebase/firestore';
+import { Ionicons as Icon } from '@expo/vector-icons';
 import auth from '@react-native-firebase/auth';
-import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
-import Icon from 'react-native-vector-icons/Ionicons';
+import firestore from '@react-native-firebase/firestore';
 import { useNavigation } from '@react-navigation/native';
-import ProfileImage from './ProfileImage';
-import { colors, fonts } from '../theme';
-import { ROLE_COLORS, ROLE_TAGS } from '../constants/roles';
-import { ANIM_MODAL } from '../animations';
-import { getChatLevelColor } from '../utils/chatLevel';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  getBadgeImage,
-  getBadgeAsset,
-  getUnlockedBadges,
-  enforceSelectedBadges,
-  type BadgeKey,
+    Alert,
+    Animated,
+    Image,
+    Linking,
+    Modal,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
+} from 'react-native';
+import { ANIM_MODAL } from '../animations';
+import {
+    enforceSelectedBadges,
+    getBadgeAsset,
+    getUnlockedBadges
 } from '../badges/UnlockableBadges';
+import { ROLE_COLORS, ROLE_TAGS } from '../constants/roles';
+import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
+import { colors } from '../theme';
+import { getChatLevelColor } from '../utils/chatLevel';
+import ProfileImage from './ProfileImage';
 
 const SOCIAL_ICONS: { [key: string]: string } = {
   insta: 'logo-instagram',

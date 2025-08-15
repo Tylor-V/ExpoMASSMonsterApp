@@ -1,18 +1,18 @@
+import { Ionicons as Icon } from '@expo/vector-icons';
 import * as React from 'react';
 import {
-  View,
-  Text,
-  Pressable,
-  StyleSheet,
-  Dimensions,
-  Animated,
+    Animated,
+    Dimensions,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabView } from 'react-native-tab-view';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { colors } from '../theme';
 const AnimatedText = Animated.createAnimatedComponent(Text);
 const AnimatedIcon = Animated.createAnimatedComponent(Icon);
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../theme';
 
 export const TAB_BAR_HEIGHT = 76;
 const initialLayout = { width: Dimensions.get('window').width };

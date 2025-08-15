@@ -1,16 +1,16 @@
+import { Ionicons as Icon } from '@expo/vector-icons';
 import React, { useCallback } from 'react';
 import {
-  Modal,
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  FlatList,
-  ActivityIndicator,
-  Image,
+    ActivityIndicator,
+    FlatList,
+    Image,
+    Modal,
+    Pressable,
+    StyleSheet,
+    Text,
+    View,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
-import { colors, radius } from '../theme';
+import { colors } from '../theme';
 
 import { getUserBadgeProgress } from '../badges/progressHelpers';
 

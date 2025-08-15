@@ -1,15 +1,15 @@
-import React, {useRef, useState} from 'react';
+import { Ionicons as Icon } from '@expo/vector-icons';
+import React, { useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  Dimensions,
+    Animated,
+    Dimensions,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
-import { colors, fonts, radius } from '../theme';
 import { ANIM_SLOW } from '../animations';
+import { colors } from '../theme';
 
 interface ChipFlipProps {
   titles: string[];

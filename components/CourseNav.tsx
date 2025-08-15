@@ -1,8 +1,8 @@
+import { Ionicons as Icon } from '@expo/vector-icons';
 import React from 'react';
-import {View, TouchableOpacity, Text, StyleSheet, Animated} from 'react-native';
-import {radius, colors} from '../theme';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors } from '../theme';
 
 interface CourseNavProps {
   showPrev?: boolean;

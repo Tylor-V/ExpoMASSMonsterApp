@@ -1,39 +1,38 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  Animated,
-  Pressable,
-  ScrollView,
-  ActivityIndicator,
-  Alert,
-  AppState,
-  Dimensions,
-  InteractionManager,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/Ionicons';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import { FontAwesome, Ionicons as Icon } from '@expo/vector-icons';
 import auth from '@react-native-firebase/auth';
 import firestore from '@react-native-firebase/firestore';
 import storage from '@react-native-firebase/storage';
-import { launchImageLibrary } from 'react-native-image-picker';
-import ScreenContainer from './ScreenContainer';
-import ProfileImage from './ProfileImage';
-import OnlineUsersSidebar from './OnlineUsersSidebar';
+import { launchImageLibrary } from 'expo-image-picker';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+    ActivityIndicator,
+    Alert,
+    Animated,
+    AppState,
+    Dimensions,
+    Image,
+    InteractionManager,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ANIM_MEDIUM } from '../animations';
+import HashIcon from '../assets/hashtag-icon.png';
+import InboxIcon from '../assets/inbox.png';
+import UsersIcon from '../assets/users.png';
+import useAnyDMUnread from '../hooks/useAnyDMUnread';
+import useChannelUnread from '../hooks/useChannelUnread';
+import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import ChatScreen from '../MainScreens/ChatScreen';
 import StoriesViewer from '../screens/StoriesViewer';
-import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
-import UsersIcon from '../assets/users.png';
-import InboxIcon from '../assets/inbox.png';
-import HashIcon from '../assets/hashtag-icon.png';
-import { fonts, colors, radius } from '../theme';
-import { ANIM_MEDIUM } from '../animations';
-import useChannelUnread from '../hooks/useChannelUnread';
-import useAnyDMUnread from '../hooks/useAnyDMUnread';
+import { colors, fonts } from '../theme';
+import OnlineUsersSidebar from './OnlineUsersSidebar';
+import ProfileImage from './ProfileImage';
+import ScreenContainer from './ScreenContainer';
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const BASE_CHANNELS = [

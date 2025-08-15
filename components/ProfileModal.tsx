@@ -1,29 +1,27 @@
+import { Ionicons as Icon } from '@expo/vector-icons';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import { CommonActions, useNavigation } from '@react-navigation/native';
 import React from 'react';
 import {
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Alert,
-  Image,
+    Alert,
+    Image,
+    Modal,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from 'react-native';
-import ProfileImage from './ProfileImage';
-import Icon from 'react-native-vector-icons/Ionicons';
-import { colors, radius } from '../theme';
-import { levelThresholds } from '../firebase/chatXPHelpers';
-import auth from '@react-native-firebase/auth';
-import {
-  getUnlockedBadges,
-  type BadgeKey,
-  getBadgeImage,
-  getBadgeAsset,
-} from '../badges/UnlockableBadges';
-import firestore from '@react-native-firebase/firestore';
-import { useNavigation, CommonActions } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+    getBadgeAsset,
+    getUnlockedBadges
+} from '../badges/UnlockableBadges';
+import { levelThresholds } from '../firebase/chatXPHelpers';
+import { colors } from '../theme';
 import { clearUserCache } from '../utils/clearUserCache';
+import ProfileImage from './ProfileImage';
 
 // Capitalize first letter
 function capitalize(str) {

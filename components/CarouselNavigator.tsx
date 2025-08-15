@@ -1,6 +1,6 @@
+import { Ionicons as Icon } from '@expo/vector-icons';
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { StyleSheet, TouchableOpacity, View, ViewStyle } from 'react-native';
 import { colors } from '../theme';
 
 type Props = {

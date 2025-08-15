@@ -1,10 +1,8 @@
-import React, {useRef, useState, forwardRef, useImperativeHandle} from 'react';
-import {View, StyleSheet, TouchableOpacity, ViewStyle, Text} from 'react-native';
-import { radius } from '../theme';
+import { Ionicons as Icon } from '@expo/vector-icons';
+import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View, ViewStyle } from 'react-native';
 import PagerView from 'react-native-pager-view';
-import Icon from 'react-native-vector-icons/Ionicons';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import { TAB_BAR_HEIGHT } from './SwipeableTabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface CoursePagerProps {
   pages: React.ReactNode[];
