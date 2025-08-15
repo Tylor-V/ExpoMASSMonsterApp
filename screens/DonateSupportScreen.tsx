@@ -56,7 +56,7 @@ const DonateSupportScreen = () => {
           onPress={() => navigation.goBack()}
           style={styles.backBtn}
         >
-          <Icon name="chevron-back" size={26} color={colors.white} />
+          <Ionicons name="chevron-back" size={26} color={colors.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>DONATE & SUPPORT</Text>
       </View>
@@ -83,7 +83,7 @@ const DonateSupportScreen = () => {
             { transform: [{ scale: pressDonate ? 1.07 : 1 }] },
           ]}
         >
-          <Icon name="heart" size={22} color="#E43F5A" style={{ marginRight: 8 }} />
+          <Ionicons name="heart" size={22} color="#E43F5A" style={{ marginRight: 8 }} />
           <Text style={styles.donateTxt}>Donate Now</Text>
         </TouchableOpacity>
         <View style={{ marginTop: 32 }}>
@@ -101,7 +101,7 @@ const DonateSupportScreen = () => {
             ]}
           >
             <Text style={styles.inviteTxt}>Invite via Text</Text>
-            <Icon name="send" size={20} color={colors.gold} style={{ marginLeft: 8 }} />
+            <Ionicons name="send" size={20} color={colors.gold} style={{ marginLeft: 8 }} />
           </TouchableOpacity>
         </View>
         <View style={styles.divider} />
