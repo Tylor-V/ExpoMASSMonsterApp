@@ -1,5 +1,5 @@
-import { ResizeMode, Video } from 'expo-av';
 import React, { useEffect, useRef, useState } from 'react';
+import { Video, ResizeMode } from 'expo-av';
 import {
   Animated,
   Dimensions,
@@ -11,15 +11,12 @@ import {
   View,
 } from 'react-native';
 <<<<<<< ours
-=======
-import firestore from '@react-native-firebase/firestore';
-import storage from '@react-native-firebase/storage';
-import auth from '@react-native-firebase/auth';
 import { Ionicons } from '@expo/vector-icons';
-import Video from 'react-native-video';
->>>>>>> theirs
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/Ionicons';
+=======
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+>>>>>>> theirs
 import { ANIM_FAST } from '../animations';
 import { auth, firestore, storage } from '../firebase/firebase';
 

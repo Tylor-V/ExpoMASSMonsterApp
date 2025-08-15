@@ -17,18 +17,9 @@ import {
   UIManager,
   Dimensions,
 } from 'react-native';
-<<<<<<< ours
-import { firestore } from '../firebase/firebase';
-import { auth } from '../firebase/firebase';
-import Icon from 'react-native-vector-icons/Ionicons';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { LinearGradient } from 'expo-linear-gradient';
-=======
-import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
+import { firestore, auth } from '../firebase/firebase';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
-import LinearGradient from 'react-native-linear-gradient';
->>>>>>> theirs
+import { LinearGradient } from 'expo-linear-gradient';
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

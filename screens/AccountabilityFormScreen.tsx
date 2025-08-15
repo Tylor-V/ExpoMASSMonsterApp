@@ -13,15 +13,8 @@ import {
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import MapView, {Marker} from 'react-native-maps';
-<<<<<<< ours
 import * as Location from 'expo-location';
-import * as Permissions from 'expo-permissions';
-import Icon from 'react-native-vector-icons/Ionicons';
-=======
-import Geolocation from '@react-native-community/geolocation';
-import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 import { Ionicons } from '@expo/vector-icons';
->>>>>>> theirs
 import {addAccountabilityPoint} from '../firebase/userProfileHelpers';
 import {colors} from '../theme';
 import {GOOGLE_PLACES_API_KEY} from '@env';
@@ -51,7 +44,7 @@ export function distanceMiles(lat1, lng1, lat2, lng2) {
 }
 
 async function ensureLocationPermission() {
-  const {status} = await Permissions.askAsync(Permissions.LOCATION_FOREGROUND);
+  const { status } = await Location.requestForegroundPermissionsAsync();
   return status === 'granted';
 }
 

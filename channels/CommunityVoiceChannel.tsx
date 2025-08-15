@@ -10,7 +10,7 @@ import {
   Animated,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons as Icon } from '@expo/vector-icons';
 import ProfileImage from '../components/ProfileImage';
 import { colors, fonts } from '../theme';
 import { ANIM_BUTTON_POP } from '../animations';

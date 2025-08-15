@@ -15,7 +15,7 @@ import {
 import useCourseTopPad from "../hooks/useCourseTopPad";
 import CoursePager, {CoursePagerHandle} from '../components/CoursePager';
 import CourseNav from '../components/CourseNav';
-import Icon from 'react-native-vector-icons/Ionicons';
+import { Ionicons as Icon } from '@expo/vector-icons';
 import {WebView} from 'react-native-webview';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {updateCourseProgress} from '../firebase/userProfileHelpers';

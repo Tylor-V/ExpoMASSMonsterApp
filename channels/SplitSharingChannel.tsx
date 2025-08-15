@@ -25,16 +25,8 @@ import {
 } from '../firebase/userProfileHelpers';
 import { LIFT_CATEGORIES, LIFT_CATEGORY_ORDER } from '../constants/liftCategories';
 import { LIFT_RATINGS } from '../constants/liftRatings';
-<<<<<<< ours
-import Icon from 'react-native-vector-icons/Ionicons';
-import FontAwesome from 'react-native-vector-icons/FontAwesome';
-import { auth } from '../firebase/firebase';
-import { firestore } from '../firebase/firebase';
-=======
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
->>>>>>> theirs
+import { auth, firestore } from '../firebase/firebase';
 import { colors, fonts } from '../theme';
 import { ANIM_INSTANT, ANIM_BUTTON_PRESS, ANIM_WIGGLE } from '../animations';
 import useCarousel from '../hooks/useCarousel';

@@ -11,15 +11,8 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
-<<<<<<< ours
-import Icon from 'react-native-vector-icons/Ionicons';
-import { firestore } from '../firebase/firebase';
-import { auth } from '../firebase/firebase';
-=======
 import { Ionicons } from '@expo/vector-icons';
-import firestore from '@react-native-firebase/firestore';
-import auth from '@react-native-firebase/auth';
->>>>>>> theirs
+import { firestore, auth } from '../firebase/firebase';
 import ProfileImage from './ProfileImage';
 import { useChatInputBarHeight } from '../MainScreens/ChatScreen';
 import UserPreviewModal from './UserPreviewModal';

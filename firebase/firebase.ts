@@ -1,30 +1,30 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import {
-    addDoc,
-    deleteDoc,
-    collection as fsCollection,
-    doc as fsDoc,
-    limit as fsLimit,
-    orderBy as fsOrderBy,
-    query as fsQuery,
-    runTransaction as fsRunTransaction,
-    where as fsWhere,
-    getDoc,
-    getDocs,
-    getFirestore,
-    onSnapshot,
-    serverTimestamp,
-    setDoc,
-    updateDoc,
+  addDoc,
+  deleteDoc,
+  collection as fsCollection,
+  doc as fsDoc,
+  limit as fsLimit,
+  orderBy as fsOrderBy,
+  query as fsQuery,
+  runTransaction as fsRunTransaction,
+  where as fsWhere,
+  getDoc,
+  getDocs,
+  getFirestore,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
 } from 'firebase/firestore';
 import {
-    deleteObject,
-    getDownloadURL,
-    getStorage,
-    listAll,
-    ref as stRef,
-    uploadBytes,
+  deleteObject,
+  getDownloadURL,
+  getStorage,
+  listAll,
+  ref as stRef,
+  uploadBytes,
 } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -104,7 +104,10 @@ export function firestore() {
 (firestore as any).FieldValue = { serverTimestamp };
 
 export const auth = () => authInstance;
-export const storage = () => ({ ref: storageRef });
+export const storage = () => ({
+  ref: storageRef,
+  refFromURL: (url: string) => storageRef(url),
+});
 export const FieldValue = { serverTimestamp };
 
 export default app;
