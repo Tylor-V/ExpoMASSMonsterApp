@@ -1,10 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Video } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/Ionicons';
 import { auth, firestore, storage } from '../firebase/firebase';
 
 const { height, width } = Dimensions.get('window');
@@ -142,7 +142,7 @@ export default function GymVideoFeed({ navigation }) {
     <View style={[styles.container, styles.emptyContainer]}>
       <Text style={styles.emptyText}>No videos yet—be the first to upload!</Text>
       <TouchableOpacity style={styles.emptyBtn} onPress={handleUpload} disabled={uploading}>
-        <Icon name="cloud-upload-outline" size={29} color="#232323" />
+        <Ionicons name="cloud-upload-outline" size={29} color="#232323" />
         <Text style={styles.uploadTxt}>{uploading ? 'Uploading...' : 'Upload Video'}</Text>
       </TouchableOpacity>
     </View>
@@ -175,14 +175,14 @@ export default function GymVideoFeed({ navigation }) {
                 <Text style={styles.reactCount}>{item.reactions?.length || 0}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => handleHide(item.id)}>
-                 <Icon name="eye-off-outline" size={28} color="#232323" />
+                 <Ionicons name="eye-off-outline" size={28} color="#232323" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.actionBtn} onPress={() => handleReport(item.id)}>
-                <Icon name="alert-circle-outline" size={28} color="#232323" />
+                <Ionicons name="alert-circle-outline" size={28} color="#232323" />
               </TouchableOpacity>
               {(item.userId === currentUserId || currentUserRole === 'moderator') && (
                 <TouchableOpacity style={styles.actionBtn} onPress={() => handleDelete(item.id, item.userId)}>
-                  <Icon name="trash-outline" size={27} color="#FF4545" />
+                  <Ionicons name="trash-outline" size={27} color="#FF4545" />
                 </TouchableOpacity>
               )}
             </View>
@@ -197,14 +197,14 @@ export default function GymVideoFeed({ navigation }) {
         onPress={handleUpload}
         disabled={uploading}
       >
-        <Icon name="cloud-upload-outline" size={29} color="#232323" />
+        <Ionicons name="cloud-upload-outline" size={29} color="#232323" />
         <Text style={styles.uploadTxt}>{uploading ? "Uploading..." : "Upload Video"}</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.backBtn, { top: insets.top + 49 }]}
         onPress={() => navigation.goBack()}
       >
-         <Icon name="chevron-back" size={29} color="#232323" />
+         <Ionicons name="chevron-back" size={29} color="#232323" />
       </TouchableOpacity>
     </View>
   );
