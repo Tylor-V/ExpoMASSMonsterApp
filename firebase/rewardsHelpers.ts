@@ -1,0 +1,29 @@
+import firestore from '@react-native-firebase/firestore';
+import auth from '@react-native-firebase/auth';
+
+export type RewardInfo = {
+  id: string;
+  name: string;
+  points: number;
+};
+
+export async function redeemReward(reward: RewardInfo) {
+  const uid = auth().currentUser?.uid;
+  if (!uid) throw new Error('No user logged in');
+  const userRef = firestore().collection('users').doc(uid);
+  await firestore().runTransaction(async tx => {
+    const doc = await tx.get(userRef);
+    const current = (doc.data()?.accountabilityPoints || 0) as number;
+    if (current < reward.points) {
+      throw new Error('Not enough points');
+    }
+    tx.update(userRef, { accountabilityPoints: current - reward.points });
+    tx.set(userRef.collection('redemptions').doc(), {
+      rewardId: reward.id,
+      name: reward.name,
+      points: reward.points,
+      date: Date.now(),
+      status: 'pending',
+    });
+  });
+}

@@ -1,0 +1,55 @@
+export type RatingMap = Record<string, number>;
+export const LIFT_RATINGS: Record<string, Record<string, RatingMap>> = {
+  'Chest Lifts': {
+    'Standard Bench': { Upper: 3, Mid: 5 },
+    'Incline Bench': { Upper: 5, Mid: 3 },
+    'Pushups': { Upper: 4, Mid: 5 },
+    'Chest Flys': { Upper: 1, Mid: 3 },
+    'Chest-Focused Dips': { Upper: 2, Mid: 4 },
+  },
+  'Shoulder Lifts': {
+    'Lateral Raises (Cable)': { Front: 2, Side: 5, 'Rear Delts': 0 },
+    'Lateral Raises (Dumbell)': { Front: 2, Side: 4, 'Rear Delts': 1 },
+    'Front Raises': { Front: 5, Side: 1, 'Rear Delts': 0 },
+    'Shoulder Press': { Front: 4, Side: 3, 'Rear Delts': 0 },
+    'Face Pulls': { Front: 0, Side: 3, 'Rear Delts': 5 },
+    'Reverse Flys': { Front: 0, Side: 1, 'Rear Delts': 4 },
+  },
+  'Back Lifts': {
+    'Pulldowns': { Lats: 5, 'Mid Back': 3, 'Teres Major': 3 },
+    'Single-Arm Cable Pulldowns': { Lats: 5, 'Mid Back': 3, 'Teres Major': 5 },
+    'Cable Pull-Overs': { Lats: 5, 'Mid Back': 2, 'Teres Major': 4 },
+    'Rows': { Lats: 3, 'Mid Back': 5, 'Teres Major': 2 },
+  },
+  'Triceps Lifts': {
+    'Rope Pulldowns': { Long: 3, Lateral: 5, Medial: 5 },
+    'Rope Overhead Extensions': { Long: 5, Lateral: 3, Medial: 3 },
+    'Kickbacks': { Long: 2, Lateral: 4, Medial: 4 },
+    'Dips': { Long: 4, Lateral: 4, Medial: 3 },
+    'Close-Grip Bench/Skull-Crushers': { Long: 3, Lateral: 3, Medial: 3 },
+  },
+  'Biceps Lifts': {
+    'Hammer Curls': { Long: 3, Short: 3, Brachialis: 5 },
+    'Spider Curls/Preacher Curls': { Long: 3, Short: 5, Brachialis: 3 },
+    'Drag Curls': { Long: 4, Short: 3, Brachialis: 3 },
+    'Bayesian Curls': { Long: 3, Short: 3, Brachialis: 3 },
+    'Supinating Curls': { Long: 5, Short: 4, Brachialis: 2 },
+  },
+  'Forearm Lifts': {
+    'Cable Twist-Ups': { Supinators: 5, Pronators: 1, Brachioradialis: 2, 'Wrist Extensors': 1 },
+    'Cable Twist-Downs': { Supinators: 1, Pronators: 5, Brachioradialis: 2, 'Wrist Extensors': 1 },
+    'Dumbbell Twists': { Supinators: 4, Pronators: 4, Brachioradialis: 3, 'Wrist Extensors': 2 },
+    'Reverse-Grip Curls': { Supinators: 1, Pronators: 1, Brachioradialis: 5, 'Wrist Extensors': 4 },
+  },
+  'Leg Lifts': {
+    'Squats': { Quads: 5, Glutes: 4, Hamstrings: 3, Adductors: 2, Abductors: 2 },
+    'Bulgarian Split Squat': { Quads: 4, Glutes: 5, Hamstrings: 4, Adductors: 4, Abductors: 4 },
+    'Sissy Squats': { Quads: 4, Glutes: 2, Hamstrings: 2, Adductors: 1, Abductors: 1 },
+    'Leg Extensions': { Quads: 5, Glutes: 1, Hamstrings: 1, Adductors: 1, Abductors: 1 },
+    'RDLs': { Quads: 1, Glutes: 5, Hamstrings: 5, Adductors: 1, Abductors: 1 },
+    'Leg Curls': { Quads: 1, Glutes: 1, Hamstrings: 5, Adductors: 1, Abductors: 1 },
+    'Adductors': { Quads: 1, Glutes: 1, Hamstrings: 2, Adductors: 5, Abductors: 1 },
+    'Abductors': { Quads: 1, Glutes: 2, Hamstrings: 1, Adductors: 1, Abductors: 5 },
+    'Calf Raises': { Calves: 5 },
+  },
+};
