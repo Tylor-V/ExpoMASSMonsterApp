@@ -1,161 +1,149 @@
 import { Ionicons as Icon } from '@expo/vector-icons';
-import * as React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
-    Animated,
-    Dimensions,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TabView } from 'react-native-tab-view';
 import { colors } from '../theme';
-const AnimatedText = Animated.createAnimatedComponent(Text);
-const AnimatedIcon = Animated.createAnimatedComponent(Icon);
 
 export const TAB_BAR_HEIGHT = 76;
-const initialLayout = { width: Dimensions.get('window').width };
+
+interface Route {
+  key: string;
+  title: string;
+  icon: any;
+}
+
+interface Scenes {
+  chat: () => React.ReactNode;
+  classroom: () => React.ReactNode;
+  profile: () => React.ReactNode;
+  store: () => React.ReactNode;
+  calendar: () => React.ReactNode;
+}
+
+interface SwipeableTabsProps {
+  routes: Route[];
+  scenes: Scenes;
+  tabIndex?: number;
+  onTabChange?: (index: number) => void;
+  activeTintColor?: string;
+  inactiveTintColor?: string;
+  swipeEnabled?: boolean;
+  tabBarVisible?: boolean;
+  animationEnabled?: boolean;
+}
 
 export default function SwipeableTabs({
   routes,
   scenes,
   tabIndex = 0,
   onTabChange,
-  // Use bright yellow for the active tab color
   activeTintColor = colors.yellow,
   inactiveTintColor = '#aaa',
   swipeEnabled = true,
   tabBarVisible = true,
   animationEnabled = false,
-}) {
+}: SwipeableTabsProps) {
   const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
+  const scrollRef = useRef<ScrollView>(null);
 
-  const handleIndexChange = React.useCallback(
-    (nextIndex: number) => {
-      onTabChange?.(nextIndex);
+  const renderScene = React.useCallback(
+    (route: Route) => {
+      switch (route.key) {
+        case 'chat':
+          return scenes.chat();
+        case 'classroom':
+          return scenes.classroom();
+        case 'profile':
+          return scenes.profile();
+        case 'store':
+          return scenes.store();
+        case 'calendar':
+          return scenes.calendar();
+        default:
+          return null;
+      }
     },
-    [onTabChange],
-  );
-
-  const renderScene = React.useMemo(
-    () =>
-      ({ route }) => {
-        switch (route.key) {
-          case 'chat':
-            return scenes.chat();
-          case 'classroom':
-            return scenes.classroom();
-          case 'profile':
-            return scenes.profile();
-          case 'store':
-            return scenes.store();
-          case 'calendar':
-            return scenes.calendar();
-          default:
-            return null;
-        }
-      },
     [scenes],
   );
 
-  const renderTabBar = React.useCallback(
-    (
-      props: {
-        navigationState: { index: number; routes: typeof routes };
-        position: Animated.AnimatedInterpolation<number>;
-        jumpTo: (key: string) => void;
-      }
-    ) => {
-      if (!tabBarVisible) return null;
-      const { navigationState, jumpTo, position } = props;
-      return (
-        <View style={[styles.tabBarContainer, { paddingBottom: insets.bottom }]}> 
-          <View style={styles.tabBar}>
-            {navigationState.routes.map((route, i) => {
-              const progress = position.interpolate({
-                inputRange: [i - 0.5, i - 0.5 + 0.0001, i + 0.5, i + 0.5 + 0.0001],
-                outputRange: [0, 1, 1, 0],
-                extrapolate: 'clamp',
-              });
-              const textOpacity = progress;
-              const indicatorStyle = {
-                opacity: progress,
-                transform: [
-                  {
-                    translateY: progress.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [4, 0],
-                    }),
-                  },
-                ],
-              };
-              return (
-                <Pressable
-                  key={route.key}
-                  delayPressIn={0}
-                  onPress={() => jumpTo(route.key)}
-                  style={styles.tabItem}
-                >
-                  {/* Show yellow icon exactly when tab becomes active */}
-                  <View style={{ width: 32, height: 32 }}>
-                    <Animated.View
-                      style={[StyleSheet.absoluteFill, { opacity: progress }]}
-                    >
-                      <Icon
-                        name={route.icon}
-                        size={32}
-                        color={activeTintColor}
-                      />
-                    </Animated.View>
-                    <Animated.View style={{ opacity: progress.interpolate({ inputRange: [0, 1], outputRange: [1, 0] }) }}>
-                      <Icon
-                        name={route.icon}
-                        size={32}
-                        color={inactiveTintColor}
-                      />
-                    </Animated.View>
-                  </View>
-                  <Animated.View
-                    style={[styles.indicator, { backgroundColor: colors.accent }, indicatorStyle]}
-                  />
-                  <AnimatedText
-                    style={[styles.tabLabel, { color: activeTintColor, opacity: textOpacity }]}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {route.title}
-                  </AnimatedText>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-      );
-    },
-    [
-      tabBarVisible,
-      insets.bottom,
-      routes,
-      activeTintColor,
-      inactiveTintColor,
-      onTabChange,
-    ],
-  );
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ x: width * tabIndex, animated: animationEnabled });
+  }, [tabIndex, width, animationEnabled]);
+
+  const handleMomentumEnd = (e: any) => {
+    const nextIndex = Math.round(e.nativeEvent.contentOffset.x / width);
+    if (nextIndex !== tabIndex) {
+      onTabChange?.(nextIndex);
+    }
+  };
+
+  const jumpTo = (key: string) => {
+    const idx = routes.findIndex(r => r.key === key);
+    scrollRef.current?.scrollTo({ x: width * idx, animated: animationEnabled });
+    onTabChange?.(idx);
+  };
 
   return (
-    <TabView
-      navigationState={{ index: tabIndex, routes }}
-      renderScene={renderScene}
-      onIndexChange={handleIndexChange}
-      initialLayout={initialLayout}
-      renderTabBar={renderTabBar}
-      swipeEnabled={swipeEnabled}
-      animationEnabled={animationEnabled}
-      /* Preload all scenes for snappier tab transitions */
-      lazy={false}
-      lazyPreloadDistance={0}
-    />
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        scrollEnabled={swipeEnabled}
+        onMomentumScrollEnd={handleMomentumEnd}
+      >
+        {routes.map(route => (
+          <View key={route.key} style={{ width, flex: 1 }}>
+            {renderScene(route)}
+          </View>
+        ))}
+      </ScrollView>
+      {tabBarVisible && (
+        <View style={[styles.tabBarContainer, { paddingBottom: insets.bottom }]}>
+          <View style={styles.tabBar}>
+            {routes.map((route, i) => (
+              <Pressable
+                key={route.key}
+                delayPressIn={0}
+                onPress={() => jumpTo(route.key)}
+                style={styles.tabItem}
+              >
+                <Icon
+                  name={route.icon}
+                  size={32}
+                  color={i === tabIndex ? activeTintColor : inactiveTintColor}
+                />
+                <View
+                  style={[
+                    styles.indicator,
+                    { backgroundColor: colors.accent, opacity: i === tabIndex ? 1 : 0 },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.tabLabel,
+                    { color: i === tabIndex ? activeTintColor : inactiveTintColor },
+                  ]}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  {route.title}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      )}
+    </View>
   );
 }
 
