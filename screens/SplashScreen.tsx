@@ -1,4 +1,4 @@
-import auth from '@react-native-firebase/auth';
+import { auth } from '../firebase/firebase';
 import { Video } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef } from 'react';

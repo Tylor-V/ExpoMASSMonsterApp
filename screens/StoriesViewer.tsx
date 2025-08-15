@@ -9,9 +9,9 @@ import {
   PanResponder,
   Animated,
 } from 'react-native';
-import firestore from '@react-native-firebase/firestore';
-import storage from '@react-native-firebase/storage';
-import auth from '@react-native-firebase/auth';
+import { firestore } from '../firebase/firebase';
+import { storage } from '../firebase/firebase';
+import { auth } from '../firebase/firebase';
 import Icon from 'react-native-vector-icons/Ionicons';
 import Video from 'react-native-video';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

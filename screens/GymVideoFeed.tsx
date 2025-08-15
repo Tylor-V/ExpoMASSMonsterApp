@@ -4,9 +4,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Video from 'react-native-video';
 import Icon from 'react-native-vector-icons/Ionicons';
 import LinearGradient from 'react-native-linear-gradient';
-import firestore from '@react-native-firebase/firestore';
-import storage from '@react-native-firebase/storage';
-import auth from '@react-native-firebase/auth';
+import { firestore } from '../firebase/firebase';
+import { storage } from '../firebase/firebase';
+import { auth } from '../firebase/firebase';
 import { launchImageLibrary } from 'react-native-image-picker';
 
 const { height, width } = Dimensions.get('window');
