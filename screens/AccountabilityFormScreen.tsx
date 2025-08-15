@@ -17,7 +17,9 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import {addAccountabilityPoint} from '../firebase/userProfileHelpers';
 import {colors} from '../theme';
-import {GOOGLE_PLACES_API_KEY} from '@env';
+import Constants from 'expo-constants';
+
+const { GOOGLE_PLACES_API_KEY } = Constants.expoConfig?.extra ?? {};
 
 // Timeout helper to avoid hanging if the Firebase request stalls
 const SUBMIT_TIMEOUT_MS = 10000;
