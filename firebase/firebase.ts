@@ -1,5 +1,10 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import {
+  initializeAuth,
+  getReactNativePersistence,
+} from 'firebase/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import {
   addDoc,
   deleteDoc,
@@ -28,17 +33,19 @@ import {
 } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+  apiKey: Constants.expoConfig?.extra?.FIREBASE_API_KEY,
+  authDomain: Constants.expoConfig?.extra?.FIREBASE_AUTH_DOMAIN,
+  projectId: Constants.expoConfig?.extra?.FIREBASE_PROJECT_ID,
+  storageBucket: Constants.expoConfig?.extra?.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: Constants.expoConfig?.extra?.FIREBASE_MESSAGING_SENDER_ID,
+  appId: Constants.expoConfig?.extra?.FIREBASE_APP_ID,
 };
 
 const app = initializeApp(firebaseConfig);
 
-const authInstance = getAuth(app);
+const authInstance = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage),
+});
 const db = getFirestore(app);
 const storageInstance = getStorage(app);
 
@@ -64,27 +71,7 @@ function wrapCollection(path: string[]): any {
     onSnapshot: (cb: any) => onSnapshot(q, cb),
     where: (field: string, op: any, value: any) => {
       q = fsQuery(q, fsWhere(field, op, value));
-      return api;
-    },
-    orderBy: (field: string, dir?: any) => {
-      q = fsQuery(q, fsOrderBy(field, dir));
-      return api;
-    },
-    limit: (n: number) => {
-      q = fsQuery(q, fsLimit(n));
-      return api;
-    },
-    get: () => getDocs(q),
-  };
-  return api;
-}
-
-function storageRef(path: string) {
-  const ref = stRef(storageInstance, path);
-  return {
-    putFile: async (uri: string) => {
-      const response = await fetch(uri);
-      const blob = await response.blob();
+@@ -88,26 +95,26 @@ function storageRef(path: string) {
       return uploadBytes(ref, blob);
     },
     getDownloadURL: () => getDownloadURL(ref),
