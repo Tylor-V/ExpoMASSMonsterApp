@@ -1,13 +1,30 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Video } from 'expo-av';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, firestore, storage } from '../firebase/firebase';
 
 const { height, width } = Dimensions.get('window');
+
+function FeedVideo({ uri, isActive }: { uri: string; isActive: boolean }) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = true;
+    p.addListener('error', (e) => console.error('Video playback error', e));
+  });
+
+  useEffect(() => {
+    if (isActive) {
+      player.play();
+    } else {
+      player.pause();
+    }
+  }, [isActive]);
+
+  return <VideoView player={player} style={styles.video} contentFit="cover" />;
+}
 
 export default function GymVideoFeed({ navigation }) {
   const [videos, setVideos] = useState([]);
@@ -157,14 +174,7 @@ export default function GymVideoFeed({ navigation }) {
         keyExtractor={item => item.id}
         renderItem={({ item, index }) => (
           <View style={styles.videoPage}>
-            <Video
-              source={{ uri: item.url }}
-              style={styles.video}
-              resizeMode={ResizeMode.COVER}
-              isLooping
-              shouldPlay={activeIndex === index}
-              onError={(e) => console.error('Video playback error', e)}
-            />
+            <FeedVideo uri={item.url} isActive={activeIndex === index} />
             <LinearGradient
               colors={["transparent", "rgba(13,13,13,0.85)"]}
               style={styles.bottomGradient}
