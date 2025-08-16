@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { htmlToText } from '../utils/htmlToText';
-import Constants from 'expo-constants';
+import env from '../utils/env';
 
 const {
   SHOPIFY_DOMAIN,
   SHOPIFY_API_VERSION,
   SHOPIFY_TOKEN,
-} = Constants.expoConfig?.extra ?? {};
+} = env;
 
 function getConfig() {
   return {
