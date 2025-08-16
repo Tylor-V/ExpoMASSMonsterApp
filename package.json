@@ -48,7 +48,8 @@
     "react-native-screens": "~4.11.1",
     "react-native-webview": "13.13.5",
     "expo-splash-screen": "~0.30.10",
-    "react-native-maps": "1.20.1"
+    "react-native-maps": "1.20.1",
+    "expo-router": "~5.1.4"
   },
   "devDependencies": {
     "typescript": "~5.8.3",
