@@ -15,7 +15,7 @@ import {
     TextInput,
     View,
 } from 'react-native';
-import { ANIM_MODAL } from '../animations';
+import { ANIM_MODAL } from '../utils/animations';
 import {
     enforceSelectedBadges,
     getBadgeAsset,

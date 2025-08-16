@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState, useEffect } from 'react';
 import { FlatList, Animated } from 'react-native';
-import { ANIM_NAVIGATION } from '../animations';
+import { ANIM_NAVIGATION } from '../utils/animations';
 
 export default function useCarousel<T>(
   length: number,

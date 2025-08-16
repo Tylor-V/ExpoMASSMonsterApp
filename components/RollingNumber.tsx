@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { colors, fonts } from '../theme';
-import { ANIM_MEDIUM } from '../animations';
+import { ANIM_MEDIUM } from '../utils/animations';
 
 type RollingNumberProps = {
   /** Numeric value to display */

@@ -8,7 +8,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { ANIM_SLOW } from '../animations';
+import { ANIM_SLOW } from '../utils/animations';
 import { colors } from '../theme';
 
 interface ChipFlipProps {

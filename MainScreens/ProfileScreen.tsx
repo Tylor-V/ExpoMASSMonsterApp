@@ -22,7 +22,7 @@ import { getTodayKey } from '../firebase/dateHelpers';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import { colors, fonts } from '../theme';
 import ProfileImage from '../components/ProfileImage';
-import { ANIM_INSTANT, ANIM_MEDIUM } from '../animations';
+import { ANIM_INSTANT, ANIM_MEDIUM } from '../utils/animations';
 import { levelThresholds } from '../firebase/chatXPHelpers';
 import * as ImagePicker from 'expo-image-picker';
 import {

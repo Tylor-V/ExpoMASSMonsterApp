@@ -11,7 +11,7 @@ import {
     TouchableOpacity,
     View,
 } from 'react-native';
-import { ANIM_SLOW, SPLASH_TIMEOUT } from '../animations';
+import { ANIM_SLOW, SPLASH_TIMEOUT } from '../utils/animations';
 import { useAppContext } from '../firebase/AppContext';
 import { fixUserLevel } from '../firebase/chatXPHelpers';
 import { checkAccountabilityStreak } from '../firebase/userProfileHelpers';

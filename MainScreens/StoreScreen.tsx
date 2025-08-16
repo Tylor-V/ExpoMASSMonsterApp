@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { ANIM_BUTTON_POP, ANIM_DRAWER, ANIM_MEDIUM } from '../animations';
+import { ANIM_BUTTON_POP, ANIM_DRAWER, ANIM_MEDIUM } from '../utils/animations';
 import AddToCartControl from '../components/AddToCartControl';
 import BackgroundWrapper from '../components/BackgroundWrapper';
 import CartDrawer from '../components/CartDrawer';

@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts } from '../theme';
 import { useCart } from '../hooks/useCart';
 import { addToCart, sanitizeId, CartItem } from '../firebase/cartHelpers';
-import { ANIM_BUTTON_POP } from '../animations';
+import { ANIM_BUTTON_POP } from '../utils/animations';
 
 type Props = {
   item: CartItem;

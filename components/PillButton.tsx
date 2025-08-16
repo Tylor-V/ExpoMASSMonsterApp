@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import Color from 'color';
 import {colors, fonts} from '../theme';
-import {ANIM_BUTTON_POP} from '../animations';
+import {ANIM_BUTTON_POP} from '../utils/animations';
 
 interface PillButtonProps
   extends React.ComponentProps<typeof Pressable> {

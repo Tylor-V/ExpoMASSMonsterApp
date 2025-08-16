@@ -36,7 +36,7 @@ import {
   ANIM_INSTANT,
   ANIM_BUTTON_POP,
   ANIM_BUTTON_PRESS,
-} from '../animations';
+} from '../utils/animations';
 import useCarousel from '../hooks/useCarousel';
 import CarouselNavigator from '../components/CarouselNavigator';
 import { useAppContext } from '../firebase/AppContext';

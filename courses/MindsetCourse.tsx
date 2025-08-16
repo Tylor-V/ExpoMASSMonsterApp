@@ -28,7 +28,7 @@ import {
 } from '../firebase/userProfileHelpers';
 import {useCurrentUserDoc} from '../hooks/useCurrentUserDoc';
 import {colors} from '../theme';
-import { ANIM_FAST, ANIM_SLOW, ANIM_SHORT, ANIM_INSTANT, ANIM_EXTRA_SLOW } from '../animations';
+import { ANIM_FAST, ANIM_SLOW, ANIM_SHORT, ANIM_INSTANT, ANIM_EXTRA_SLOW } from '../utils/animations';
 import AccordionList from '../components/AccordionList';
 import ChipFlip from '../components/ChipFlip';
 

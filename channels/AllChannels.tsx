@@ -1,51 +1,48 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View,
+  Alert,
+  Animated,
+  Dimensions,
+  FlatList,
+  Image,
+  KeyboardAvoidingView,
+  LayoutAnimation,
+  Modal,
+  Platform,
+  Pressable,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
-  StyleSheet,
-  Alert,
-  Modal,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-  Pressable,
-  Animated,
-  LayoutAnimation,
   UIManager,
-  Dimensions,
+  View,
 } from 'react-native';
-import { firestore, auth } from '../firebase/firebase';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-
-const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ChannelWrapper from '../components/ChannelWrapper';
 import ProfileImage from '../components/ProfileImage';
-import { fonts, colors, gradients } from '../theme';
-import { ROLE_COLORS, ROLE_TAGS } from '../constants/roles';
-import { dedupeById } from '../utils/dedupeById';
-import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
-import { getChatLevelColor } from '../utils/chatLevel';
-import {
-  ANIM_INSTANT,
-  ANIM_SHORT,
-  ANIM_BUTTON_POP,
-  ANIM_WIGGLE,
-} from '../animations';
 import UserPreviewModal from '../components/UserPreviewModal';
-import { awardXP, awardStreakXP } from '../firebase/chatXPHelpers';
+import { ROLE_COLORS, ROLE_TAGS } from '../constants/roles';
+import { awardStreakXP, awardXP } from '../firebase/chatXPHelpers';
+import { auth, firestore } from '../firebase/firebase';
 import { useLastRead } from '../firebase/userChatReadHelpers';
-import { TAB_BAR_HEIGHT } from '../components/SwipeableTabs';
+import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
+import { colors, fonts, gradients } from '../theme';
+import {
+  ANIM_BUTTON_POP,
+  ANIM_SHORT,
+  ANIM_WIGGLE
+} from '../utils/animations';
+import { getChatLevelColor } from '../utils/chatLevel';
+import { dedupeById } from '../utils/dedupeById';
+
+const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 import {
-  getUnlockedBadges,
   enforceSelectedBadges,
-  MAX_DISPLAY_BADGES,
   getBadgeAsset,
+  MAX_DISPLAY_BADGES
 } from '../badges/UnlockableBadges';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');

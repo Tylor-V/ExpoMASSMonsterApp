@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { View, Pressable, Text, StyleSheet, Animated, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts } from '../theme';
-import { ANIM_BUTTON_POP, ANIM_MEDIUM } from '../animations';
+import { ANIM_BUTTON_POP, ANIM_MEDIUM } from '../utils/animations';
 import { useCart } from '../hooks/useCart';
 import { addToCart, updateCartItem, removeCartItem, CartItem, sanitizeId } from '../firebase/cartHelpers';
 

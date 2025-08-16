@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { fonts, radius } from '../theme';
-import { ANIM_ROTATE } from '../animations';
+import { ANIM_ROTATE } from '../utils/animations';
 
 if (
   Platform.OS === 'android' &&

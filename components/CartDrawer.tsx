@@ -13,7 +13,7 @@ import {
     View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ANIM_MEDIUM } from '../animations';
+import { ANIM_MEDIUM } from '../utils/animations';
 import { useCart } from '../hooks/useCart';
 import { createShopifyCheckout, shopifyFetch } from '../hooks/useShopify'; // add this import
 import { colors, fonts } from '../theme';

@@ -20,7 +20,7 @@ import {
     View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ANIM_MEDIUM } from '../animations';
+import { ANIM_MEDIUM } from '../utils/animations';
 import HashIcon from '../assets/hashtag-icon.png';
 import InboxIcon from '../assets/inbox.png';
 import UsersIcon from '../assets/users.png';

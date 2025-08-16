@@ -24,7 +24,7 @@ import {
   enforceSelectedBadges,
   type BadgeKey,
 } from '../badges/UnlockableBadges';
-import { ANIM_MEDIUM } from '../animations';
+import { ANIM_MEDIUM } from '../utils/animations';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(Pressable);
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);

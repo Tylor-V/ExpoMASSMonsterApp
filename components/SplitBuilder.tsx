@@ -11,7 +11,7 @@ import {
     View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ANIM_INSTANT } from '../animations';
+import { ANIM_INSTANT } from '../utils/animations';
 import { LIFT_CATEGORIES, LIFT_CATEGORY_ORDER } from '../constants/liftCategories';
 import { LIFT_RATINGS, RatingMap } from '../constants/liftRatings';
 import { colors, fonts } from '../theme';
