@@ -1,13 +1,16 @@
-import { initializeApp } from 'firebase/app';
-import {
-  initializeAuth,
-  getReactNativePersistence,
-} from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { initializeApp } from 'firebase/app';
+import {
+  getReactNativePersistence,
+  initializeAuth,
+} from 'firebase/auth';
 import {
   addDoc,
+  arrayRemove,
+  arrayUnion,
   deleteDoc,
+  deleteField,
   collection as fsCollection,
   doc as fsDoc,
   limit as fsLimit,
@@ -18,10 +21,12 @@ import {
   getDoc,
   getDocs,
   getFirestore,
+  increment,
   onSnapshot,
   serverTimestamp,
   setDoc,
   updateDoc,
+  writeBatch,
 } from 'firebase/firestore';
 import {
   deleteObject,
@@ -49,7 +54,7 @@ const authInstance = initializeAuth(app, {
 const db = getFirestore(app);
 const storageInstance = getStorage(app);
 
-function wrapDoc(path: string[]): any {
+function wrapDoc(path: string[]) {
   const ref = fsDoc(db, ...path);
   return {
     get: () => getDoc(ref),
@@ -62,16 +67,37 @@ function wrapDoc(path: string[]): any {
   };
 }
 
-function wrapCollection(path: string[]): any {
-  let colRef = fsCollection(db, ...path);
+function wrapCollection(path: string[]) {
+  const colRef = fsCollection(db, ...path);
   let q: any = colRef;
   const api: any = {
     doc: (id: string) => wrapDoc([...path, id]),
     add: (data: any) => addDoc(colRef, data),
+    get: () => getDocs(q),
     onSnapshot: (cb: any) => onSnapshot(q, cb),
     where: (field: string, op: any, value: any) => {
       q = fsQuery(q, fsWhere(field, op, value));
-@@ -88,26 +95,26 @@ function storageRef(path: string) {
+      return api;
+    },
+    orderBy: (field: string, dir?: any) => {
+      q = fsQuery(q, fsOrderBy(field, dir));
+      return api;
+    },
+    limit: (n: number) => {
+      q = fsQuery(q, fsLimit(n));
+      return api;
+    },
+  };
+  return api;
+}
+
+function storageRef(path: string) {
+  const ref = stRef(storageInstance, path);
+  return {
+    put: (blob: Blob) => uploadBytes(ref, blob),
+    putFile: async (uri: string) => {
+      const res = await fetch(uri);
+      const blob = await res.blob();
       return uploadBytes(ref, blob);
     },
     getDownloadURL: () => getDownloadURL(ref),
@@ -86,15 +112,23 @@ export function firestore() {
   return {
     collection: (name: string) => wrapCollection([name]),
     runTransaction: (updateFunction: any) => fsRunTransaction(db, updateFunction),
+    batch: () => writeBatch(db),
   };
 }
-(firestore as any).FieldValue = { serverTimestamp };
+
+export const FieldValue = {
+  serverTimestamp,
+  increment,
+  arrayUnion,
+  arrayRemove,
+  delete: deleteField,
+};
+(firestore as any).FieldValue = FieldValue;
 
 export const auth = () => authInstance;
 export const storage = () => ({
   ref: storageRef,
   refFromURL: (url: string) => storageRef(url),
 });
-export const FieldValue = { serverTimestamp };
 
 export default app;
