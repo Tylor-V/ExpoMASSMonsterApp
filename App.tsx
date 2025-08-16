@@ -1,6 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import React, { useCallback, useState } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import ForgotPasswordScreen from './LoginScreens/ForgotPasswordScreen';
 import LoginScreen from './LoginScreens/LoginScreen';
 import SignUpScreen from './LoginScreens/SignUpScreen';
@@ -72,14 +73,16 @@ function AppStackScreen() {
 
 export default function App() {
   return (
-    <AppContextProvider>
-      <NavigationContainer>
-        <RootStack.Navigator screenOptions={{ headerShown: false }}>
-          <RootStack.Screen name="Splash" component={SplashScreen} />
-          <RootStack.Screen name="AuthStack" component={AuthStackScreen} />
-          <RootStack.Screen name="AppStack" component={AppStackScreen} />
-        </RootStack.Navigator>
-      </NavigationContainer>
-    </AppContextProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AppContextProvider>
+        <NavigationContainer>
+          <RootStack.Navigator screenOptions={{ headerShown: false }}>
+            <RootStack.Screen name="Splash" component={SplashScreen} />
+            <RootStack.Screen name="AuthStack" component={AuthStackScreen} />
+            <RootStack.Screen name="AppStack" component={AppStackScreen} />
+          </RootStack.Navigator>
+        </NavigationContainer>
+      </AppContextProvider>
+    </GestureHandlerRootView>
   );
 }
