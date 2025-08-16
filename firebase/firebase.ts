@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import env from '../utils/env';
 import { initializeApp } from 'firebase/app';
 import {
+  getAuth,
   getReactNativePersistence,
   initializeAuth,
 } from 'firebase/auth';
@@ -36,6 +36,8 @@ import {
   ref as stRef,
   uploadBytes,
 } from 'firebase/storage';
+import { Platform } from 'react-native';
+import env from '../utils/env';
 
 const firebaseConfig = {
   apiKey: env.FIREBASE_API_KEY,
@@ -44,15 +46,30 @@ const firebaseConfig = {
   storageBucket: env.FIREBASE_STORAGE_BUCKET,
   messagingSenderId: env.FIREBASE_MESSAGING_SENDER_ID,
   appId: env.FIREBASE_APP_ID,
+  measurementId: env.FIREBASE_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
-
-const authInstance = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage),
-});
+let authInstance = getAuth(app);
+if (Platform.OS !== 'web') {
+  authInstance = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage),
+  });
+}
 const db = getFirestore(app);
 const storageInstance = getStorage(app);
+
+// Analytics is only available on web; load lazily to remain Expo compatible
+let analyticsInstance: any;
+if (Platform.OS === 'web') {
+  import('firebase/analytics').then(({ getAnalytics, isSupported }) => {
+    isSupported().then((supported) => {
+      if (supported) {
+        analyticsInstance = getAnalytics(app);
+      }
+    });
+  });
+}
 
 function wrapDoc(path: string[]) {
   const ref = fsDoc(db, ...path);
@@ -130,5 +147,7 @@ export const storage = () => ({
   ref: storageRef,
   refFromURL: (url: string) => storageRef(url),
 });
+
+export const analytics = () => analyticsInstance;
 
 export default app;
