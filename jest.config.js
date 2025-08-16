@@ -14,14 +14,10 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   transformIgnorePatterns: [
-    'node_modules/(?!(jest-)?react-native|@react-native|@react-navigation|@react-native-community|@react-native-firebase|react-native-reanimated|react-native-screens|react-native-safe-area-context|react-native-vector-icons|react-native-device-info|react-native-video)',
+    'node_modules/(?!(jest-)?react-native|@react-native|@react-navigation|@react-native-community|react-native-reanimated|react-native-screens|react-native-safe-area-context|react-native-vector-icons|react-native-device-info|react-native-video)',
   ],
   moduleNameMapper: {
     '^react-native-gesture-handler$': '<rootDir>/__mocks__/react-native-gesture-handler.js',
-    '^@react-native-firebase/app$': '<rootDir>/__mocks__/@react-native-firebase/app.js',
-    '^@react-native-firebase/auth$': '<rootDir>/__mocks__/@react-native-firebase/auth.js',
-    '^@react-native-firebase/firestore$': '<rootDir>/__mocks__/@react-native-firebase/firestore.js',
-    '^@react-native-firebase/storage$': '<rootDir>/__mocks__/@react-native-firebase/storage.js',
     '^react-native-reanimated$': '<rootDir>/__mocks__/react-native-reanimated.js',
     '^react-native-screens$': '<rootDir>/__mocks__/react-native-screens.js',
     '^react-native-safe-area-context$': '<rootDir>/__mocks__/react-native-safe-area-context.js',

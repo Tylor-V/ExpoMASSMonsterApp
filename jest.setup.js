@@ -58,11 +58,13 @@ jest.mock("@react-native-community/netinfo", () => require("@react-native-commun
 
 // 🔧 Added Mocks for Firebase and App-specific logic
 
-jest.mock('@react-native-firebase/auth', () => () => ({
+jest.mock('firebase/auth', () => ({
   signInWithEmailAndPassword: jest.fn(() => Promise.resolve()),
+  getReactNativePersistence: jest.fn(() => ({})),
+  initializeAuth: jest.fn(() => ({ currentUser: null })),
 }));
 
-jest.mock('@react-native-firebase/firestore', () => () => ({
+jest.mock('firebase/firestore', () => ({
   collection: () => ({
     where: () => ({
       orderBy: () => ({

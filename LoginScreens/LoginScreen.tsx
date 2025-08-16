@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { auth } from '../firebase/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 import {createOrUpdateUserProfile} from '../firebase/firebaseUserProfile';
 import {clearUserCache} from '../utils/clearUserCache';
 import {fixUserLevel} from '../firebase/chatXPHelpers';
@@ -55,7 +56,8 @@ const LoginScreen: React.FC = () => {
     try {
       const sanitizedEmail = email.trim().toLowerCase();
       const sanitizedPassword = password.trim();
-      await auth().signInWithEmailAndPassword(
+      await signInWithEmailAndPassword(
+        auth(),
         sanitizedEmail,
         sanitizedPassword,
       );
