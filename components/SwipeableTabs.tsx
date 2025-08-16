@@ -34,7 +34,6 @@ interface SwipeableTabsProps {
   onTabChange?: (index: number) => void;
   activeTintColor?: string;
   inactiveTintColor?: string;
-  swipeEnabled?: boolean;
   tabBarVisible?: boolean;
   animationEnabled?: boolean;
 }
@@ -46,7 +45,6 @@ export default function SwipeableTabs({
   onTabChange,
   activeTintColor = colors.yellow,
   inactiveTintColor = '#aaa',
-  swipeEnabled = true,
   tabBarVisible = true,
   animationEnabled = false,
 }: SwipeableTabsProps) {
@@ -78,13 +76,6 @@ export default function SwipeableTabs({
     scrollRef.current?.scrollTo({ x: width * tabIndex, animated: animationEnabled });
   }, [tabIndex, width, animationEnabled]);
 
-  const handleMomentumEnd = (e: any) => {
-    const nextIndex = Math.round(e.nativeEvent.contentOffset.x / width);
-    if (nextIndex !== tabIndex) {
-      onTabChange?.(nextIndex);
-    }
-  };
-
   const jumpTo = (key: string) => {
     const idx = routes.findIndex(r => r.key === key);
     scrollRef.current?.scrollTo({ x: width * idx, animated: animationEnabled });
@@ -98,8 +89,7 @@ export default function SwipeableTabs({
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        scrollEnabled={swipeEnabled}
-        onMomentumScrollEnd={handleMomentumEnd}
+        scrollEnabled={false}
       >
         {routes.map(route => (
           <View key={route.key} style={{ width, flex: 1 }}>

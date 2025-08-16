@@ -105,7 +105,6 @@ const MainAppScreen = ({ navigation, news, newsLoaded, onNewsAdded }) => {
           onTabChange={setTabIndex}
           activeTintColor="#FFCC00"
           inactiveTintColor="#aaa"
-          swipeEnabled={!isCourseOpen}
           tabBarVisible={!isCourseOpen}
         />
 
