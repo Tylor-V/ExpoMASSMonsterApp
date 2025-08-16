@@ -1,5 +1,5 @@
 import { Ionicons as Icon } from '@expo/vector-icons';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -7,6 +7,8 @@ import {
   Text,
   useWindowDimensions,
   View,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme';
@@ -76,6 +78,16 @@ export default function SwipeableTabs({
     scrollRef.current?.scrollTo({ x: width * tabIndex, animated: animationEnabled });
   }, [tabIndex, width, animationEnabled]);
 
+  const handleMomentumScrollEnd = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
+      if (newIndex !== tabIndex) {
+        onTabChange?.(newIndex);
+      }
+    },
+    [width, tabIndex, onTabChange],
+  );
+
   const jumpTo = (key: string) => {
     const idx = routes.findIndex(r => r.key === key);
     scrollRef.current?.scrollTo({ x: width * idx, animated: animationEnabled });
@@ -89,7 +101,7 @@ export default function SwipeableTabs({
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        scrollEnabled={false}
+        onMomentumScrollEnd={handleMomentumScrollEnd}
       >
         {routes.map(route => (
           <View key={route.key} style={{ width, flex: 1 }}>
