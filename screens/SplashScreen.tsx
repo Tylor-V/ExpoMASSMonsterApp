@@ -1,5 +1,5 @@
 import { auth } from '../firebase/firebase';
-import { Video } from 'expo-av';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useRef } from 'react';
 import {
@@ -24,10 +24,39 @@ export default function SplashScreen({navigation}) {
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
   const {appReady} = useAppContext();
 
-  const videoRef = useRef(null);
   const hasNavigated = useRef(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const timeoutRef = useRef<NodeJS.Timeout>();
+
+  // When splash video ends or tap to skip, navigate accordingly
+  const handleFinish = (force = false) => {
+    if (!authChecked || hasNavigated.current) return;
+    if (!force && isLoggedIn && !appReady) return;
+    hasNavigated.current = true;
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = undefined;
+    }
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: ANIM_SLOW,
+      useNativeDriver: true,
+    }).start(() => {
+      if (isLoggedIn) {
+        navigation.replace('AppStack');
+      } else {
+        navigation.replace('AuthStack');
+      }
+    });
+  };
+
+  const player = useVideoPlayer(require('../assets/mass-splash.mp4'), (p) => {
+    p.loop = false;
+    p.muted = false;
+    p.volume = 1;
+    p.addListener('playToEnd', handleFinish);
+    p.addListener('error', () => handleFinish(true));
+  });
 
   useEffect(() => {
     const unsub = auth().onAuthStateChanged(async user => {
@@ -53,28 +82,6 @@ export default function SplashScreen({navigation}) {
     };
   }, []);
 
-  // When splash video ends or tap to skip, navigate accordingly
-  const handleFinish = (force = false) => {
-    if (!authChecked || hasNavigated.current) return;
-    if (!force && isLoggedIn && !appReady) return;
-    hasNavigated.current = true;
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = undefined;
-    }
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: ANIM_SLOW,
-      useNativeDriver: true,
-    }).start(() => {
-      if (isLoggedIn) {
-        navigation.replace('AppStack');
-      } else {
-        navigation.replace('AuthStack');
-      }
-    });
-  };
-
   // If auth and data fetching finish after the video ends, navigate automatically
   useEffect(() => {
     if (authChecked && !hasNavigated.current) {
@@ -84,22 +91,17 @@ export default function SplashScreen({navigation}) {
     }
   }, [authChecked, appReady, isLoggedIn]);
 
+  useEffect(() => {
+    player.play();
+  }, [player]);
+
   return (
     <Animated.View style={[styles.container, {opacity: fadeAnim}]}>
-      <Video
-        ref={videoRef}
-        source={require('../assets/mass-splash.mp4')}
+      <VideoView
+        player={player}
         style={styles.video}
-        resizeMode="cover"
-        repeat={false}
-        onEnd={handleFinish}
-        onError={() => handleFinish(true)}
-        muted={false}
-        controls={false}
-        ignoreSilentSwitch="ignore"
-        playInBackground={false}
-        playWhenInactive={false}
-        volume={1.0}
+        contentFit="cover"
+        nativeControls={false}
       />
       <LinearGradient
         colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0)']}

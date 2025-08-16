@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ResizeMode, Video } from 'expo-av';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -30,6 +30,19 @@ interface StoriesViewerProps {
 }
 
 const { width, height } = Dimensions.get('window');
+
+function StoryVideo({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = true;
+    p.addListener('error', (e) => console.error('Video playback error', e));
+  });
+
+  useEffect(() => {
+    player.play();
+  }, [player]);
+
+  return <VideoView player={player} style={styles.img} contentFit="cover" nativeControls />;
+}
 
 export default function StoriesViewer({ visible, userId, onClose, initialIndex = 0 }: StoriesViewerProps) {
   const [stories, setStories] = useState<Story[]>([]);
@@ -150,15 +163,7 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
         {...panResponder.panHandlers}
       >
         {story.type === 'video' ? (
-          <Video
-            source={{ uri: story.url }}
-            style={styles.img}
-            resizeMode={ResizeMode.COVER}
-            useNativeControls
-            shouldPlay
-            isLooping
-            onError={(e) => console.error('Video playback error', e)}
-          />
+          <StoryVideo uri={story.url} />
         ) : (
           <Image source={{ uri: story.url }} style={styles.img} resizeMode="cover" />
         )}
