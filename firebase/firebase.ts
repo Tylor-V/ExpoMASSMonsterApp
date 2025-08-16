@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { initializeApp } from 'firebase/app';
+import { getApp, getApps, initializeApp } from 'firebase/app';
 import {
   getAuth,
   getReactNativePersistence,
@@ -49,12 +49,18 @@ const firebaseConfig = {
   measurementId: env.FIREBASE_MEASUREMENT_ID,
 };
 
-const app = initializeApp(firebaseConfig);
-let authInstance = getAuth(app);
-if (Platform.OS !== 'web') {
-  authInstance = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage),
-  });
+// Ensure the Firebase app and auth are initialized only once
+const existingApps = getApps();
+const app = existingApps.length ? getApp() : initializeApp(firebaseConfig);
+let authInstance;
+if (Platform.OS === 'web') {
+  authInstance = getAuth(app);
+} else {
+  authInstance = existingApps.length
+    ? getAuth(app)
+    : initializeAuth(app, {
+        persistence: getReactNativePersistence(AsyncStorage),
+      });
 }
 const db = getFirestore(app);
 const storageInstance = getStorage(app);
