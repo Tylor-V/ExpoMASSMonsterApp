@@ -3,11 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Pressable,
   Dimensions,
   Animated,
+  FlatList,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons as Icon } from '@expo/vector-icons';
@@ -87,7 +87,6 @@ export default function CommunityVoiceChannel() {
     const showActions = actionTarget === p.id;
     return (
       <Pressable
-        key={p.id}
         style={styles.participantRow}
         onLongPress={() => setActionTarget(p.id)}
         onPressOut={() => setActionTarget(null)}
@@ -173,13 +172,14 @@ export default function CommunityVoiceChannel() {
       <View style={styles.roomContainer}>
         <View style={styles.sidebar}>
           <Text style={styles.sidebarHeader}>{`Users ${participants.length}`}</Text>
-          <ScrollView
+          <FlatList
             style={styles.participantsList}
+            data={participants}
+            keyExtractor={item => item.id}
+            renderItem={({ item }) => renderParticipant(item)}
             contentContainerStyle={{ paddingBottom: 0 }}
             showsVerticalScrollIndicator={false}
-          >
-            {participants.map(renderParticipant)}
-          </ScrollView>
+          />
         </View>
         {fullscreen ? (
           <View style={styles.fullscreenContainer}>
