@@ -2,7 +2,7 @@ import { Ionicons as Icon } from '@expo/vector-icons';
 import React, { useEffect, useRef, useCallback } from 'react';
 import {
   Pressable,
-  ScrollView,
+  FlatList,
   StyleSheet,
   Text,
   useWindowDimensions,
@@ -52,7 +52,7 @@ export default function SwipeableTabs({
 }: SwipeableTabsProps) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<FlatList<Route>>(null);
 
   const renderScene = React.useCallback(
     (route: Route) => {
@@ -75,7 +75,7 @@ export default function SwipeableTabs({
   );
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ x: width * tabIndex, animated: animationEnabled });
+    scrollRef.current?.scrollToOffset({ offset: width * tabIndex, animated: animationEnabled });
   }, [tabIndex, width, animationEnabled]);
 
   const handleMomentumScrollEnd = useCallback(
@@ -90,25 +90,25 @@ export default function SwipeableTabs({
 
   const jumpTo = (key: string) => {
     const idx = routes.findIndex(r => r.key === key);
-    scrollRef.current?.scrollTo({ x: width * idx, animated: animationEnabled });
+    scrollRef.current?.scrollToOffset({ offset: width * idx, animated: animationEnabled });
     onTabChange?.(idx);
   };
 
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
+      <FlatList
         ref={scrollRef}
+        data={routes}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
+        renderItem={({ item }) => (
+          <View style={{ width, flex: 1 }}>{renderScene(item)}</View>
+        )}
+        keyExtractor={item => item.key}
         onMomentumScrollEnd={handleMomentumScrollEnd}
-      >
-        {routes.map(route => (
-          <View key={route.key} style={{ width, flex: 1 }}>
-            {renderScene(route)}
-          </View>
-        ))}
-      </ScrollView>
+        getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+      />
       {tabBarVisible && (
         <View style={[styles.tabBarContainer, { paddingBottom: insets.bottom }]}>
           <View style={styles.tabBar}>

@@ -1,4 +1,11 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useRef,
+  useCallback,
+} from 'react';
+import type { ComponentProps } from 'react';
 import {
   View,
   Text,
@@ -56,7 +63,16 @@ import {
 import { LIFT_RATINGS, type RatingMap } from '../constants/liftRatings';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(Pressable);
-const AnimatedIcon = Animated.createAnimatedComponent(Ionicons);
+
+type IoniconProps = ComponentProps<typeof Ionicons> & {
+  style?: any;
+  pointerEvents?: 'auto' | 'none' | 'box-none' | 'box-only';
+};
+const AnimatedIcon = ({ style, pointerEvents, ...rest }: IoniconProps) => (
+  <Animated.View style={style} pointerEvents={pointerEvents}>
+    <Ionicons {...rest} />
+  </Animated.View>
+);
 
 const CAROUSEL_INDEX_KEY = 'calendarCarouselIndex';
 // Persist carousel position across component unmounts
