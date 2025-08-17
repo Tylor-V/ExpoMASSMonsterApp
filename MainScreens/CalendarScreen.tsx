@@ -44,7 +44,6 @@ import {
   ANIM_BUTTON_POP,
   ANIM_BUTTON_PRESS,
 } from '../utils/animations';
-import useCarousel from '../hooks/useCarousel';
 import CarouselNavigator from '../components/CarouselNavigator';
 import { useAppContext } from '../firebase/AppContext';
 import { getTodayKey } from '../firebase/dateHelpers';
@@ -543,14 +542,18 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     [],
   );
   const carouselIndexPersist = useRef(calendarCarouselIndex);
-  const {    
-    index: carouselIndex,
-    goToIndex,
-    ref: carouselRef,
-    slideAnim,
-  } = useCarousel<string>(carouselItems.length, carouselWidth, {
-    initialIndex: carouselIndexPersist.current,
-  });
+  const [carouselIndex, setCarouselIndex] = useState(carouselIndexPersist.current);
+  const carouselRef = useRef<ScrollView>(null);
+  const goToIndex = useCallback(
+    (next: number | ((cur: number) => number)) => {
+      setCarouselIndex(cur => {
+        const target = typeof next === 'function' ? next(cur) : next;
+        const clamped = Math.min(Math.max(target, 0), carouselItems.length - 1);
+        return clamped;
+      });
+    },
+    [carouselItems.length],
+  );
   const loadedCarouselIndex = useRef(false);
   useEffect(() => {
     if (loadedCarouselIndex.current) return;
@@ -570,7 +573,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             carouselIndexPersist.current = idx;
             lastCarouselIndex = idx;
             setCalendarCarouselIndex(idx);
-            goToIndex(idx);
+            setCarouselIndex(idx);
           }
         }
       })
@@ -582,11 +585,12 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     };
   }, []);
   useEffect(() => {
+    carouselRef.current?.scrollTo({ x: carouselWidth * carouselIndex, animated: true });
     carouselIndexPersist.current = carouselIndex;
     lastCarouselIndex = carouselIndex;
     setCalendarCarouselIndex(carouselIndex);
     AsyncStorage.setItem(CAROUSEL_INDEX_KEY, String(carouselIndex)).catch(() => {});
-  }, [carouselIndex]);
+  }, [carouselIndex, carouselWidth]);
   const [carouselHeight, setCarouselHeight] = useState<number | undefined>();
 
   useEffect(() => {
@@ -1579,8 +1583,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   );
 
 
-  const renderCarouselItem = ({ item }: { item: string }) => (
+  const renderCarouselItem = (item: string, idx: number) => (
     <View
+      key={item}
       style={{ width: carouselWidth, paddingHorizontal: CAROUSEL_SIDE_PADDING }}
       onLayout={onCarouselItemLayout}
     >
@@ -1605,15 +1610,14 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           style={{ paddingTop: 12 }}
           onLayout={e => setDaysRowHeight(e.nativeEvent.layout.height)}
         >
-          <FlatList
-            data={days}
-            keyExtractor={(_, i) => 'd-' + i}
-            renderItem={renderDay}
+          <ScrollView
             horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.daysRow}
-        />
-      </View>
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.daysRow}
+          >
+            {days.map((item, i) => renderDay({ item, index: i }))}
+          </ScrollView>
+        </View>
       <FlatList
         style={[
           { flexGrow: 0, flexShrink: 0 },
@@ -1637,49 +1641,37 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         scrollEnabled={eventListScrollable}
       />
 
-<Animated.View
+      <View
         style={[
-      styles.carouselContainer,
-    {
-      width: carouselWidth,
-      paddingHorizontal: CAROUSEL_SIDE_PADDING,
-      transform: [{ translateX: slideAnim }],
-      minHeight: carouselHeight,
-    },
-    ]}
-  >
-  <FlatList
-    ref={carouselRef}
-    data={carouselItems}
-    horizontal
-    pagingEnabled
-    getItemLayout={(_, index) => ({
-      length: carouselWidth,
-      offset: carouselWidth * index,
-      index,
-    })}
-    snapToInterval={carouselWidth}
-    decelerationRate="fast"
-    scrollEnabled={false} // disables swipe, navigation is via arrows/dots
-    showsHorizontalScrollIndicator={false}
-    keyExtractor={item => item}
-    style={{ width: carouselWidth, alignSelf: 'center' }}
-    renderItem={renderCarouselItem}
-    extraData={carouselIndex}
-    key={`carousel-${carouselWidth}-${carouselItems.length}`}
-  />
-  {carouselItems.length > 1 && (
-    <CarouselNavigator
-      index={carouselIndex}
-      length={carouselItems.length}
-      onIndexChange={goToIndex}
-      dotsRowStyle={styles.carouselDotsRow}
-      arrowSize={36}
-      dotSize={16}
-      // Optionally add leftOffset/rightOffset/inactiveColor/maxDots as in SplitSharing
-    />
-  )}
-</Animated.View>
+          styles.carouselContainer,
+          {
+            width: carouselWidth,
+            paddingHorizontal: CAROUSEL_SIDE_PADDING,
+            minHeight: carouselHeight,
+          },
+        ]}
+      >
+        <ScrollView
+          ref={carouselRef}
+          horizontal
+          pagingEnabled
+          scrollEnabled={false} // disables swipe, navigation is via arrows/dots
+          showsHorizontalScrollIndicator={false}
+        >
+          {carouselItems.map(renderCarouselItem)}
+        </ScrollView>
+        {carouselItems.length > 1 && (
+          <CarouselNavigator
+            index={carouselIndex}
+            length={carouselItems.length}
+            onIndexChange={goToIndex}
+            dotsRowStyle={styles.carouselDotsRow}
+            arrowSize={36}
+            dotSize={16}
+            // Optionally add leftOffset/rightOffset/inactiveColor/maxDots as in SplitSharing
+          />
+        )}
+      </View>
       <View
         style={[
           styles.bottomRow,
