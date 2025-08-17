@@ -4,12 +4,11 @@ import {
   Text,
   StyleSheet,
   Animated,
-  FlatList,
   Pressable,
   TouchableOpacity,
   TextInput,
-  ScrollView,
   Image,
+  SectionList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { firestore, auth } from '../firebase/firebase';
@@ -238,64 +237,69 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
           },
         ]}
       >
-        <ScrollView style={{ flex: 1 }}>
-        {/* Header */}
-        <View style={styles.headerRow}>
-          <Image
-            source={require('../assets/members-logo.png')}
-            style={styles.headerLogo}
-          />
-        </View>
-        <View style={styles.searchBar}>
-          <TextInput
-            ref={searchRef}
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search"
-            placeholderTextColor="#B0B0B0"
-            style={styles.searchInput}
-          />
-          {search ? (
-            <TouchableOpacity
-              onPress={() => {
-                setSearch('');
-                setTimeout(() => searchRef.current?.focus(), 0);
-              }}
-              style={{ padding: 4 }}
-            >
-              <Ionicons name="close-circle" size={23} color="#8B5CF6" />
-            </TouchableOpacity>
-          ) : (
-            <Ionicons name="search-outline" size={21} color="#B0B0B0" />
+        <SectionList
+          style={{ flex: 1 }}
+          sections={[
+            { title: `Online (${filteredOnline.length})`, data: filteredOnline },
+            { title: `Offline (${filteredOffline.length})`, data: filteredOffline },
+          ]}
+          keyExtractor={item => item.id}
+          renderItem={({ item }) => renderUser(item)}
+          renderSectionHeader={({ section }) => (
+            <Text style={styles.sectionHeader}>{section.title}</Text>
           )}
-        </View>
-        {/* Online */}
-        <FlatList
-          data={filteredOnline}
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => renderUser(item)}
-          ListHeaderComponent={
-            <Text style={styles.sectionHeader}>Online ({filteredOnline.length})</Text>
+          renderSectionFooter={({ section }) =>
+            section.data.length === 0 ? (
+              <Text style={styles.emptyTxt}>
+                {section.title.startsWith('Online')
+                  ? 'No users online.'
+                  : 'No users offline.'}
+              </Text>
+            ) : null
           }
-          ListEmptyComponent={<Text style={styles.emptyTxt}>No users online.</Text>}
-          style={{ marginBottom: 13 }}
-          scrollEnabled={false}
-        />
-        {/* Offline */}
-        <FlatList
-          data={filteredOffline}
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => renderUser(item)}
           ListHeaderComponent={
-            <Text style={styles.sectionHeader}>Offline ({filteredOffline.length})</Text>
+            <>
+              <View style={styles.headerRow}>
+                <Image
+                  source={require('../assets/members-logo.png')}
+                  style={styles.headerLogo}
+                />
+              </View>
+              <View style={styles.searchBar}>
+                <TextInput
+                  ref={searchRef}
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder="Search"
+                  placeholderTextColor="#B0B0B0"
+                  style={styles.searchInput}
+                />
+                {search ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSearch('');
+                      setTimeout(() => searchRef.current?.focus(), 0);
+                    }}
+                    style={{ padding: 4 }}
+                  >
+                    <Ionicons name="close-circle" size={23} color="#8B5CF6" />
+                  </TouchableOpacity>
+                ) : (
+                  <Ionicons name="search-outline" size={21} color="#B0B0B0" />
+                )}
+              </View>
+            </>
           }
-          ListEmptyComponent={<Text style={styles.emptyTxt}>No users offline.</Text>}
-          scrollEnabled={false}
+          ListFooterComponent={
+            filteredOnline.length === 0 &&
+            filteredOffline.length === 0 &&
+            !!term ? (
+              <Text style={styles.noUsersTxt}>No users found</Text>
+            ) : null
+          }
+          showsVerticalScrollIndicator={false}
+          stickySectionHeadersEnabled={false}
         />
-        {filteredOnline.length === 0 && filteredOffline.length === 0 && !!term && (
-          <Text style={styles.noUsersTxt}>No users found</Text>
-        )}
-        </ScrollView>
       </Animated.View>
       <UserPreviewModal
         visible={!!previewUserId}
