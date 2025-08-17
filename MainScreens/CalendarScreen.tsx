@@ -1497,55 +1497,62 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           </TouchableOpacity>
         )}
       </View>
-      {newsLoaded ? (
-        <FlatList
-          data={news ?? []}
-          keyExtractor={(item, idx) => item.id || `badge-${idx}`}
-          renderItem={({ item, index }) =>
-            item.message ? (
-              <View
-                style={[
-                  carouselChipStyle,
-                  styles.newsTile,
-                  index !== 0 && styles.massTileSpacing,
-                ]}
-              >
-                <Text style={styles.massTileTitle}>{item.message ?? item.title}</Text>
-              </View>
-            ) : (
-              <View
-                style={[
-                  carouselChipStyle,
-                  styles.newsTile,
-                  index !== 0 && styles.massTileSpacing,
-                ]}
-              >
-                <View style={styles.massTileHeader}>
-                  <Image source={item.image} style={styles.badgeImage} />
-                  <Text style={styles.massTileTitle}>{item.id} Badge</Text>
-                </View>
-                <View style={styles.badgeRowCarousel}>
-                  <View style={styles.progressTrack}> 
-                    <View style={[styles.progressBar, { width: `${Math.round(item.progress * 100)}%` }]} />
+        {newsLoaded ? (
+          news && news.length ? (
+            <ScrollView
+              style={{ flexGrow: 1 }}
+              contentContainerStyle={{ flexGrow: 1 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {news.map((item, index) =>
+                item.message ? (
+                  <View
+                    key={item.id || `badge-${index}`}
+                    style={[
+                      carouselChipStyle,
+                      styles.newsTile,
+                      index !== 0 && styles.massTileSpacing,
+                    ]}
+                  >
+                    <Text style={styles.massTileTitle}>{item.message ?? item.title}</Text>
                   </View>
-                  <Text style={styles.badgePercent}>{Math.round(item.progress * 100)}%</Text>
-                </View>
-                <Text style={styles.requirements}>{item.requirements}</Text>
-              </View>
-            )
-          }
-          ListEmptyComponent={
+                ) : (
+                  <View
+                    key={item.id || `badge-${index}`}
+                    style={[
+                      carouselChipStyle,
+                      styles.newsTile,
+                      index !== 0 && styles.massTileSpacing,
+                    ]}
+                  >
+                    <View style={styles.massTileHeader}>
+                      <Image source={item.image} style={styles.badgeImage} />
+                      <Text style={styles.massTileTitle}>{item.id} Badge</Text>
+                    </View>
+                    <View style={styles.badgeRowCarousel}>
+                      <View style={styles.progressTrack}>
+                      <View
+                        style={[
+                          styles.progressBar,
+                          { width: `${Math.round(item.progress * 100)}%` },
+                        ]}
+                      />
+                      </View>
+                      <Text style={styles.badgePercent}>{Math.round(item.progress * 100)}%</Text>
+                    </View>
+                    <Text style={styles.requirements}>{item.requirements}</Text>
+                  </View>
+                  )
+              )}
+            </ScrollView>
+          ) : (
             <Text style={styles.newsEmptyText}>No New MASS News</Text>
-          }
-          style={{ flexGrow: 1 }}
-          initialNumToRender={5}
-          contentContainerStyle={{ flexGrow: 1 }}
-        />
-      ) : (
-        <ActivityIndicator color={colors.accent} size="large" style={{ marginTop: 30 }} />
-      )}
-    </View>
-  );
+          )
+        ) : (
+          <ActivityIndicator color={colors.accent} size="large" style={{ marginTop: 30 }} />
+        )}
+      </View>
+    );
 
   const CompetitionsSection = () => (
     <View style={carouselCardStyle}>
