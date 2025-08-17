@@ -1186,6 +1186,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
   const renderDay = ({ item, index }) => (
     <Pressable
+      key={item.date.toISOString()}
       onPress={() => setSelectedIndex(index)}
       style={({ pressed }) => [
         styles.dayBtn,
