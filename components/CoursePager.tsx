@@ -99,8 +99,8 @@ const CoursePager = forwardRef<CoursePagerHandle, CoursePagerProps>(function Cou
       onBack();
       return true;
     };
-    BackHandler.addEventListener('hardwareBackPress', handler);
-    return () => BackHandler.removeEventListener('hardwareBackPress', handler);
+    const sub = BackHandler.addEventListener('hardwareBackPress', handler);
+    return () => sub.remove();
   }, [onBack]);
 
   useEffect(() => {

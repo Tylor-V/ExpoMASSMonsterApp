@@ -18,8 +18,8 @@ describe('CoursePager', () => {
 
   it('handles hardware back press when onBack provided', () => {
     const onBack = jest.fn();
-    const addSpy = jest.spyOn(BackHandler, 'addEventListener');
-    const removeSpy = jest.spyOn(BackHandler, 'removeEventListener');
+    const remove = jest.fn();
+    const addSpy = jest.spyOn(BackHandler, 'addEventListener').mockReturnValue({ remove });
     const {unmount} = render(<CoursePager pages={[<Text key="1">1</Text>]} onBack={onBack} />);
     const handler = addSpy.mock.calls[0][1];
     act(() => {
@@ -27,6 +27,6 @@ describe('CoursePager', () => {
     });
     expect(onBack).toHaveBeenCalledTimes(1);
     unmount();
-    expect(removeSpy).toHaveBeenCalledWith('hardwareBackPress', handler);
+    expect(remove).toHaveBeenCalled();
   });
 });
