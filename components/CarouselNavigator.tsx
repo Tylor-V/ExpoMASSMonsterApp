@@ -38,7 +38,7 @@ export default function CarouselNavigator({
       <TouchableOpacity
         testID="prev-arrow"
         style={[styles.arrow, { left: leftOffset, marginTop: -arrowSize * 0.75 }]}
-        onPress={() => onIndexChange(i => i - 1)}
+        onPress={() => onIndexChange(index - 1)}
         disabled={index === 0}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
@@ -52,7 +52,7 @@ export default function CarouselNavigator({
       <TouchableOpacity
         testID="next-arrow"
         style={[styles.arrow, { right: rightOffset, marginTop: -arrowSize * 0.75 }]}
-        onPress={() => onIndexChange(i => i + 1)}
+        onPress={() => onIndexChange(index + 1)}
         disabled={index === length - 1}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >

@@ -29,7 +29,7 @@
     "@react-navigation/native": "^7.1.6",
     "@react-navigation/native-stack": "^7.1.6",
     "color": "^5.0.0",
-    "expo": "^53.0.20",
+    "expo": "~53.0.22",
     "expo-av": "~15.1.7",
     "expo-font": "~13.3.2",
     "expo-haptics": "~14.1.4",
@@ -51,7 +51,8 @@
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
-    "react-native-webview": "13.13.5"
+    "react-native-webview": "13.13.5",
+    "@react-native-community/datetimepicker": "8.4.1"
   },
   "devDependencies": {
     "@testing-library/jest-native": "^5.4.3",

@@ -8,6 +8,7 @@ import {
   Dimensions,
   Text,
   ViewStyle,
+  Animated,
 } from 'react-native';
 import { colors, fonts } from '../theme';
 import useCarousel from '../hooks/useCarousel';
@@ -69,7 +70,7 @@ type Props = {
 };
 
 function FeaturedCarousel({ products, onSelect, style, arrowSize = 24, dotSize = 12 }: Props) {
-  const { index, goToIndex, ref } = useCarousel<any>(products.length, ITEM_LENGTH);
+  const { index, goToIndex, ref, slideAnim } = useCarousel<any>(products.length, ITEM_LENGTH);
 
   const renderItem = useCallback(({ item }: { item: any }) => (
     <FeaturedCard item={item} onSelect={onSelect} />
@@ -83,20 +84,22 @@ function FeaturedCarousel({ products, onSelect, style, arrowSize = 24, dotSize =
 
   return (
     <View style={style}>
-      <FlatList
-        testID="featured-carousel"
-        ref={ref}
-        data={products}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        snapToInterval={ITEM_LENGTH}
-        decelerationRate="fast"
-        scrollEnabled={false}
-        keyExtractor={keyExtractor}
-        renderItem={renderItem}
-        contentContainerStyle={CONTENT_CONTAINER_STYLE}
-        getItemLayout={getItemLayout}
-      />
+      <Animated.View style={{ transform: [{ translateX: slideAnim }] }}>
+        <FlatList
+          testID="featured-carousel"
+          ref={ref}
+          data={products}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          snapToInterval={ITEM_LENGTH}
+          decelerationRate="fast"
+          scrollEnabled={false}
+          keyExtractor={keyExtractor}
+          renderItem={renderItem}
+          contentContainerStyle={CONTENT_CONTAINER_STYLE}
+          getItemLayout={getItemLayout}
+        />
+      </Animated.View>
       {products.length > 1 && (
         <CarouselNavigator
           index={index}
