@@ -1,26 +1,26 @@
-import React, {useState, useRef} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  TouchableOpacity,
-  ScrollView,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-  Modal,
-} from 'react-native';
-import { Image } from 'expo-image';
-import useCourseTopPad from "../hooks/useCourseTopPad";
-import CoursePager, {CoursePagerHandle} from '../components/CoursePager';
-import CourseNav from '../components/CourseNav';
 import { Ionicons as Icon } from '@expo/vector-icons';
-import {WebView} from 'react-native-webview';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {updateCourseProgress} from '../firebase/userProfileHelpers';
-import {LIFT_RATINGS, type RatingMap} from '../constants/liftRatings';
-import {colors} from '../theme';
+import { Image } from 'expo-image';
+import React, { useRef, useState } from 'react';
+import {
+  Dimensions,
+  LayoutAnimation,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  UIManager,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { WebView } from 'react-native-webview';
+import CourseNav from '../components/CourseNav';
+import CoursePager, { CoursePagerHandle } from '../components/CoursePager';
+import { LIFT_RATINGS, type RatingMap } from '../constants/liftRatings';
+import { updateCourseProgress } from '../firebase/userProfileHelpers';
+import useCourseTopPad from "../hooks/useCourseTopPad";
+import { colors } from '../theme';
 
 const {width} = Dimensions.get('window');
 
@@ -314,7 +314,11 @@ export default function PushPullLegsCourse({onBack}) {
           style={styles.fullScreenPage}
           activeOpacity={1}
           onPress={() => pagerRef.current?.goToPage(idx + 1)}>
-          <Image source={p.fullImage} style={styles.fullPageImg} resizeMode="cover" />
+          <Image
+            source={p.fullImage}
+            style={styles.fullPageImg}
+            contentFit="cover"
+          />
         </TouchableOpacity>
       );
     }
@@ -337,7 +341,7 @@ export default function PushPullLegsCourse({onBack}) {
                   <Image
                     source={p.image}
                     style={styles.heroImg}
-                    resizeMode="contain"
+                    contentFit="contain"
                   />
                   {p.anatomyLabel && (
                     <Text style={styles.anatomyLabel}>{p.anatomyLabel}</Text>
@@ -397,7 +401,7 @@ export default function PushPullLegsCourse({onBack}) {
                 <Image
                   source={p.referenceImg}
                   style={styles.refImg}
-                  resizeMode="contain"
+                  contentFit="contain"
                 />
               </TouchableOpacity>
             )}
@@ -443,7 +447,7 @@ export default function PushPullLegsCourse({onBack}) {
                 styles.fullscreenImg,
                 {aspectRatio: fullscreenMedia.aspect || 1},
               ]}
-              resizeMode="contain"
+              contentFit="contain"
             />
           )}
           {fullscreenMedia?.type === 'web' && (

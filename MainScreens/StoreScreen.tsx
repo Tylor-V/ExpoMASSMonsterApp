@@ -272,6 +272,7 @@ function StoreScreen({ navigation }) {
               <Image
                 source={require('../assets/coral-logo.png')}
                 style={styles.coralLogo}
+                contentFit="contain"
               />
             )}
             <Text style={styles.cardTitle} numberOfLines={2}>
@@ -332,6 +333,7 @@ function StoreScreen({ navigation }) {
           <Image
             source={require('../assets/mass-logo.png')}
             style={styles.logo}
+            contentFit="contain"
           />
           <Text style={styles.shopTitle}>SHOP</Text>
         </View>
@@ -543,7 +545,6 @@ const styles = StyleSheet.create({
   logo: {
     width: width * 0.5,
     height: 70,
-    resizeMode: 'contain',
     shadowColor: colors.gold,
     shadowOpacity: 0.35,
     shadowRadius: 14,
@@ -630,7 +631,6 @@ const styles = StyleSheet.create({
     width: 80,
     height: 20,
     alignSelf: 'center',
-    resizeMode: 'contain',
     marginTop: -16,
     marginLeft: -32,
   },

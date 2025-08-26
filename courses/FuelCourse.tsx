@@ -121,7 +121,7 @@ export default function FuelCourse({onBack}) {
             <Image
               source={caloriesImg}
               style={styles.heroImg}
-              resizeMode="contain"
+              contentFit="contain"
             />
             <Text style={styles.text}>
               "Every rep tears muscle. Calories rebuild it bigger. Without a
@@ -146,6 +146,7 @@ export default function FuelCourse({onBack}) {
                 styles.massLogo,
                 {transform: [{scale: 1 + calories / 5000}]},
               ]}
+              contentFit="contain"
             />
             <TouchableOpacity onPress={() => setShowBolt(!showBolt)}>
               <Text style={styles.bolt}>⚡</Text>
@@ -166,7 +167,7 @@ export default function FuelCourse({onBack}) {
             <Image
               source={caloricMathImg}
               style={styles.heroImg}
-              resizeMode="contain"
+              contentFit="contain"
             />
             <Text style={styles.header}>The 5,000-Calorie Blueprint</Text>
             <Text style={styles.text}>
@@ -193,7 +194,7 @@ export default function FuelCourse({onBack}) {
             <Image
               source={bricksImg}
               style={styles.heroImg}
-              resizeMode="contain"
+              contentFit="contain"
             />
             <Text style={styles.header}>Protein = Muscle Bricks</Text>
             <Text style={styles.text}>
@@ -221,7 +222,7 @@ export default function FuelCourse({onBack}) {
             <Image
               source={factsImg}
               style={styles.heroImg}
-              resizeMode="contain"
+              contentFit="contain"
             />
             <Text style={styles.header}>Easy High-Protein Foods</Text>
             <Text style={styles.text}>
@@ -236,7 +237,7 @@ export default function FuelCourse({onBack}) {
             <Image
               source={wheyImg}
               style={styles.heroImg}
-              resizeMode="contain"
+              contentFit="contain"
             />
             <Text style={styles.header}>Whey Protein Power</Text>
             <Text style={styles.text}>
@@ -254,7 +255,7 @@ export default function FuelCourse({onBack}) {
             <Image
               source={caseinImg}
               style={styles.heroImg}
-              resizeMode="contain"
+              contentFit="contain"
             />
             <Text style={styles.header}>Casein: Nighttime Builder</Text>
             <Text style={styles.text}>
@@ -269,7 +270,7 @@ export default function FuelCourse({onBack}) {
             <Image
               source={plantImg}
               style={styles.heroImg}
-              resizeMode="contain"
+              contentFit="contain"
             />
             <Text style={styles.header}>Plant & Blended Proteins</Text>
             <Text style={styles.text}>
@@ -278,7 +279,7 @@ export default function FuelCourse({onBack}) {
             <Image
               source={blendImg}
               style={[styles.heroImg, {marginTop: 8}]}
-              resizeMode="contain"
+              contentFit="contain"
             />
             <Text style={styles.text}>
               Blended: Whey + casein + plant—balanced release & added nutrients.
@@ -291,7 +292,7 @@ export default function FuelCourse({onBack}) {
             <Image
               source={preImg}
               style={styles.heroImg}
-              resizeMode="contain"
+              contentFit="contain"
             />
             <Text style={styles.header}>Pre-Workout Fuel</Text>
             <Text style={styles.text}>
@@ -306,7 +307,7 @@ export default function FuelCourse({onBack}) {
             <Image
               source={postImg}
               style={styles.heroImg}
-              resizeMode="contain"
+              contentFit="contain"
             />
             <Text style={styles.header}>Post-Workout Recovery</Text>
             <Text style={styles.text}>
@@ -321,7 +322,7 @@ export default function FuelCourse({onBack}) {
             <Image
               source={caloricMathImg}
               style={styles.heroImg}
-              resizeMode="contain"
+              contentFit="contain"
             />
             <Text style={styles.header}>Calorie Boosters & Hacks</Text>
             <Text style={styles.text}>
@@ -361,7 +362,7 @@ export default function FuelCourse({onBack}) {
           style={styles.fullScreenPage}
           activeOpacity={1}
           onPress={() => pagerRef.current?.goToPage(idx + 1)}>
-          <Image source={introImg} style={styles.fullPageImg} resizeMode="cover" />
+          <Image source={introImg} style={styles.fullPageImg} contentFit="cover" />
         </TouchableOpacity>
       );
     }
@@ -378,7 +379,7 @@ export default function FuelCourse({onBack}) {
           <Image
             source={require('../assets/fuel-last-page.png')}
             style={styles.fullPageImg}
-            resizeMode="cover"
+            contentFit="cover"
           />
         </TouchableOpacity>
       );
@@ -447,7 +448,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     lineHeight: 22,
   },
-  massLogo: {width: 80, height: 40, marginVertical: 6, resizeMode: 'contain'},
+  massLogo: {width: 80, height: 40, marginVertical: 6},
   bolt: {fontSize: 28, color: '#FFCC00', marginVertical: 6},
   badge: {color: '#FF5050', fontWeight: 'bold', marginTop: 6},
   stepBtn: {

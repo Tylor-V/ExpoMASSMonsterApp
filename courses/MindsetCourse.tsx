@@ -967,7 +967,7 @@ export default function MindsetCourse({onBack}) {
           <Image
             source={p.fullImage}
             style={styles.fullPageImg}
-            resizeMode="cover"
+            contentFit="cover"
           />
         </TouchableOpacity>
       );
@@ -990,7 +990,7 @@ export default function MindsetCourse({onBack}) {
           <Image
             source={p.image}
             style={styles.heroImg}
-            resizeMode="cover"
+            contentFit="cover"
           />
         )}
         <Text style={styles.header}>{p.header}</Text>

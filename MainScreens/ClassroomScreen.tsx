@@ -87,7 +87,11 @@ function ClassroomScreen({ onRequestTabChange, onCourseOpenChange }) {
     <WhiteBackgroundWrapper style={{ flex: 1 }} padBottom={!currentCourse}>
       {!currentCourse && (
         <View style={styles.headerContainer}>
-          <Image source={MassUniversityLogo} style={styles.headerImage} resizeMode="contain" />
+          <Image
+            source={MassUniversityLogo}
+            style={styles.headerImage}
+            contentFit="contain"
+          />
         </View>
       )}
       <Animated.View style={{ flex: 1, transform: [{ translateX: listTranslate }] }}>
@@ -115,7 +119,7 @@ function ClassroomScreen({ onRequestTabChange, onCourseOpenChange }) {
                 <Image
                   source={item.bannerImage}
                   style={styles.courseBanner}
-                  resizeMode="cover"
+                  contentFit="cover"
                 />
                 <Text style={styles.courseDesc}>{item.description}</Text>
               </TouchableOpacity>

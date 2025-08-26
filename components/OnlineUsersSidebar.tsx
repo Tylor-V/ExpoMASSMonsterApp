@@ -263,6 +263,7 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
                 <Image
                   source={require('../assets/members-logo.png')}
                   style={styles.headerLogo}
+                  contentFit="contain"
                 />
               </View>
               <View style={styles.searchBar}>
@@ -350,7 +351,6 @@ const styles = StyleSheet.create({
   headerLogo: {
     flex: 1,
     height: 120,
-    resizeMode: 'contain',
   },
   sectionHeader: {
     color: '#232323',

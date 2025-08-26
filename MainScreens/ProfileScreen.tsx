@@ -695,7 +695,11 @@ const ProfileScreen = () => {
           >
             <Text style={styles.infoHeader}>Badge Requirements</Text>
             <View style={styles.infoRow}>
-              <Image source={getBadgeImage('SCHOLAR')} style={styles.infoIcon} />
+              <Image
+                source={getBadgeImage('SCHOLAR')}
+                style={styles.infoIcon}
+                contentFit="contain"
+              />
               <View style={{ flex: 1 }}>
                 <Text style={styles.infoTitle}>Scholar Badge</Text>
                 <Text style={styles.infoDesc}>Complete the Welcome Course, Push Pull Legs Course, and Fuel Course.</Text>
@@ -713,7 +717,11 @@ const ProfileScreen = () => {
               </View>
             </View>
             <View style={styles.infoRow}>
-              <Image source={getBadgeImage('MINDSET')} style={styles.infoIcon} />
+              <Image
+                source={getBadgeImage('MINDSET')}
+                style={styles.infoIcon}
+                contentFit="contain"
+              />
               <View style={{ flex: 1 }}>
                 <Text style={styles.infoTitle}>Mindset Badge</Text>
                 <Text style={styles.infoDesc}>Complete the Mindset Course.</Text>
@@ -731,7 +739,11 @@ const ProfileScreen = () => {
               </View>
             </View>
             <View style={styles.infoRow}>
-              <Image source={getBadgeImage('ACCOUNTABILITY')} style={styles.infoIcon} />
+              <Image
+                source={getBadgeImage('ACCOUNTABILITY')}
+                style={styles.infoIcon}
+                contentFit="contain"
+              />
               <View style={{ flex: 1 }}>
                 <Text style={styles.infoTitle}>Accountability Badge</Text>
                 <Text style={styles.infoDesc}>Submit 5 accountability check-ins.</Text>
@@ -1073,7 +1085,6 @@ badgesLabelRow: {
     width: 46,
     height: 46,
     marginRight: 12,
-    resizeMode: 'contain',
     borderRadius: 23,
     overflow: 'hidden',
   },
