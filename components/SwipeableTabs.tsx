@@ -53,6 +53,11 @@ export default function SwipeableTabs({
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const scrollRef = useRef<FlatList<Route>>(null);
+  const tabIndexRef = useRef(tabIndex);
+
+  useEffect(() => {
+    tabIndexRef.current = tabIndex;
+  }, [tabIndex]);
 
   const renderScene = React.useCallback(
     (route: Route) => {
@@ -78,14 +83,15 @@ export default function SwipeableTabs({
     scrollRef.current?.scrollToOffset({ offset: width * tabIndex, animated: animationEnabled });
   }, [tabIndex, width, animationEnabled]);
 
-  const handleMomentumScrollEnd = useCallback(
+  const handleScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
-      if (newIndex !== tabIndex) {
+      if (newIndex !== tabIndexRef.current) {
+        tabIndexRef.current = newIndex;
         onTabChange?.(newIndex);
       }
     },
-    [width, tabIndex, onTabChange],
+    [width, onTabChange],
   );
 
   const jumpTo = (key: string) => {
@@ -106,8 +112,10 @@ export default function SwipeableTabs({
           <View style={{ width, flex: 1 }}>{renderScene(item)}</View>
         )}
         keyExtractor={item => item.key}
-        onMomentumScrollEnd={handleMomentumScrollEnd}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
         getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+        testID="swipeable-tabs-list"
       />
       {tabBarVisible && (
         <View style={[styles.tabBarContainer, { paddingBottom: insets.bottom }]}>
@@ -118,6 +126,8 @@ export default function SwipeableTabs({
                 delayPressIn={0}
                 onPress={() => jumpTo(route.key)}
                 style={styles.tabItem}
+                accessibilityRole="button"
+                accessibilityLabel={route.title}
               >
                 <Icon
                   name={route.icon}
@@ -131,9 +141,13 @@ export default function SwipeableTabs({
                   ]}
                 />
                 <Text
+                  testID={`tab-label-${route.key}`}
                   style={[
                     styles.tabLabel,
-                    { color: i === tabIndex ? activeTintColor : inactiveTintColor },
+                    {
+                      color: i === tabIndex ? activeTintColor : inactiveTintColor,
+                      opacity: i === tabIndex ? 1 : 0,
+                    },
                   ]}
                   numberOfLines={1}
                   ellipsizeMode="tail"

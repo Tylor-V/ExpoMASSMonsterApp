@@ -37,10 +37,10 @@ jest.mock('../../hooks/usePresence', () => jest.fn());
 describe('MainAppScreen', () => {
   it('switches to Chat tab when pressed', async () => {
     const navigation = { navigate: jest.fn() } as any;
-    const { getByText } = render(
+    const { getByLabelText, getByText } = render(
       <MainAppScreen navigation={navigation} news={[]} newsLoaded onNewsAdded={jest.fn()} />,
     );
-    fireEvent.press(getByText('Chat'));
+    fireEvent.press(getByLabelText('Chat'));
     await waitFor(() => getByText('Chat Active'));
   });
 });
