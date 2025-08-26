@@ -20,7 +20,6 @@ import {checkAccountabilityStreak} from '../firebase/userProfileHelpers';
 import {useNavigation, StackActions} from '@react-navigation/native';
 import { fonts, colors, radius } from '../theme';
 import BackgroundWrapper from '../components/BackgroundWrapper';
-import PillButton from '../components/PillButton';
 import ResponsivePressable from '../components/ResponsivePressable';
 import {useInitializeUser} from '../hooks/useInitializeUser';
 import {useNetworkStatus} from '../hooks/useNetworkStatus';
