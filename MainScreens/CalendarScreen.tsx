@@ -433,6 +433,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const [tick, setTick] = useState(0);
 
   const badgeProgress = useMemo(() => getUserBadgeProgress(user), [user]);
+  const mergedNews = useMemo(
+    () => [...(news || []), ...badgeProgress],
+    [news, badgeProgress]
+  );
 
   const [showWorkout, setShowWorkout] = useState(false);
   const [plan, setPlan] = useState<WorkoutPlan | null>(null);
@@ -1530,13 +1534,13 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         )}
       </View>
         {newsLoaded ? (
-          news && news.length ? (
+          mergedNews.length ? (
             <ScrollView
               style={{ flexGrow: 1 }}
               contentContainerStyle={{ flexGrow: 1 }}
               showsVerticalScrollIndicator={false}
             >
-              {news.map((item, index) =>
+              {mergedNews.map((item, index) =>
                 item.message ? (
                   <View
                     key={item.id || `badge-${index}`}

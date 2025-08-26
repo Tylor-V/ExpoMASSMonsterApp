@@ -14,6 +14,7 @@ import {
   ViewStyle,
   ScrollView,
   useWindowDimensions,
+  BackHandler,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -93,8 +94,19 @@ const CoursePager = forwardRef<CoursePagerHandle, CoursePagerProps>(function Cou
   };
 
   useEffect(() => {
+    if (!onBack) return;
+    const handler = () => {
+      onBack();
+      return true;
+    };
+    BackHandler.addEventListener('hardwareBackPress', handler);
+    return () => BackHandler.removeEventListener('hardwareBackPress', handler);
+  }, [onBack]);
+
+  useEffect(() => {
     scrollRef.current?.scrollTo({x: width * page, animated: false});
-  }, [width, page]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [width]);
 
   const isFullScreen = fullScreenPages?.includes(page);
   
