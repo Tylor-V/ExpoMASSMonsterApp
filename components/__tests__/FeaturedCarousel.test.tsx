@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import React from 'react';
 import { FlatList } from 'react-native';
 import FeaturedCarousel from '../FeaturedCarousel';
@@ -18,14 +18,18 @@ describe('FeaturedCarousel', () => {
     expect(onSelect).toHaveBeenCalledWith(products[0]);
   });
 
-  it('navigates using arrow buttons', async () => {
+  it('navigates using arrow buttons', () => {
     const onSelect = jest.fn();
     const spy = jest.spyOn(FlatList.prototype as any, 'scrollToIndex').mockImplementation(() => {});
-    const { getByTestId } = render(<FeaturedCarousel products={products} onSelect={onSelect} />);
+    const { getByTestId } = render(
+      <FeaturedCarousel products={products} onSelect={onSelect} />,
+    );
     spy.mockClear();
     fireEvent.press(getByTestId('next-arrow'));
-    await waitFor(() => expect(spy).toHaveBeenLastCalledWith({ index: 1, animated: false }));
+    jest.runAllTimers();
+    expect(spy).toHaveBeenLastCalledWith({ index: 1, animated: false });
     fireEvent.press(getByTestId('prev-arrow'));
-    await waitFor(() => expect(spy).toHaveBeenLastCalledWith({ index: 0, animated: false }));
+    jest.runAllTimers();
+    expect(spy).toHaveBeenLastCalledWith({ index: 0, animated: false });
   });
 });
