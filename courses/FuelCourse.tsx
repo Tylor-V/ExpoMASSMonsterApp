@@ -5,10 +5,10 @@ import {
   StyleSheet,
   Dimensions,
   TouchableOpacity,
-  Image,
   ScrollView,
   LayoutAnimation,
 } from 'react-native';
+import { Image } from 'expo-image';
 import useCourseTopPad from "../hooks/useCourseTopPad";
 
 import CoursePager, {CoursePagerHandle} from '../components/CoursePager';

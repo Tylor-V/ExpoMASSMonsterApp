@@ -7,9 +7,9 @@ import {
   Pressable,
   TouchableOpacity,
   TextInput,
-  Image,
   SectionList,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { firestore, auth } from '../firebase/firebase';
 import ProfileImage from './ProfileImage';

@@ -3,13 +3,13 @@ import React, { useCallback } from 'react';
 import {
     ActivityIndicator,
     FlatList,
-    Image,
     Modal,
     Pressable,
     StyleSheet,
     Text,
     View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { colors } from '../theme';
 
 import { getUserBadgeProgress } from '../badges/progressHelpers';

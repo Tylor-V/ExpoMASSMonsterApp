@@ -7,11 +7,11 @@ import {
   TouchableOpacity,
   ScrollView,
   TextInput,
-  Image,
   Animated,
   Share,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import CoursePager, {CoursePagerHandle} from '../components/CoursePager';
 import CourseNav from '../components/CourseNav';
 import CourseOutlineSidebar from '../components/CourseOutlineSidebar';

@@ -4,13 +4,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
-  Image,
   Modal,
   PanResponder,
   StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, firestore, storage } from '../firebase/firebase';
 import { ANIM_FAST } from '../utils/animations';

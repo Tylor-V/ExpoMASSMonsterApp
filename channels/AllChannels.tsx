@@ -6,7 +6,6 @@ import {
   Animated,
   Dimensions,
   FlatList,
-  Image,
   KeyboardAvoidingView,
   LayoutAnimation,
   Modal,
@@ -19,6 +18,7 @@ import {
   UIManager,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ChannelWrapper from '../components/ChannelWrapper';
 import ProfileImage from '../components/ProfileImage';

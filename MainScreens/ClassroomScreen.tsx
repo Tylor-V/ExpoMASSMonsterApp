@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  Image,
   TouchableOpacity,
   Animated,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import WhiteBackgroundWrapper from '../components/WhiteBackgroundWrapper';
 import WelcomeCourse from '../courses/WelcomeCourse';
 import PushPullLegsCourse from '../courses/PushPullLegsCourse';

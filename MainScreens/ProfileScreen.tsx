@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Pressable,
-  Image,
   Alert,
   ScrollView,
   TextInput,
@@ -13,6 +12,7 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import { auth } from '../firebase/firebase';

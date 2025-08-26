@@ -5,12 +5,12 @@ import {
   TextInput,
   StyleSheet,
   Alert,
-  Image,
   Animated,
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { auth } from '../firebase/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import {createOrUpdateUserProfile} from '../firebase/firebaseUserProfile';

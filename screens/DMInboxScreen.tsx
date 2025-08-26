@@ -7,8 +7,8 @@ import {
   TextInput,
   ActivityIndicator,
   TouchableOpacity,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import ProfileImage from '../components/ProfileImage';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts } from '../theme';

@@ -5,9 +5,9 @@ import {
   StyleSheet,
   Dimensions,
   TouchableOpacity,
-  Image,
   ScrollView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import useCourseTopPad from "../hooks/useCourseTopPad";
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import CoursePager, {CoursePagerHandle} from '../components/CoursePager';

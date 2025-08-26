@@ -7,12 +7,12 @@ import {
   ActivityIndicator,
   Animated,
   Dimensions,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useAppContext } from '../firebase/AppContext';
 import { fixUserLevel } from '../firebase/chatXPHelpers';
 import { auth } from '../firebase/firebase';

@@ -5,7 +5,6 @@ import {
     Animated,
     Dimensions,
     FlatList,
-    Image,
     Linking,
     Modal,
     Pressable,
@@ -14,6 +13,7 @@ import {
     Text,
     View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ANIM_BUTTON_POP, ANIM_DRAWER, ANIM_MEDIUM } from '../utils/animations';

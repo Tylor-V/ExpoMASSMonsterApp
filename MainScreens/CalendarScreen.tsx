@@ -20,7 +20,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Image,
   ActivityIndicator,
   Linking,
   useWindowDimensions,
@@ -28,6 +27,7 @@ import {
   LayoutChangeEvent,
   DeviceEventEmitter,
 } from 'react-native';
+import { Image } from 'expo-image';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { getUserBadgeProgress } from '../badges/progressHelpers';

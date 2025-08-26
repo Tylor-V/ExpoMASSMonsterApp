@@ -8,7 +8,6 @@ import {
   Alert,
   Animated,
   Pressable,
-  Image,
   DeviceEventEmitter,
   LayoutAnimation,
 } from 'react-native';
@@ -31,6 +30,7 @@ import { colors, fonts } from '../theme';
 import { ANIM_INSTANT, ANIM_BUTTON_PRESS, ANIM_WIGGLE } from '../utils/animations';
 import useCarousel from '../hooks/useCarousel';
 import CarouselNavigator from '../components/CarouselNavigator';
+import { Image } from 'expo-image';
 
 const SplitShareBubble = ({
   item,
