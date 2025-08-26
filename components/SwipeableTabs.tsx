@@ -140,20 +140,16 @@ export default function SwipeableTabs({
                     { backgroundColor: colors.accent, opacity: i === tabIndex ? 1 : 0 },
                   ]}
                 />
-                <Text
-                  testID={`tab-label-${route.key}`}
-                  style={[
-                    styles.tabLabel,
-                    {
-                      color: i === tabIndex ? activeTintColor : inactiveTintColor,
-                      opacity: i === tabIndex ? 1 : 0,
-                    },
-                  ]}
-                  numberOfLines={1}
-                  ellipsizeMode="tail"
-                >
-                  {route.title}
-                </Text>
+                {i === tabIndex && (
+                  <Text
+                    testID={`tab-label-${route.key}`}
+                    style={[styles.tabLabel, { color: activeTintColor }]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {route.title}
+                  </Text>
+                )}
               </Pressable>
             ))}
           </View>
