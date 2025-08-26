@@ -33,7 +33,7 @@ describe('SwipeableTabs', () => {
     expect(onTabChange).toHaveBeenCalledWith(1);
   });
 
-  it('only renders label for the active tab', () => {
+  it('does not render tab labels', () => {
     const routes = [
       { key: 'chat', title: 'Chat', icon: 'chatbubble-ellipses-outline' },
       { key: 'calendar', title: 'Calendar', icon: 'calendar-outline' },
@@ -41,7 +41,7 @@ describe('SwipeableTabs', () => {
     const { queryByTestId } = render(
       <SwipeableTabs routes={routes} scenes={scenes} tabIndex={0} />,
     );
-    expect(queryByTestId('tab-label-chat')).not.toBeNull();
+    expect(queryByTestId('tab-label-chat')).toBeNull();
     expect(queryByTestId('tab-label-calendar')).toBeNull();
   });
 });
