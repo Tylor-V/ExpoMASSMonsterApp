@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme';
 
-export const TAB_BAR_HEIGHT = 76;
+export const TAB_BAR_HEIGHT = 56;
 
 interface Route {
   key: string;
@@ -130,14 +130,8 @@ export default function SwipeableTabs({
               >
                 <Icon
                   name={route.icon}
-                  size={32}
+                  size={36}
                   color={i === tabIndex ? activeTintColor : inactiveTintColor}
-                />
-                <View
-                  style={[
-                    styles.indicator,
-                    { backgroundColor: colors.accent, opacity: i === tabIndex ? 1 : 0 },
-                  ]}
                 />
               </Pressable>
             ))}
@@ -175,11 +169,5 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     minHeight: 48,
     minWidth: 48,
-  },
-  indicator: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginTop: 2,
   },
 });
