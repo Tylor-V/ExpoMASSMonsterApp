@@ -102,11 +102,13 @@ export default function HelpFaqScreen() {
   };
 
   const openLink = (url: string) => {
-    Linking.openURL(url).catch(() => {});
+    Linking.openURL(url).catch(err => console.error('Failed to open link', err));
   };
 
   const contactSupport = () => {
-    Linking.openURL('mailto:support@massmonster.com').catch(() => {});
+    Linking.openURL('mailto:support@massmonster.com').catch(err =>
+      console.error('Failed to open mail app', err)
+    );
   };
 
   return (

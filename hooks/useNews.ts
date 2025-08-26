@@ -1,6 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { firestore } from '../firebase/firebase';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export function useNews() {
   const [news, setNews] = useState([]);
@@ -17,7 +17,9 @@ export function useNews() {
           setNews(JSON.parse(cached));
           setLoading(false);
         }
-      } catch {}
+      } catch (err) {
+        console.error('Failed to load cached news', err);
+      }
 
       setLoading(true);
 
@@ -47,7 +49,10 @@ export function useNews() {
             AsyncStorage.setItem('newsCache', JSON.stringify(items));
             setLoading(false);
           },
-          () => !cancelled && setLoading(false)
+          err => {
+            console.error('News subscription error', err);
+            !cancelled && setLoading(false);
+          }
         );
     };
 

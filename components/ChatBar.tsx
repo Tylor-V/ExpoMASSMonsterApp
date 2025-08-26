@@ -95,7 +95,9 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
           try {
             const ref = storage().refFromURL(s.url);
             ref.delete();
-          } catch {}
+          } catch (err) {
+            console.error('Failed to delete story media', err);
+          }
         }
         return null;
       });

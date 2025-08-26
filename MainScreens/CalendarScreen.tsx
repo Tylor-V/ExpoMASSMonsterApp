@@ -589,7 +589,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     carouselIndexPersist.current = carouselIndex;
     lastCarouselIndex = carouselIndex;
     setCalendarCarouselIndex(carouselIndex);
-    AsyncStorage.setItem(CAROUSEL_INDEX_KEY, String(carouselIndex)).catch(() => {});
+    AsyncStorage.setItem(CAROUSEL_INDEX_KEY, String(carouselIndex)).catch(err =>
+      console.error('Failed to save carousel index', err)
+    );
   }, [carouselIndex, carouselWidth]);
   const [carouselHeight, setCarouselHeight] = useState<number | undefined>();
 
@@ -715,7 +717,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
               shared = remoteShared;
               await AsyncStorage.setItem('sharedSplits', JSON.stringify(remoteShared));
             }
-          } catch {}
+          } catch (err) {
+            console.error('Failed to fetch shared splits', err);
+          }
         }
       } catch (e) {
         console.error('Failed to load profile data from Firestore', e);
@@ -729,7 +733,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
   useEffect(() => {
     AsyncStorage.setItem('showWorkout', showWorkout ? 'true' : 'false');
-    saveShowWorkout(showWorkout).catch(() => {});
+    saveShowWorkout(showWorkout).catch(err =>
+      console.error('Failed to save showWorkout', err)
+    );
   }, [showWorkout]);
 
   useEffect(() => {
@@ -740,17 +746,23 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     if (!customSplitLoaded) return;
     if (customSplit) {
       AsyncStorage.setItem(customSplitKey, JSON.stringify(customSplit));
-      saveCustomSplit(customSplit).catch(() => {});
+      saveCustomSplit(customSplit).catch(err =>
+        console.error('Failed to save custom split', err)
+      );
     } else {
       AsyncStorage.removeItem(customSplitKey);
-      saveCustomSplit(null).catch(() => {});
+      saveCustomSplit(null).catch(err =>
+        console.error('Failed to clear custom split', err)
+      );
     }
   }, [customSplit, customSplitLoaded]);
 
   useEffect(() => {
     if (!sharedLoaded) return;
     AsyncStorage.setItem('sharedSplits', JSON.stringify(sharedSplits));
-    saveSharedSplits(sharedSplits).catch(() => {});
+    saveSharedSplits(sharedSplits).catch(err =>
+      console.error('Failed to save shared splits', err)
+    );
   }, [sharedSplits, sharedLoaded]);
 
   useEffect(() => {
@@ -925,7 +937,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     } else {
       setShowWorkout(false);
     }
-    saveShowWorkout(v).catch(() => {});
+    saveShowWorkout(v).catch(err => console.error('Failed to save showWorkout', err));
   };
 
   const selectPlan = (p: WorkoutPlan) => {
@@ -947,8 +959,12 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const handleCustomPlanSaved = (newPlan: WorkoutPlan) => {
     setCustomSplit(newPlan);
     selectPlan(newPlan);
-    AsyncStorage.setItem(customSplitKey, JSON.stringify(newPlan)).catch(() => {});
-    saveCustomSplit(newPlan).catch(() => {});
+    AsyncStorage.setItem(customSplitKey, JSON.stringify(newPlan)).catch(err =>
+      console.error('Failed to save custom split', err)
+    );
+    saveCustomSplit(newPlan).catch(err =>
+      console.error('Failed to save custom split', err)
+    );
   };
 
   const openPlanDrawerFromButton = async () => {
@@ -963,7 +979,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         try {
           const remoteShared = await fetchSharedSplits();
           if (Array.isArray(remoteShared)) setSharedSplits(remoteShared);
-        } catch {}
+        } catch (err) {
+          console.error('Failed to fetch shared splits', err);
+        }
       }
     } catch (e) {
       console.error('Failed to fetch customSplit', e);
@@ -976,7 +994,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       setShowWorkout(true);
     }
     setShowPlanDrawer(false);
-    if (plan) saveWorkoutPlan(plan).catch(() => {});
+    if (plan)
+      saveWorkoutPlan(plan).catch(err =>
+        console.error('Failed to save workout plan', err)
+      );
   };
 
   const openEditCustomBuilder = () => {
@@ -1011,7 +1032,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     setSharedSplits(list => {
       const updated = list.filter(s => s.id !== id);
       AsyncStorage.setItem('sharedSplits', JSON.stringify(updated));
-      saveSharedSplits(updated).catch(() => {});
+      saveSharedSplits(updated).catch(err =>
+        console.error('Failed to save shared splits', err)
+      );
       return updated;
     });
     await removeSharedSplit(id);
@@ -1022,7 +1045,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         .collection('messages')
         .doc(target.msgId)
         .update({ saveCount: firestore.FieldValue.increment(-1) })
-        .catch(() => {});
+        .catch(err => console.error('Failed to update save count', err));
     }
     DeviceEventEmitter.emit('sharedSplitsUpdated');
   };
@@ -1348,8 +1371,12 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     const iso = start.toISOString().slice(0, 10);
     const updated = { ...plan, startDate: iso };
     setPlan(updated);
-    AsyncStorage.setItem('workoutPlan', JSON.stringify(updated)).catch(() => {});
-    saveWorkoutPlan(updated).catch(() => {});
+    AsyncStorage.setItem('workoutPlan', JSON.stringify(updated)).catch(err =>
+      console.error('Failed to save workout plan', err)
+    );
+    saveWorkoutPlan(updated).catch(err =>
+      console.error('Failed to save workout plan', err)
+    );
     setTick(t => t + 1);
     setDayMenuOpen(false);
   };

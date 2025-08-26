@@ -124,7 +124,9 @@ function StoreScreen({ navigation }) {
         variantId: item.variantId, // <-- add this
         variantTitle: item.variantTitle, // optional
       });
-    } catch {}
+    } catch (err) {
+      console.error('Failed to add item to cart', err);
+    }
   };
 
   const nextImg = () => {

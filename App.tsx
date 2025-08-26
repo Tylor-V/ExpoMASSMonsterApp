@@ -26,7 +26,9 @@ import WorkoutHistoryScreen from './screens/WorkoutHistoryScreen';
 import { preloadGlobals } from './utils/preloadTools';
 
 // Keep the native splash screen visible until the first render
-NativeSplashScreen.preventAutoHideAsync().catch(() => {});
+NativeSplashScreen.preventAutoHideAsync().catch(err =>
+  console.error('Failed to prevent auto hide', err)
+);
 
 const RootStack = createNativeStackNavigator();
 const AuthStack = createNativeStackNavigator();

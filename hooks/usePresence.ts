@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
-import { firestore } from '../firebase/firebase';
-import { auth } from '../firebase/firebase';
+import { auth, firestore } from '../firebase/firebase';
 
 export default function usePresence() {
   useEffect(() => {
@@ -11,10 +10,14 @@ export default function usePresence() {
     const userRef = firestore().collection('users').doc(uid);
 
     const setOnline = () =>
-      userRef.update({ presence: 'online', lastActive: Date.now() }).catch(() => {});
+      userRef
+        .update({ presence: 'online', lastActive: Date.now() })
+        .catch(err => console.error('Failed to set online presence', err));
 
     const setOffline = () =>
-      userRef.update({ presence: 'offline', lastActive: Date.now() }).catch(() => {});
+      userRef
+        .update({ presence: 'offline', lastActive: Date.now() })
+        .catch(err => console.error('Failed to set offline presence', err));
 
     setOnline();
 

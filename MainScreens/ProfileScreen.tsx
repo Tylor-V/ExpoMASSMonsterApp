@@ -112,7 +112,7 @@ const ProfileScreen = () => {
             : [],
         });
       })
-      .catch(() => {});
+      .catch(err => console.error('Failed to refresh user data', err));
   }, []);
   
   const [menuOpen, setMenuOpen] = useState(false);

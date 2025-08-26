@@ -22,7 +22,9 @@ const OnlineStatusScreen = () => {
     setEnabled(newVal);
     try {
       await updateProfileField('showOnlineStatus', newVal);
-    } catch {}
+    } catch (err) {
+      console.error('Failed to update online status', err);
+    }
   };
 
   return (

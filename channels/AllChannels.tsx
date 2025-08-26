@@ -296,7 +296,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
               }));
             }
           })
-          .catch(() => {});
+          .catch(err => console.error('Failed to fetch user data', err));
 
         userListenersRef.current[uid] = userRef.onSnapshot(doc => {
           if (doc.exists) {

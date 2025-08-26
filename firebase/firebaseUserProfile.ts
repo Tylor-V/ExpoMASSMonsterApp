@@ -1,6 +1,4 @@
-import { firestore } from './firebase';
-import { storage } from './firebase';
-import { auth } from './firebase';
+import { auth, firestore, storage } from './firebase';
 
 // Generates the full user profile doc for new users
 export const getDefaultUserProfile = ({
@@ -92,9 +90,14 @@ export async function uploadProfilePic(localUri: string): Promise<string> {
   if (!uid) throw new Error('No user logged in');
   const filename = `profilePics/${uid}/${Date.now()}.jpg`;
   const ref = storage().ref(filename);
-  await ref.putFile(localUri);
-  return await ref.getDownloadURL();
+  try {
+    await ref.putFile(localUri);
+    return await ref.getDownloadURL();
+  } catch (err) {
+    console.error('Failed to upload profile picture', err);
+    throw err;
   }
+}
 
 // Upload a new profile pic and remove any previous pics for this user
 export async function replaceProfilePic(localUri: string): Promise<string> {
@@ -104,7 +107,9 @@ export async function replaceProfilePic(localUri: string): Promise<string> {
   try {
     const list = await storage().ref(`profilePics/${uid}`).listAll();
     await Promise.all(list.items.map(i => i.delete()));
-  } catch {}
+  } catch (err) {
+    console.error('Failed to remove old profile pictures', err);
+  }
 
   return uploadProfilePic(localUri);
 }

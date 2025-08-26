@@ -103,7 +103,9 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
               try {
                 const ref = storage().refFromURL(s.url);
                 ref.delete();
-              } catch {}
+              } catch (err) {
+                console.error('Failed to delete expired story media', err);
+              }
             }
           } else {
             filtered.push({ id: doc.id, ...s });
@@ -136,7 +138,9 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
         try {
           const ref = storage().refFromURL(story.url);
           await ref.delete();
-        } catch {}
+        } catch (err) {
+          console.error('Failed to delete story media', err);
+        }
       }
       const remaining = stories.filter(s => s.id !== story.id);
       setStories(remaining);
@@ -145,7 +149,9 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
       } else if (idx >= remaining.length) {
         setIdx(remaining.length - 1);
       }
-    } catch {}
+    } catch (err) {
+      console.error('Failed to delete story', err);
+    }
   };
 
   if (!visible || !stories.length) return null;

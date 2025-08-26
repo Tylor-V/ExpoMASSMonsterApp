@@ -51,7 +51,10 @@ export default function RewardsScreen() {
               await redeemReward(reward);
               setConfetti(true);
               setTimeout(() => setConfetti(false), 3000);
-            } catch {}
+            } catch (err) {
+              console.error('Failed to redeem reward', err);
+              Alert.alert('Error', 'Could not redeem reward.');
+            }
           },
         },
       ],

@@ -49,7 +49,7 @@ function AddToCartControl({ item, style }: AddToCartControlProps) {
     ]).start();
   };
 
-  const handleAdd = (e?: any) => {
+  const handleAdd = async (e?: any) => {
     if (e?.stopPropagation) e.stopPropagation();
     bounce(rightScale);
     const newQty = localQty + 1;
@@ -58,11 +58,13 @@ function AddToCartControl({ item, style }: AddToCartControlProps) {
       prev.map(i => (i.id === sanitizedId ? { ...i, quantity: newQty } : i)),
     );
     try {
-      updateCartItem(item.id, newQty).catch(() => {});
-    } catch {}
+      await updateCartItem(item.id, newQty);
+    } catch (err) {
+      console.error('Failed to update cart item', err);
+    }
   };
 
-  const handleRemove = (e?: any) => {
+  const handleRemove = async (e?: any) => {
     if (e?.stopPropagation) e.stopPropagation();
     bounce(leftScale);
     const newQty = localQty - 1;
@@ -75,22 +77,28 @@ function AddToCartControl({ item, style }: AddToCartControlProps) {
     });
     if (newQty <= 0) {
       try {
-        removeCartItem(item.id).catch(() => {});
-      } catch {}
+        await removeCartItem(item.id);
+      } catch (err) {
+        console.error('Failed to remove cart item', err);
+      }
     } else {
       try {
-        updateCartItem(item.id, newQty).catch(() => {});
-      } catch {}
+        await updateCartItem(item.id, newQty);
+      } catch (err) {
+        console.error('Failed to update cart item', err);
+      }
     }
   };
 
-  const handleInitialAdd = (e?: any) => {
+  const handleInitialAdd = async (e?: any) => {
     if (e?.stopPropagation) e.stopPropagation();
     setLocalQty(1);
     setItems(prev => [...prev, { ...item, id: sanitizedId, quantity: 1 }]);
     try {
-      addToCart(item).catch(() => {});
-    } catch {}
+      await addToCart(item);
+    } catch (err) {
+      console.error('Failed to add item to cart', err);
+    }
   };
 
   const circleWidth = localQty >= 10 ? 40 : 30;

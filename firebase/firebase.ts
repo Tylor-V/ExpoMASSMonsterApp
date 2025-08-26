@@ -36,7 +36,7 @@ import {
   ref as stRef,
   uploadBytes,
 } from 'firebase/storage';
-import { Platform } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import env from '../utils/env';
 
 const firebaseConfig = {
@@ -63,6 +63,14 @@ if (Platform.OS === 'web') {
       });
 }
 const db = getFirestore(app);
+if (Platform.OS === 'web') {
+  // Enable offline persistence on supported browsers
+  import('firebase/firestore').then(({ enableIndexedDbPersistence }) => {
+    enableIndexedDbPersistence(db).catch((err) => {
+      console.warn('Persistence enablement failed', err);
+    });
+  });
+}
 const storageInstance = getStorage(app);
 
 // Analytics is only available on web; load lazily to remain Expo compatible
@@ -77,14 +85,36 @@ if (Platform.OS === 'web') {
   });
 }
 
+async function withRetry<T>(operation: () => Promise<T>, retries = 1): Promise<T> {
+  try {
+    return await operation();
+  } catch (error: any) {
+    if (retries > 0 && error?.code === 'unavailable') {
+      Alert.alert('Offline', 'Network unavailable, retrying...');
+      await new Promise((res) => setTimeout(res, 1000));
+      return withRetry(operation, retries - 1);
+    }
+    console.error('Firebase operation failed:', error);
+    Alert.alert('Error', 'Something went wrong. Please try again later.');
+    throw error;
+  }
+}
+
 function wrapDoc(path: string[]) {
   const ref = fsDoc(db, ...path);
   return {
-    get: () => getDoc(ref),
-    set: (data: any, options?: any) => setDoc(ref, data, options),
-    update: (data: any) => updateDoc(ref, data),
-    delete: () => deleteDoc(ref),
-    onSnapshot: (cb: any) => onSnapshot(ref, cb),
+    get: () => withRetry(() => getDoc(ref)),
+    set: (data: any, options?: any) => withRetry(() => setDoc(ref, data, options)),
+    update: (data: any) => withRetry(() => updateDoc(ref, data)),
+    delete: () => withRetry(() => deleteDoc(ref)),
+    onSnapshot: (cb: any) => {
+      try {
+        return onSnapshot(ref, cb);
+      } catch (error) {
+        console.error('Firestore onSnapshot error:', error);
+        throw error;
+      }
+    },
     collection: (name: string) => wrapCollection([...path, name]),
     ref,
   };
@@ -95,9 +125,16 @@ function wrapCollection(path: string[]) {
   let q: any = colRef;
   const api: any = {
     doc: (id: string) => wrapDoc([...path, id]),
-    add: (data: any) => addDoc(colRef, data),
-    get: () => getDocs(q),
-    onSnapshot: (cb: any) => onSnapshot(q, cb),
+    add: (data: any) => withRetry(() => addDoc(colRef, data)),
+    get: () => withRetry(() => getDocs(q)),
+    onSnapshot: (cb: any) => {
+      try {
+        return onSnapshot(q, cb);
+      } catch (error) {
+        console.error('Firestore onSnapshot error:', error);
+        throw error;
+      }
+    },
     where: (field: string, op: any, value: any) => {
       q = fsQuery(q, fsWhere(field, op, value));
       return api;
@@ -117,15 +154,16 @@ function wrapCollection(path: string[]) {
 function storageRef(path: string) {
   const ref = stRef(storageInstance, path);
   return {
-    put: (blob: Blob) => uploadBytes(ref, blob),
-    putFile: async (uri: string) => {
-      const res = await fetch(uri);
-      const blob = await res.blob();
-      return uploadBytes(ref, blob);
-    },
-    getDownloadURL: () => getDownloadURL(ref),
-    listAll: () => listAll(ref),
-    delete: () => deleteObject(ref),
+    put: (blob: Blob) => withRetry(() => uploadBytes(ref, blob)),
+    putFile: async (uri: string) =>
+      withRetry(async () => {
+        const res = await fetch(uri);
+        const blob = await res.blob();
+        return uploadBytes(ref, blob);
+      }),
+    getDownloadURL: () => withRetry(() => getDownloadURL(ref)),
+    listAll: () => withRetry(() => listAll(ref)),
+    delete: () => withRetry(() => deleteObject(ref)),
     child: (name: string) => storageRef(`${path}/${name}`),
     ref,
   };

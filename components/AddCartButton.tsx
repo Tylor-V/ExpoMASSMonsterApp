@@ -34,7 +34,9 @@ function AddCartButton({ item, style }: Props) {
     });
     try {
       addToCart({ ...item, quantity: 1 });
-    } catch {}
+    } catch (err) {
+      console.error('Failed to add item to cart', err);
+    }
   };
 
   return (

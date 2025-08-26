@@ -24,7 +24,9 @@ const DonateSupportScreen = () => {
     setPressDonate(true);
     setTimeout(() => {
       setPressDonate(false);
-      Linking.openURL('https://massmonster.life/donate').catch(() => {});
+      Linking.openURL('https://massmonster.life/donate').catch(err =>
+        console.error('Failed to open donate link', err)
+      );
     }, 120);
   };
 
@@ -35,12 +37,16 @@ const DonateSupportScreen = () => {
     setTimeout(() => {
       setPressInvite(false);
       const sms = Platform.OS === 'ios' ? 'sms:&body=' : 'sms:?body=';
-      Linking.openURL(`${sms}${encodeURIComponent(body)}`).catch(() => {});
+      Linking.openURL(`${sms}${encodeURIComponent(body)}`).catch(err =>
+        console.error('Failed to open SMS app', err)
+      );
     }, 120);
   };
 
   const openEmail = () => {
-    Linking.openURL('mailto:support@massmonster.com').catch(() => {});
+    Linking.openURL('mailto:support@massmonster.com').catch(err =>
+      console.error('Failed to open email app', err)
+    );
   };
 
   return (
