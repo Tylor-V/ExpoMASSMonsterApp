@@ -1,7 +1,7 @@
-import {Image} from 'react-native';
+import { Image } from 'react-native';
+import { BADGE_CONFIG, type BadgeKey } from '../badges/UnlockableBadges';
+import { colors, fonts, gradients, radius } from '../theme';
 import * as Anim from './animations';
-import {colors, fonts, gradients, radius} from '../theme';
-import {getBadgeAsset, BadgeKey} from '../badges/UnlockableBadges';
 
 export const palette = {...colors};
 export const fontFaces = {...fonts};
@@ -15,12 +15,12 @@ export const textPresets = {
   body: {fontFamily: fonts.regular, fontSize: 15, color: colors.textDark},
 };
 
-const PRELOAD_BADGES: BadgeKey[] = ['MINDSET', 'SCHOLAR', 'ACCOUNTABILITY'];
+const PRELOAD_BADGES: BadgeKey[] = Object.keys(BADGE_CONFIG) as BadgeKey[];
 export const badgeAssets: Record<BadgeKey, any> = {} as any;
 
 export function preloadGlobals() {
   PRELOAD_BADGES.forEach(key => {
-    const asset = getBadgeAsset(key);
+    const asset = BADGE_CONFIG[key];
     if (asset?.type === 'image') {
       const uri = Image.resolveAssetSource(asset.source).uri;
       Image.prefetch(uri);

@@ -1,12 +1,12 @@
 export type BadgeKey = 'MINDSET' | 'SCHOLAR' | 'ACCOUNTABILITY' | string;
 
-type BadgeAsset = {
+export type BadgeAsset = {
   source: any;
   type: 'image';
   isUnlocked: (u: any) => boolean;
 };
 
-const BADGE_CONFIG: Record<string, BadgeAsset> = {
+export const BADGE_CONFIG: Record<string, BadgeAsset> = {
   MINDSET: {
     source: require('../assets/mindset-badge.png'),
     type: 'image',

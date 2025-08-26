@@ -1,7 +1,7 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as NativeSplashScreen from 'expo-splash-screen';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import ForgotPasswordScreen from './LoginScreens/ForgotPasswordScreen';
 import LoginScreen from './LoginScreens/LoginScreen';
@@ -23,6 +23,7 @@ import SplashScreen from './screens/SplashScreen';
 import SplitEditorScreen from './screens/SplitEditorScreen';
 import TermsPrivacyScreen from './screens/TermsPrivacyScreen';
 import WorkoutHistoryScreen from './screens/WorkoutHistoryScreen';
+import { preloadGlobals } from './utils/preloadTools';
 
 // Keep the native splash screen visible until the first render
 NativeSplashScreen.preventAutoHideAsync().catch(() => {});
@@ -76,6 +77,10 @@ function AppStackScreen() {
 }
 
 export default function App() {
+  useEffect(() => {
+    preloadGlobals();
+  }, []);
+  
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppContextProvider>
