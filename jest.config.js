@@ -31,5 +31,6 @@ module.exports = {
     '^lucide-react-native$': '<rootDir>/__mocks__/lucide-react-native.js',
     '^@env$': '<rootDir>/__mocks__/env.js',
     '^@expo/vector-icons$': '<rootDir>/__mocks__/@expo/vector-icons.js',
+    '^expo-image$': '<rootDir>/__mocks__/expo-image.js',
   },
 };
