@@ -1,19 +1,19 @@
-import React, {useRef, useState} from 'react';
+import { useNavigation } from '@react-navigation/native';
+import React, { useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
   Alert,
   Animated,
   KeyboardAvoidingView,
   Platform,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
-import { auth } from '../firebase/firebase';
-import { colors, radius, fonts } from '../theme';
 import BackgroundWrapper from '../components/BackgroundWrapper';
 import ResponsivePressable from '../components/ResponsivePressable';
+import { auth } from '../firebase/firebase';
+import { colors, fonts, radius } from '../theme';
 
 const ForgotPasswordScreen: React.FC = () => {
   const [email, setEmail] = useState('');
