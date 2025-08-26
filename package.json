@@ -44,7 +44,7 @@
     "expo-web-browser": "~14.2.0",
     "firebase": "^12.1.0",
     "react": "19.0.0",
-    "react-native": "^0.74.5",
+    "react-native": "0.79.5",
     "react-native-confetti-cannon": "^1.5.2",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-modal-datetime-picker": "^18.0.0",
