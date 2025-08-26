@@ -1,32 +1,51 @@
-import { auth } from '../firebase/firebase';
-import { VideoView, useVideoPlayer } from 'expo-video';
+import { Asset } from 'expo-asset';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as NativeSplashScreen from 'expo-splash-screen';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import React, { useEffect, useRef } from 'react';
 import {
-    ActivityIndicator,
-    Animated,
-    Dimensions,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Animated,
+  Dimensions,
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { ANIM_SLOW, SPLASH_TIMEOUT } from '../utils/animations';
 import { useAppContext } from '../firebase/AppContext';
 import { fixUserLevel } from '../firebase/chatXPHelpers';
+import { auth } from '../firebase/firebase';
 import { checkAccountabilityStreak } from '../firebase/userProfileHelpers';
 import { colors } from '../theme';
+import { ANIM_SLOW, SPLASH_TIMEOUT } from '../utils/animations';
 
+const splashVideo = require('../assets/mass-splash.mp4');
+const splashPlaceholder = require('../assets/app-icon.png');
 const {width, height} = Dimensions.get('window');
 
 export default function SplashScreen({navigation}) {
   const [authChecked, setAuthChecked] = React.useState(false);
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const [videoReady, setVideoReady] = React.useState(false);
   const {appReady} = useAppContext();
 
   const hasNavigated = useRef(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const timeoutRef = useRef<NodeJS.Timeout>();
+
+  // Preload the splash video so the first frame shows immediately
+  useEffect(() => {
+    let mounted = true;
+    Asset.loadAsync(splashVideo)
+      .catch(() => null)
+      .finally(() => {
+        if (mounted) setVideoReady(true);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // When splash video ends or tap to skip, navigate accordingly
   const handleFinish = (force = false) => {
@@ -50,7 +69,7 @@ export default function SplashScreen({navigation}) {
     });
   };
 
-  const player = useVideoPlayer(require('../assets/mass-splash.mp4'), (p) => {
+  const player = useVideoPlayer(splashVideo, (p) => {
     p.loop = false;
     p.muted = false;
     p.volume = 1;
@@ -92,17 +111,24 @@ export default function SplashScreen({navigation}) {
   }, [authChecked, appReady, isLoggedIn]);
 
   useEffect(() => {
-    player.play();
-  }, [player]);
+    if (videoReady) {
+      player.play();
+      NativeSplashScreen.hideAsync().catch(() => null);
+    }
+  }, [player, videoReady]);
 
   return (
     <Animated.View style={[styles.container, {opacity: fadeAnim}]}>
-      <VideoView
-        player={player}
-        style={styles.video}
-        contentFit="cover"
-        nativeControls={false}
-      />
+      {videoReady ? (
+        <VideoView
+          player={player}
+          style={styles.video}
+          contentFit="cover"
+          nativeControls={false}
+        />
+      ) : (
+        <Image source={splashPlaceholder} style={styles.video} resizeMode="cover" />
+      )}
       <LinearGradient
         colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0)']}
         style={StyleSheet.absoluteFill}

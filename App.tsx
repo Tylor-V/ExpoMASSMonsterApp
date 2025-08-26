@@ -1,5 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import * as NativeSplashScreen from 'expo-splash-screen';
 import React, { useCallback, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import ForgotPasswordScreen from './LoginScreens/ForgotPasswordScreen';
@@ -22,6 +23,9 @@ import SplashScreen from './screens/SplashScreen';
 import SplitEditorScreen from './screens/SplitEditorScreen';
 import TermsPrivacyScreen from './screens/TermsPrivacyScreen';
 import WorkoutHistoryScreen from './screens/WorkoutHistoryScreen';
+
+// Keep the native splash screen visible until the first render
+NativeSplashScreen.preventAutoHideAsync().catch(() => {});
 
 const RootStack = createNativeStackNavigator();
 const AuthStack = createNativeStackNavigator();
