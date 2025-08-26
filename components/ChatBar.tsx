@@ -1,35 +1,33 @@
 import { FontAwesome, Ionicons as Icon } from '@expo/vector-icons';
-import { auth } from '../firebase/firebase';
-import { firestore } from '../firebase/firebase';
-import { storage } from '../firebase/firebase';
+import { Image } from 'expo-image';
 import { launchImageLibrary } from 'expo-image-picker';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Image } from 'expo-image';
 import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    AppState,
-    Dimensions,
-    InteractionManager,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  Animated,
+  AppState,
+  Dimensions,
+  InteractionManager,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ANIM_MEDIUM } from '../utils/animations';
 import HashIcon from '../assets/hashtag-icon.png';
 import InboxIcon from '../assets/inbox.png';
 import UsersIcon from '../assets/users.png';
+import { auth, firestore, storage } from '../firebase/firebase';
 import useAnyDMUnread from '../hooks/useAnyDMUnread';
 import useChannelUnread from '../hooks/useChannelUnread';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import ChatScreen from '../MainScreens/ChatScreen';
 import StoriesViewer from '../screens/StoriesViewer';
 import { colors, fonts } from '../theme';
+import { ANIM_MEDIUM } from '../utils/animations';
 import OnlineUsersSidebar from './OnlineUsersSidebar';
 import ProfileImage from './ProfileImage';
 import ScreenContainer from './ScreenContainer';
@@ -348,7 +346,7 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
           zIndex: 18,
         },
         headerTitle: {
-          fontSize: 20,
+          fontSize: 24,
           fontWeight: '700',
           marginLeft: 4,
           fontWeight: 'bold',
@@ -361,7 +359,7 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
           color: colors.background,
           marginLeft: 2,
         },
-        headerArrowBtn: { marginLeft: 3, alignSelf: 'center', padding: 2 },
+        headerArrowBtn: { marginLeft: 1, alignSelf: 'center', padding: 2 },
         unreadDot: {
           width: 8,
           height: 8,
@@ -426,7 +424,7 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
       borderBottomWidth: 1,
       borderColor: colors.gray,
       alignSelf: 'stretch',
-      paddingVertical: 2,
+      paddingVertical: 4,
       paddingHorizontal: 12,
       shadowColor: colors.shadow,
       shadowOpacity: 0.15,
@@ -436,7 +434,7 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
     },
     pinnedBarText: {
       color: colors.black,
-      fontSize: 12,
+      fontSize: 16,
       fontWeight: 'bold',
     },
     pinnedDropdown: {
