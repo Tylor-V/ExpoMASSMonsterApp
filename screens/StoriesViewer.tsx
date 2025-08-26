@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Video } from 'expo-video';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { Image } from 'expo-image';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -31,26 +31,17 @@ interface StoriesViewerProps {
 const { width, height } = Dimensions.get('window');
 
 function StoryVideo({ uri }: { uri: string }) {
-  const ref = useRef<Video>(null);
+  const player = useVideoPlayer({ uri }, player => {
+    player.loop = true;
+    player.play().catch(() => {});
+    player.addListener('statusChange', ({ status, error }) => {
+      if (status === 'error') {
+        console.error('Video playback error', error);
+      }
+    });
+  });
 
-  useEffect(() => {
-    try {
-      ref.current?.play();
-    } catch {
-      // ignore play errors
-    }
-  }, [uri]);
-
-  return (
-    <Video
-      ref={ref}
-      source={{ uri }}
-      style={styles.img}
-      contentFit="cover"
-      isLooping
-      onError={(e) => console.error('Video playback error', e)}
-    />
-  );
+  return <VideoView style={styles.img} contentFit="cover" player={player} />;
 }
 
 export default function StoriesViewer({ visible, userId, onClose, initialIndex = 0 }: StoriesViewerProps) {
