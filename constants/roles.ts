@@ -4,7 +4,7 @@ export const ROLE_COLORS = {
   admin: '#FF4545',
   moderator: colors.success,
   experienced: colors.purple,
-  coach: colors.accent,
+  coach: colors.yellow,
   member: colors.accent,
 };
 

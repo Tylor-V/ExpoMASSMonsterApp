@@ -1,4 +1,5 @@
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -18,7 +19,6 @@ import {
   UIManager,
   View,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ChannelWrapper from '../components/ChannelWrapper';
 import ProfileImage from '../components/ProfileImage';
@@ -1172,13 +1172,11 @@ export const chatStyles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
     marginRight: 4,
-    marginBottom: 0,
   },
   metaRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    marginBottom: 0,
   },
   footerRow: {
     flexDirection: 'row',
