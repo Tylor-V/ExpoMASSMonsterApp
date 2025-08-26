@@ -1,29 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
   Animated,
   Pressable,
-  TouchableOpacity,
-  TextInput,
   SectionList,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Image } from 'expo-image';
-import { Ionicons } from '@expo/vector-icons';
-import { firestore, auth } from '../firebase/firebase';
-import ProfileImage from './ProfileImage';
-import { useChatInputBarHeight } from '../MainScreens/ChatScreen';
-import UserPreviewModal from './UserPreviewModal';
-import { fonts, colors, radius } from '../theme';
+import { enforceSelectedBadges } from '../badges/UnlockableBadges';
 import { ROLE_COLORS, ROLE_TAGS } from '../constants/roles';
-import {
-  getBadgeImage,
-  getBadgeAsset,
-  enforceSelectedBadges,
-  type BadgeKey,
-} from '../badges/UnlockableBadges';
+import { auth, firestore } from '../firebase/firebase';
+import { useChatInputBarHeight } from '../MainScreens/ChatScreen';
+import { colors } from '../theme';
 import { ANIM_MEDIUM } from '../utils/animations';
+import BadgeImage from './BadgeImage';
+import ProfileImage from './ProfileImage';
+import UserPreviewModal from './UserPreviewModal';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(Pressable);
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -194,19 +190,13 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
             )}
             {badges.length > 0 && (
               <View style={styles.badgesRow}>
-                {badges.map((b, i) => {
-                  const asset = getBadgeAsset(b);
-                  if (asset?.type === 'image') {
-                    return (
-                      <Image
-                        key={i}
-                        source={asset.source}
-                        style={[styles.roleImage, styles.badgeHighlight]}
-                      />
-                    );
-                  }
-                  return null;
-                })}
+                {badges.map((b, i) => (
+                  <BadgeImage
+                    key={i}
+                    badgeKey={b}
+                    style={[styles.roleImage, styles.badgeHighlight]}
+                  />
+                ))}
               </View>
             )}
           </View>
