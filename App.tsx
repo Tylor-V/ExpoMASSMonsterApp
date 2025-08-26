@@ -1,3 +1,9 @@
+import {
+  Inter_400Regular,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  useFonts,
+} from '@expo-google-fonts/inter';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as NativeSplashScreen from 'expo-splash-screen';
@@ -79,9 +85,21 @@ function AppStackScreen() {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Inter: Inter_400Regular,
+    'Inter-SemiBold': Inter_600SemiBold,
+    'Inter-Bold': Inter_700Bold,
+  });
+
   useEffect(() => {
-    preloadGlobals();
-  }, []);
+    if (fontsLoaded) {
+      preloadGlobals();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null;
+  }
   
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
