@@ -1,9 +1,9 @@
 import React from 'react';
+import { Image } from 'expo-image';
 import {
   View,
   FlatList,
   StyleSheet,
-  Image,
   Pressable,
   Dimensions,
   Text,
@@ -36,8 +36,9 @@ export default function FeaturedCarousel({ products, onSelect, style, arrowSize 
       <Pressable style={styles.touch} onPress={() => onSelect(item)}>
         <Image
           source={{ uri: item.images?.[0]?.url }}
-          defaultSource={require('../assets/mass-logo.png')}
+          placeholder={require('../assets/mass-logo.png')}
           style={styles.image}
+          contentFit="cover"
         />
         <View style={styles.body}>
           <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">

@@ -1,4 +1,4 @@
-import { Image } from 'react-native';
+import { Asset } from 'expo-asset';
 import { BADGE_CONFIG, type BadgeKey } from '../badges/UnlockableBadges';
 import { colors, fonts, gradients, radius } from '../theme';
 import * as Anim from './animations';
@@ -22,8 +22,8 @@ export function preloadGlobals() {
   PRELOAD_BADGES.forEach(key => {
     const asset = BADGE_CONFIG[key];
     if (asset?.type === 'image') {
-      const uri = Image.resolveAssetSource(asset.source).uri;
-      Image.prefetch(uri);
+      const moduleAsset = Asset.fromModule(asset.source);
+      moduleAsset.downloadAsync();
       badgeAssets[key] = asset.source;
     }
   });

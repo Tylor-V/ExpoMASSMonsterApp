@@ -4,13 +4,13 @@ import { firestore } from '../firebase/firebase';
 import { storage } from '../firebase/firebase';
 import { launchImageLibrary } from 'expo-image-picker';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Image } from 'expo-image';
 import {
     ActivityIndicator,
     Alert,
     Animated,
     AppState,
     Dimensions,
-    Image,
     InteractionManager,
     Pressable,
     ScrollView,
@@ -553,7 +553,11 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
           style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 }}
           onPress={toggleMenu}
         >
-            <Image source={HashIcon} style={{ width: 18, height: 20, marginRight: -3, marginBottom: -2 }} />
+            <Image
+              source={HashIcon}
+              style={{ width: 18, height: 20, marginRight: -3, marginBottom: -2 }}
+              contentFit="contain"
+            />
             <Text style={headerStyles.headerTitle} numberOfLines={1}>
               {selectedChannel.name}
             </Text>
@@ -594,11 +598,11 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
           {anyUnread && <View style={headerStyles.unreadDot} />}
         </Pressable>
         <TouchableOpacity onPress={() => setOnlineUsersOpen(true)} style={{ marginHorizontal: 8 }}>
-          <Image source={UsersIcon} style={{ width: 32, height: 32 }} />
+          <Image source={UsersIcon} style={{ width: 32, height: 32 }} contentFit="contain" />
         </TouchableOpacity>
         <TouchableOpacity onPress={onOpenDMInbox} style={{ marginHorizontal: 8 }}>
           <View style={{ position: 'relative' }}>
-            <Image source={InboxIcon} style={{ width: 32, height: 32 }} />
+            <Image source={InboxIcon} style={{ width: 32, height: 32 }} contentFit="contain" />
             {dmUnread && <View style={headerStyles.dmUnreadDot} />}
           </View>
         </TouchableOpacity>

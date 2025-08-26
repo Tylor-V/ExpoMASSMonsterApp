@@ -1,10 +1,10 @@
 import { MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef } from 'react';
+import { Image } from 'expo-image';
 import {
     ActivityIndicator,
     Animated,
     Dimensions,
-    Image,
     Linking,
     Pressable,
     ScrollView,
@@ -186,6 +186,7 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
                 <Image
                   source={require('../assets/mass-logo.png')}
                   style={styles.emptyLogo}
+                  contentFit="contain"
                 />
                 <Text style={styles.emptyTitle}>Your cart is empty!</Text>
                 <Text style={styles.emptySub}>Browse the shop to add products.</Text>
@@ -392,7 +393,6 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     opacity: 0.6,
-    resizeMode: 'contain',
   },
   emptyTitle: {
     fontWeight: 'bold',

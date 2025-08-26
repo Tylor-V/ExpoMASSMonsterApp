@@ -3,9 +3,9 @@ import { auth } from '../firebase/firebase';
 import { firestore } from '../firebase/firebase';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import React from 'react';
+import { Image } from 'expo-image';
 import {
     Alert,
-    Image,
     Modal,
     ScrollView,
     StyleSheet,
@@ -153,6 +153,7 @@ function ProfileModal({
                           key={b + i}
                           source={asset.source}
                           style={styles.badgeIcon}
+                          contentFit="contain"
                         />
                       );
                     }

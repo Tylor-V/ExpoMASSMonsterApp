@@ -1,5 +1,6 @@
+import { Image } from 'expo-image';
 import React from 'react';
-import { Image, StyleProp, ImageStyle } from 'react-native';
+import { ImageStyle, StyleProp } from 'react-native';
 
 type ProfileImageProps = {
   uri?: string;
@@ -17,6 +18,7 @@ function ProfileImage({ uri, style, isCurrentUser }: ProfileImageProps) {
     <Image
       source={source}
       style={[{ borderRadius: 9999, overflow: 'hidden' }, style]}
+      contentFit="cover"
     />
   );
 }

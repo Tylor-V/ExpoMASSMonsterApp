@@ -1,29 +1,28 @@
 import { Ionicons as Icon } from '@expo/vector-icons';
-import { auth } from '../firebase/firebase';
-import { firestore } from '../firebase/firebase';
 import { useNavigation } from '@react-navigation/native';
+import { Image } from 'expo-image';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-    Alert,
-    Animated,
-    Image,
-    Linking,
-    Modal,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  Animated,
+  Linking,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
-import { ANIM_MODAL } from '../utils/animations';
 import {
-    enforceSelectedBadges,
-    getBadgeAsset,
-    getUnlockedBadges
+  enforceSelectedBadges,
+  getBadgeAsset,
+  getUnlockedBadges
 } from '../badges/UnlockableBadges';
 import { ROLE_COLORS, ROLE_TAGS } from '../constants/roles';
+import { auth, firestore } from '../firebase/firebase';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import { colors } from '../theme';
+import { ANIM_MODAL } from '../utils/animations';
 import { getChatLevelColor } from '../utils/chatLevel';
 import ProfileImage from './ProfileImage';
 
@@ -258,6 +257,7 @@ export default function UserPreviewModal({ visible, userId, onClose }) {
                           key={b + i}
                           source={asset.source}
                           style={[{ width: 16, height: 16, aspectRatio: 1, marginRight: 4 }, styles.badgeHighlight]}
+                          contentFit="contain"
                         />
                       );
                     }
