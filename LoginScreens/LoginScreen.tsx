@@ -1,28 +1,28 @@
-import React, {useRef, useState, useEffect} from 'react';
+import { StackActions, useNavigation } from '@react-navigation/native';
+import { Image } from 'expo-image';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
+  ActivityIndicator,
   Alert,
   Animated,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
-import { Image } from 'expo-image';
-import { auth } from '../firebase/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import {createOrUpdateUserProfile} from '../firebase/firebaseUserProfile';
-import {clearUserCache} from '../utils/clearUserCache';
-import {fixUserLevel} from '../firebase/chatXPHelpers';
-import {checkAccountabilityStreak} from '../firebase/userProfileHelpers';
-import {useNavigation, StackActions} from '@react-navigation/native';
-import { fonts, colors, radius } from '../theme';
 import BackgroundWrapper from '../components/BackgroundWrapper';
 import ResponsivePressable from '../components/ResponsivePressable';
-import {useInitializeUser} from '../hooks/useInitializeUser';
-import {useNetworkStatus} from '../hooks/useNetworkStatus';
+import { fixUserLevel } from '../firebase/chatXPHelpers';
+import { auth } from '../firebase/firebase';
+import { createOrUpdateUserProfile } from '../firebase/firebaseUserProfile';
+import { checkAccountabilityStreak } from '../firebase/userProfileHelpers';
+import { useInitializeUser } from '../hooks/useInitializeUser';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
+import { colors, fonts, radius } from '../theme';
+import { clearUserCache } from '../utils/clearUserCache';
 
 const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -133,7 +133,11 @@ const LoginScreen: React.FC = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <View style={styles.container}>
-        <Image source={require('../assets/mass-logo.png')} style={styles.logo} />
+        <Image
+          source={require('../assets/mass-logo.png')}
+          style={styles.logo}
+          contentFit="contain"
+        />
       <Text style={styles.header} numberOfLines={1}>LET'S DO IT</Text>
       <Animated.View
         style={[
@@ -289,7 +293,6 @@ const styles = StyleSheet.create({
     width: 250,
     height: 159,
     marginBottom: -25,
-    resizeMode: 'contain',
   },
 });
 
