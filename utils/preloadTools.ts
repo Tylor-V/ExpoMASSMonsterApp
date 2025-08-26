@@ -1,4 +1,5 @@
-import { Asset } from 'expo-asset';
+import { Ionicons } from '@expo/vector-icons';
+import * as Font from 'expo-font';
 import { BADGE_CONFIG, type BadgeKey } from '../badges/UnlockableBadges';
 import { colors, fonts, gradients, radius } from '../theme';
 import * as Anim from './animations';
@@ -18,13 +19,15 @@ export const textPresets = {
 const PRELOAD_BADGES: BadgeKey[] = Object.keys(BADGE_CONFIG) as BadgeKey[];
 export const badgeAssets: Record<BadgeKey, any> = {} as any;
 
-export function preloadGlobals() {
-  PRELOAD_BADGES.forEach(key => {
+export async function preloadGlobals() {
+  const badgePromises = PRELOAD_BADGES.map(async key => {
     const asset = BADGE_CONFIG[key];
     if (asset?.type === 'image') {
       const moduleAsset = Asset.fromModule(asset.source);
-      moduleAsset.downloadAsync();
       badgeAssets[key] = asset.source;
+      await moduleAsset.downloadAsync();
     }
   });
+
+  await Promise.all([Font.loadAsync(Ionicons.font), ...badgePromises]);
 }

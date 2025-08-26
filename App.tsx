@@ -93,7 +93,10 @@ export default function App() {
 
   useEffect(() => {
     if (fontsLoaded) {
-      preloadGlobals();
+      (async () => {
+        await preloadGlobals();
+        await NativeSplashScreen.hideAsync();
+      })();
     }
   }, [fontsLoaded]);
 
