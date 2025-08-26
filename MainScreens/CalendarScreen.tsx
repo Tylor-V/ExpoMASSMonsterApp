@@ -1396,6 +1396,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         <Image
           source={require('../assets/mass-logo.png')}
           style={styles.massHeaderLogo}
+          contentFit="contain"
         />
         <Text style={styles.massHeaderTxt}>EVENTS</Text>
       </View>
@@ -1521,6 +1522,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         <Image
           source={require('../assets/mass-logo.png')}
           style={styles.massHeaderLogo}
+          contentFit="contain"
         />
         <Text style={styles.massHeaderTxt}>NEWS</Text>
         {user?.role === 'moderator' && (
@@ -1596,6 +1598,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         <Image
           source={require('../assets/comps-logo.png')}
           style={styles.massHeaderLogo}
+          contentFit="contain"
         />
       </View>
       {fakeComps.map((c, idx) => (
@@ -2444,7 +2447,6 @@ const styles = StyleSheet.create({
     right: 30,
     top: 24,
     opacity: 0.14,
-    resizeMode: 'contain',
   },
   massHeaderLogo: {
     width: 100,
@@ -2452,7 +2454,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
     marginTop: -20,
     marginBottom: -20,
-    resizeMode: 'contain',
   },
   massHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   massHeaderTxt: {
