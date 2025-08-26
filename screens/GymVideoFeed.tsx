@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { VideoView, useVideoPlayer } from 'expo-video';
+import { Video } from 'expo-av';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,20 +10,26 @@ import { auth, firestore, storage } from '../firebase/firebase';
 const { height, width } = Dimensions.get('window');
 
 function FeedVideo({ uri, isActive }: { uri: string; isActive: boolean }) {
-  const player = useVideoPlayer(uri, (p) => {
-    p.loop = true;
-    p.addListener('error', (e) => console.error('Video playback error', e));
-  });
+  const ref = useRef<Video>(null);
 
   useEffect(() => {
     if (isActive) {
-      player.play();
+      ref.current?.playAsync().catch(() => null);
     } else {
-      player.pause();
+      ref.current?.pauseAsync().catch(() => null);
     }
   }, [isActive]);
 
-  return <VideoView player={player} style={styles.video} contentFit="cover" />;
+  return (
+    <Video
+      ref={ref}
+      source={{ uri }}
+      style={styles.video}
+      resizeMode="cover"
+      isLooping
+      onError={(e) => console.error('Video playback error', e)}
+    />
+  );
 }
 
 export default function GymVideoFeed({ navigation }) {

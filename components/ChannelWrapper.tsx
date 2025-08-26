@@ -1,7 +1,8 @@
+import { ImageBackground } from 'expo-image'
 import React from 'react'
-import {ImageBackground, StyleSheet, ViewStyle, Text} from 'react-native'
-import {useSafeAreaInsets} from 'react-native-safe-area-context'
-import {TAB_BAR_HEIGHT} from './SwipeableTabs'
+import { StyleSheet, Text, ViewStyle } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { TAB_BAR_HEIGHT } from './SwipeableTabs'
 
 type ChannelWrapperProps = {
   children: React.ReactNode
@@ -27,7 +28,7 @@ export default function ChannelWrapper({children, style, padBottom = true, padTo
         padTop && { paddingTop: insets.top},
         padBottom && {paddingBottom: TAB_BAR_HEIGHT},
       ]}
-      resizeMode="cover"
+      contentFit="cover"
     >
       {renderChildren}
     </ImageBackground>

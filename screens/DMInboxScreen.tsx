@@ -192,6 +192,7 @@ const DMsInboxScreen = ({ navigation }) => {
           <Image
             source={require('../assets/mass-inbox.png')}
             style={styles.headerImage}
+            contentFit="contain"
           />
         </View>
         <View style={styles.searchBar}>

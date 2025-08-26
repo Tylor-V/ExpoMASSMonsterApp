@@ -18,7 +18,7 @@ const MediaBlock = ({image, videoUrl, anatomyLabel, showVideo, onPressImage}: Pr
     {image && (
       <TouchableOpacity onPress={onPressImage}>
         <View style={styles.heroContainer}>
-          <Image source={image} style={styles.heroImg} resizeMode="contain" />
+          <Image source={image} style={styles.heroImg} contentFit="contain" />
           {anatomyLabel && <Text style={styles.anatomyLabel}>{anatomyLabel}</Text>}
         </View>
       </TouchableOpacity>

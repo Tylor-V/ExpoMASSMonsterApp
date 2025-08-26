@@ -1,11 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { VideoView, useVideoPlayer } from 'expo-video';
+import { Video } from 'expo-av';
+import { Image } from 'expo-image';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Dimensions,
   Modal,
-  PanResponder,
   StyleSheet,
   TouchableOpacity,
   View,
@@ -32,16 +32,22 @@ interface StoriesViewerProps {
 const { width, height } = Dimensions.get('window');
 
 function StoryVideo({ uri }: { uri: string }) {
-  const player = useVideoPlayer(uri, (p) => {
-    p.loop = true;
-    p.addListener('error', (e) => console.error('Video playback error', e));
-  });
+  const ref = useRef<Video>(null);
 
   useEffect(() => {
-    player.play();
-  }, [player]);
+    ref.current?.playAsync().catch(() => null);
+  }, [uri]);
 
-  return <VideoView player={player} style={styles.img} contentFit="cover" nativeControls />;
+  return (
+    <Video
+      ref={ref}
+      source={{ uri }}
+      style={styles.img}
+      resizeMode="cover"
+      isLooping
+      onError={(e) => console.error('Video playback error', e)}
+    />
+  );
 }
 
 export default function StoriesViewer({ visible, userId, onClose, initialIndex = 0 }: StoriesViewerProps) {
@@ -50,21 +56,6 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
   const currentUserId = auth().currentUser?.uid;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) =>
-        Math.abs(g.dx) > 10 || Math.abs(g.dy) > 10,
-      onPanResponderRelease: (_, g) => {
-        if (g.dy > 100) {
-          onClose();
-        } else if (g.dx < -50) {
-          handleNext();
-        } else if (g.dx > 50) {
-          handlePrev();
-        }
-      },
-    }),
-  ).current;
 
   useEffect(() => {
     if (visible) {
@@ -164,14 +155,11 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
       transparent
       onRequestClose={onClose}
     >
-      <Animated.View
-        style={[styles.overlay, { opacity: fadeAnim }]}
-        {...panResponder.panHandlers}
-      >
+      <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
         {story.type === 'video' ? (
           <StoryVideo uri={story.url} />
         ) : (
-          <Image source={{ uri: story.url }} style={styles.img} resizeMode="cover" />
+          <Image source={{ uri: story.url }} style={styles.img} contentFit="cover" />
         )}
         <View style={[styles.progressRow, { top: insets.top + 20 }]} pointerEvents="none">
           {stories.map((_, i) => (
@@ -188,6 +176,20 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
           onPress={handleNext}
           activeOpacity={1}
         />
+        <TouchableOpacity
+          style={[styles.arrowBtn, styles.leftArrow]}
+          onPress={handlePrev}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="chevron-back" size={32} color="#fff" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.arrowBtn, styles.rightArrow]}
+          onPress={handleNext}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="chevron-forward" size={32} color="#fff" />
+        </TouchableOpacity>
         {currentUserId === userId && (
           <TouchableOpacity
             style={[styles.deleteBtn, { top: insets.top + 40 }]}
@@ -230,6 +232,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: width / 2,
   },
+  arrowBtn: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -20,
+    padding: 6,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 20,
+  },
+  leftArrow: { left: 12 },
+  rightArrow: { right: 12 },
   deleteBtn: {
     position: 'absolute',
     top: 40,

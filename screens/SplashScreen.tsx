@@ -1,7 +1,8 @@
 import { Asset } from 'expo-asset';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as NativeSplashScreen from 'expo-splash-screen';
-import { VideoView, useVideoPlayer } from 'expo-video';
+import { Video } from 'expo-av';
+import { Image } from 'expo-image';
 import React, { useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
@@ -33,6 +34,7 @@ export default function SplashScreen({navigation}) {
   const hasNavigated = useRef(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const timeoutRef = useRef<NodeJS.Timeout>();
+  const videoRef = useRef<Video>(null);
 
   // Preload the splash video so the first frame shows immediately
   useEffect(() => {
@@ -68,14 +70,13 @@ export default function SplashScreen({navigation}) {
       }
     });
   };
-
-  const player = useVideoPlayer(splashVideo, (p) => {
-    p.loop = false;
-    p.muted = false;
-    p.volume = 1;
-    p.addListener('playToEnd', handleFinish);
-    p.addListener('error', () => handleFinish(true));
-  });
+  const onPlaybackStatusUpdate = (status: any) => {
+    if (!status.isLoaded) {
+      if (status.error) handleFinish(true);
+      return;
+    }
+    if (status.didJustFinish) handleFinish();
+  };
 
   useEffect(() => {
     const unsub = auth().onAuthStateChanged(async user => {
@@ -112,22 +113,25 @@ export default function SplashScreen({navigation}) {
 
   useEffect(() => {
     if (videoReady) {
-      player.play();
+      videoRef.current?.playAsync().catch(() => handleFinish(true));
       NativeSplashScreen.hideAsync().catch(() => null);
     }
-  }, [player, videoReady]);
+  }, [videoReady]);
 
   return (
     <Animated.View style={[styles.container, {opacity: fadeAnim}]}>
       {videoReady ? (
-        <VideoView
-          player={player}
+        <Video
+          ref={videoRef}
+          source={splashVideo}
           style={styles.video}
-          contentFit="cover"
-          nativeControls={false}
+          resizeMode="cover"
+          isLooping={false}
+          shouldPlay={false}
+          onPlaybackStatusUpdate={onPlaybackStatusUpdate}
         />
       ) : (
-        <Image source={splashPlaceholder} style={styles.video} resizeMode="cover" />
+        <Image source={splashPlaceholder} style={styles.video} contentFit="cover" />
       )}
       <LinearGradient
         colors={['rgba(0,0,0,0.6)', 'rgba(0,0,0,0)']}
