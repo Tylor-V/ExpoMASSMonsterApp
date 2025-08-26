@@ -22,6 +22,7 @@ import { getTodayKey } from '../firebase/dateHelpers';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import { colors, fonts } from '../theme';
 import ProfileImage from '../components/ProfileImage';
+import BadgeImage from '../components/BadgeImage';
 import { ANIM_INSTANT, ANIM_MEDIUM } from '../utils/animations';
 import { levelThresholds } from '../firebase/chatXPHelpers';
 import * as ImagePicker from 'expo-image-picker';
@@ -33,7 +34,6 @@ saveSelectedBadges,
 import {
   getUnlockedBadges,
   getBadgeImage,
-  getBadgeAsset,
   enforceSelectedBadges,
   isValidBadge,
   MAX_DISPLAY_BADGES,
@@ -500,7 +500,6 @@ const ProfileScreen = () => {
               >
                 {displayBadges.map((b, i) => {
                   const selected = selectedBadges.includes(b);
-                  const asset = getBadgeAsset(b);
                   return (
                     <TouchableOpacity
                       key={b + i}
@@ -524,13 +523,13 @@ const ProfileScreen = () => {
                           selected && styles.badgeSelected,
                         ]}
                       >
-                        {asset?.type === 'image' ? (
-                          <Image source={asset.source} style={styles.badgeImage} />
-                        ) : /^Level /.test(b) ? (
+                        {/^Level /.test(b) ? (
                           <View style={styles.badge}>
                             <Text style={styles.badgeText}>{b.replace(/^Level /, 'Lv')}</Text>
                           </View>
-                        ) : null}
+                        ) : (
+                          <BadgeImage badgeKey={b} style={styles.badgeImage} />
+                        )}
                       </View>
                     </TouchableOpacity>
                   );
