@@ -192,16 +192,12 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
 const storyStyles = StyleSheet.create({
   bar: {
     backgroundColor: colors.white,
-    marginTop: -9,
     zIndex: 19,
-    height: 80,
     borderBottomColor: colors.grayLight,
     borderBottomWidth: 1,
-    marginBottom: 6,
   },
   storyCircle: {
     alignItems: 'center',
-    paddingTop: 10,
     marginHorizontal: 7,
     width: 62,
   },
@@ -216,12 +212,13 @@ const storyStyles = StyleSheet.create({
   },
   avatarImg: { width: 46, height: 46, borderRadius: 23 },
   label: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.textDark,
     fontWeight: 'bold',
     textAlign: 'center',
     marginTop: 2,
-    width: 54,
+    marginBottom: 8,
+    width: 66,
   },
 });
 
