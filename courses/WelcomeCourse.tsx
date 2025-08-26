@@ -179,7 +179,11 @@ export default function WelcomeCourse({onBack}) {
           style={styles.fullScreenPage}
           activeOpacity={1}
           onPress={handlePress}>
-          <Image source={p.fullImage} style={styles.fullPageImg} resizeMode="cover" />
+          <Image
+            source={p.fullImage}
+            style={styles.fullPageImg}
+            contentFit="cover"
+          />
         </TouchableOpacity>
       );
     }
@@ -189,7 +193,11 @@ export default function WelcomeCourse({onBack}) {
         style={[styles.page, {paddingTop: topPad}]}
         contentContainerStyle={{alignItems: 'center', justifyContent: 'flex-start', paddingBottom: 48}}>
         {p.image ? (
-          <Image source={p.image} style={styles.heroImg} resizeMode="cover" />
+          <Image
+            source={p.image}
+            style={styles.heroImg}
+            contentFit="cover"
+          />
         ) : (
           <Ionicons
             name={p.icon}

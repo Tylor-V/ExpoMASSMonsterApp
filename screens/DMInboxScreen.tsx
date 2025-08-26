@@ -291,7 +291,6 @@ const styles = StyleSheet.create({
   headerImage: {
     width: 150,
     height: 85,
-    resizeMode: 'contain',
   },
   searchBar: {
     backgroundColor: colors.white,
