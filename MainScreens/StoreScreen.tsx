@@ -262,7 +262,7 @@ function StoreScreen({ navigation }) {
           )}
           <Image
             source={{ uri: item.images?.[0]?.url }}
-            defaultSource={require('../assets/mass-logo.png')}
+            placeholder={require('../assets/mass-logo.png')}
             style={styles.cardImg}
           />
           <View style={styles.cardBody}>
