@@ -1,7 +1,6 @@
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useCallback, useEffect, useRef, useState, useMemo, memo } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
   Animated,
@@ -20,6 +19,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import BadgeImage from '../components/BadgeImage';
 import ChannelWrapper from '../components/ChannelWrapper';
 import ProfileImage from '../components/ProfileImage';
 import UserPreviewModal from '../components/UserPreviewModal';
@@ -39,11 +39,7 @@ import { dedupeById } from '../utils/dedupeById';
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
-import {
-  enforceSelectedBadges,
-  getBadgeAsset,
-  MAX_DISPLAY_BADGES
-} from '../badges/UnlockableBadges';
+import { enforceSelectedBadges, MAX_DISPLAY_BADGES } from '../badges/UnlockableBadges';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -809,22 +805,16 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                 </TouchableOpacity>
                 {badges && badges.length > 0 && (
                   <View style={{ flexDirection: 'row', marginLeft: 5 }}>
-                    {badges.slice(0, MAX_DISPLAY_BADGES).map((b, i) => {
-                      const asset = getBadgeAsset(b);
-                      if (asset?.type === 'image') {
-                        return (
-                          <Image
-                            key={b + i}
-                            source={asset.source}
-                            style={[
-                              { width: 19, height: 19, marginLeft: i ? 4 : 0 },
-                              chatStyles.badgeHighlight,
-                            ]}
-                          />
-                        );
-                      }
-                      return null;
-                    })}
+                    {badges.slice(0, MAX_DISPLAY_BADGES).map((b, i) => (
+                      <BadgeImage
+                        key={b}
+                        badgeKey={b}
+                        style={[
+                          { width: 19, height: 19, marginLeft: i ? 4 : 0 },
+                          chatStyles.badgeHighlight,
+                        ]}
+                      />
+                    ))}
                   </View>
                 )}
               </View>
