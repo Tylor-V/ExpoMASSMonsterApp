@@ -1,14 +1,13 @@
 import { Ionicons as Icon } from '@expo/vector-icons';
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
-  Pressable,
   FlatList,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Pressable,
   StyleSheet,
-  Text,
   useWindowDimensions,
   View,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme';
@@ -140,16 +139,6 @@ export default function SwipeableTabs({
                     { backgroundColor: colors.accent, opacity: i === tabIndex ? 1 : 0 },
                   ]}
                 />
-                {i === tabIndex && (
-                  <Text
-                    testID={`tab-label-${route.key}`}
-                    style={[styles.tabLabel, { color: activeTintColor }]}
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {route.title}
-                  </Text>
-                )}
               </Pressable>
             ))}
           </View>
@@ -186,13 +175,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     minHeight: 48,
     minWidth: 48,
-  },
-  tabLabel: {
-    fontSize: 11,
-    marginTop: 0,
-    fontWeight: '600',
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
   },
   indicator: {
     width: 6,

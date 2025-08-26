@@ -1,7 +1,7 @@
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo, memo } from 'react';
 import {
   Alert,
   Animated,
@@ -659,7 +659,8 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   const hasUnreadMarker = showNewMarker && firstUnreadIndex !== -1 && firstUnreadIndex < messages.length - 1;
 
   // --- UI COLOR SCHEME ---
-  const ChatMessage: React.FC<{ item: any; index: number }> = ({ item, index }) => {
+  const ChatMessage = useCallback(
+    ({ item, index }: { item: any; index: number }) => {
     const user = userMap[item.userId];
     let displayName = 'Unknown';
     let isModerator = false;
@@ -984,13 +985,36 @@ const AllChannels: React.FC<ChatScreenProps> = ({
           </Animated.View>
         )}
         </View>
-      </>
-    );
-  };
+        </>
+      );
+    }, [
+      userMap,
+      currentUserId,
+      hasUnreadMarker,
+      firstUnreadIndex,
+      renderCustomMessage,
+      messages.length,
+      handleAddReaction,
+      setReactionTargetId,
+      reactionOpacityMap,
+      actionTargetId,
+      wiggleAnim,
+      currentUserRole,
+      pinMessage,
+      confirmDelete,
+      stopActions,
+      handleUserPreview,
+      handleLongPress,
+    ]);
 
-  const renderMessage = ({ item, index }: { item: any; index: number }) => (
-    <ChatMessage item={item} index={index} />
-  );
+    const MemoizedChatMessage = useMemo(() => memo(ChatMessage), [ChatMessage]);
+
+    const renderMessage = useCallback(
+      ({ item, index }: { item: any; index: number }) => (
+        <MemoizedChatMessage item={item} index={index} />
+      ),
+      [MemoizedChatMessage],
+    );
 
   return (
     <ChannelWrapper padTop={false} padBottom style={{ flex: 1 }}>
