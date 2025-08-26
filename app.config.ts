@@ -2,7 +2,11 @@ import { ConfigContext, ExpoConfig } from 'expo/config';
 
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
-  plugins: [...(config.plugins || []), 'expo-video', 'expo-audio'],
+  plugins: [
+    ...(config.plugins || []),
+    'expo-video/app.plugin.js',
+    'expo-audio/app.plugin.js',
+  ],
   extra: {
     ...(config.extra ?? {}),
     // Support both prefixed (EXPO_PUBLIC_) and legacy env variable names
