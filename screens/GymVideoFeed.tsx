@@ -2,43 +2,45 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Video } from 'expo-video';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, firestore, storage } from '../firebase/firebase';
 
 const { height, width } = Dimensions.get('window');
 
-function FeedVideo({ uri, isActive }: { uri: string; isActive: boolean }) {
-  const ref = useRef<Video>(null);
+const FeedVideo = React.memo(
+  ({ uri, isActive }: { uri: string; isActive: boolean }) => {
+    const ref = useRef<Video>(null);
 
-  useEffect(() => {
-    if (isActive) {
-      try {
-        ref.current?.play();
-      } catch {
-        // ignore play errors
+    useEffect(() => {
+      if (isActive) {
+        try {
+          ref.current?.play();
+        } catch {
+          // ignore play errors
+        }
+      } else {
+        try {
+          ref.current?.pause();
+        } catch {
+          // ignore pause errors
+        }
       }
-    } else {
-      try {
-        ref.current?.pause();
-      } catch {
-        // ignore pause errors
-      }
-    }
-  }, [isActive]);
+    }, [isActive]);
 
-  return (
-    <Video
-      ref={ref}
-      source={{ uri }}
-      style={styles.video}
-      contentFit="cover"
-      isLooping
-      onError={(e) => console.error('Video playback error', e)}
-    />
-  );
-}
+    return (
+      <Video
+        ref={ref}
+        source={{ uri }}
+        style={styles.video}
+        contentFit="cover"
+        isLooping
+        onError={(e) => console.error('Video playback error', e)}
+      />
+    );
+  }
+);
 
 export default function GymVideoFeed({ navigation }) {
   const [videos, setVideos] = useState([]);
@@ -122,42 +124,97 @@ export default function GymVideoFeed({ navigation }) {
     setUploading(false);
   };
 
-  const handleReact = async (id) => {
-    const docRef = firestore().collection('videos').doc('gym-feed').collection('gym-feed').doc(id);
+  const handleReact = useCallback(async (id: string) => {
+    const docRef = firestore()
+      .collection('videos')
+      .doc('gym-feed')
+      .collection('gym-feed')
+      .doc(id);
     const doc = await docRef.get();
     const data = doc.data();
     const reactions = data?.reactions ?? [];
     if (reactions.find(r => r.userId === currentUserId && r.emoji === '💪')) return;
     await docRef.update({ reactions: [...reactions, { emoji: '💪', userId: currentUserId }] });
-  };
+  }, [currentUserId]);
 
-  const handleHide = async (id) => {
-    const docRef = firestore().collection('videos').doc('gym-feed').collection('gym-feed').doc(id);
+  const handleHide = useCallback(async (id: string) => {
+    const docRef = firestore()
+      .collection('videos')
+      .doc('gym-feed')
+      .collection('gym-feed')
+      .doc(id);
     const doc = await docRef.get();
     const hiddenBy = doc.data()?.hiddenBy ?? [];
     await docRef.update({ hiddenBy: [...hiddenBy, currentUserId] });
-  };
+  }, [currentUserId]);
 
-  const handleReport = async (id) => {
-    await firestore().collection('reports').add({
-      type: 'video',
-      reportedBy: currentUserId,
-      targetId: id,
-      reason: 'Inappropriate video',
-      timestamp: Date.now(),
-    });
+  const handleReport = useCallback(async (id: string) => {
+    await firestore()
+      .collection('reports')
+      .add({
+        type: 'video',
+        reportedBy: currentUserId,
+        targetId: id,
+        reason: 'Inappropriate video',
+        timestamp: Date.now(),
+      });
     Alert.alert('Reported', 'Video reported to admins.');
-  };
+  }, [currentUserId]);
 
-  const handleDelete = async (id, userId) => {
-    if (userId !== currentUserId && currentUserRole !== 'moderator') return;
-    Alert.alert('Delete', 'Delete this video?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        await firestore().collection('videos').doc('gym-feed').collection('gym-feed').doc(id).delete();
-      } }
-    ]);
-  };
+  const handleDelete = useCallback(
+    async (id: string, userId: string) => {
+      if (userId !== currentUserId && currentUserRole !== 'moderator') return;
+      Alert.alert('Delete', 'Delete this video?', [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await firestore()
+              .collection('videos')
+              .doc('gym-feed')
+              .collection('gym-feed')
+              .doc(id)
+              .delete();
+          },
+        },
+      ]);
+    },
+    [currentUserId, currentUserRole]
+  );
+
+  const renderItem = useCallback(
+    ({ item, index }: { item: any; index: number }) => (
+      <View style={styles.videoPage}>
+        <FeedVideo uri={item.url} isActive={activeIndex === index} />
+        <LinearGradient
+          colors={["transparent", "rgba(13,13,13,0.85)"]}
+          style={styles.bottomGradient}
+        />
+        <View style={styles.overlay}>
+          <TouchableOpacity style={styles.reactBtn} onPress={() => handleReact(item.id)}>
+            <Text style={styles.emoji}>💪</Text>
+            <Text style={styles.reactCount}>{item.reactions?.length || 0}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => handleHide(item.id)}>
+            <Ionicons name="eye-off-outline" size={28} color="#232323" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => handleReport(item.id)}>
+            <Ionicons name="alert-circle-outline" size={28} color="#232323" />
+          </TouchableOpacity>
+          {(item.userId === currentUserId || currentUserRole === 'moderator') && (
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => handleDelete(item.id, item.userId)}
+            >
+              <Ionicons name="trash-outline" size={27} color="#FF4545" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    ),
+    [activeIndex, currentUserId, currentUserRole, handleReact, handleHide, handleReport, handleDelete]
+  );
 
   const handleViewableItemsChanged = useRef(({ viewableItems }) => {
     if (viewableItems.length) setActiveIndex(viewableItems[0].index || 0);
@@ -179,39 +236,16 @@ export default function GymVideoFeed({ navigation }) {
     </View>
   );
 
+  const keyExtractor = useCallback((item: any) => item.id, []);
+
   return (
     <View style={styles.container}>
       <FlatList
         ref={flatListRef}
         data={videos}
         pagingEnabled
-        keyExtractor={item => item.id}
-        renderItem={({ item, index }) => (
-          <View style={styles.videoPage}>
-            <FeedVideo uri={item.url} isActive={activeIndex === index} />
-            <LinearGradient
-              colors={["transparent", "rgba(13,13,13,0.85)"]}
-              style={styles.bottomGradient}
-            />
-            <View style={styles.overlay}>
-              <TouchableOpacity style={styles.reactBtn} onPress={() => handleReact(item.id)}>
-                <Text style={styles.emoji}>💪</Text>
-                <Text style={styles.reactCount}>{item.reactions?.length || 0}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionBtn} onPress={() => handleHide(item.id)}>
-                 <Ionicons name="eye-off-outline" size={28} color="#232323" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionBtn} onPress={() => handleReport(item.id)}>
-                <Ionicons name="alert-circle-outline" size={28} color="#232323" />
-              </TouchableOpacity>
-              {(item.userId === currentUserId || currentUserRole === 'moderator') && (
-                <TouchableOpacity style={styles.actionBtn} onPress={() => handleDelete(item.id, item.userId)}>
-                  <Ionicons name="trash-outline" size={27} color="#FF4545" />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        )}
+        keyExtractor={keyExtractor}
+        renderItem={renderItem}
         onViewableItemsChanged={handleViewableItemsChanged}
         viewabilityConfig={{ itemVisiblePercentThreshold: 85 }}
         showsVerticalScrollIndicator={false}
