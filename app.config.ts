@@ -4,8 +4,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   plugins: [
     ...(config.plugins || []),
-    'expo-video/app.plugin.js',
-    'expo-audio/app.plugin.js',
+    'expo-video',
+    'expo-audio',
   ],
   extra: {
     ...(config.extra ?? {}),
