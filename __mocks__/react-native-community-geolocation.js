@@ -1,0 +1,1 @@
+module.exports = { getCurrentPosition: jest.fn(), watchPosition: jest.fn() };

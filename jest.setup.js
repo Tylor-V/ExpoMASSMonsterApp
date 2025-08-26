@@ -1,9 +1,8 @@
 // jest.setup.js
 
-jest.mock('react-native/Libraries/Utilities/Platform', () => ({
-  OS: 'android',
-  select: (objs) => objs.android ?? objs.default,
-}));
+const { Platform } = require('react-native');
+Platform.OS = 'android';
+Platform.select = (objs) => objs.android ?? objs.default;
 
 jest.mock('@react-navigation/native', () => ({
   NavigationContainer: ({ children }) => children,

@@ -4,6 +4,7 @@ module.exports = {
     './jest.setup.js',
   ],
   setupFilesAfterEnv: [
+    '@testing-library/jest-native/extend-expect',
     './jest.afterEnv.js',
   ],
   // Ensure Jest exits cleanly after all tests complete. This prevents
@@ -14,7 +15,7 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   transformIgnorePatterns: [
-    'node_modules/(?!(jest-)?react-native|@react-native|@react-navigation|@react-native-community|react-native-reanimated|react-native-screens|react-native-safe-area-context|react-native-vector-icons|react-native-device-info|react-native-video)',
+    'node_modules/(?!(jest-)?react-native|@react-native|@react-navigation|@react-native-community|react-native-reanimated|react-native-screens|react-native-safe-area-context|react-native-vector-icons|react-native-device-info|react-native-video|@expo|expo-)',
   ],
   moduleNameMapper: {
     '^react-native-gesture-handler$': '<rootDir>/__mocks__/react-native-gesture-handler.js',
@@ -29,5 +30,6 @@ module.exports = {
     '^react-native-maps$': '<rootDir>/__mocks__/react-native-maps.js',
     '^lucide-react-native$': '<rootDir>/__mocks__/lucide-react-native.js',
     '^@env$': '<rootDir>/__mocks__/env.js',
+    '^@expo/vector-icons$': '<rootDir>/__mocks__/@expo/vector-icons.js',
   },
 };
