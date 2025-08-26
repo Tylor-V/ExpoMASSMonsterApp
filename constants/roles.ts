@@ -1,7 +1,7 @@
 import { colors } from '../theme';
 
 export const ROLE_COLORS = {
-  admin: '#FF4545',
+  admin: colors.grayLight,
   moderator: colors.success,
   experienced: colors.purple,
   coach: colors.yellow,
