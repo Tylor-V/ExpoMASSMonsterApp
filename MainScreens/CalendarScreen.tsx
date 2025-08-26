@@ -1079,7 +1079,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
               old.docs.forEach(d => batch.delete(d.ref));
 
               const newRef = ref.doc();
-              batch.set(newRef, {
+              batch.set(newRef.ref, {
                 userId: uid,
                 split: splitCopy,
                 timestamp: firestore.FieldValue.serverTimestamp(),

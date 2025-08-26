@@ -181,7 +181,7 @@ export async function saveSharedSplits(splits: any[]) {
   splits.forEach((s: any) => {
     const id = s.msgId || s.id;
     if (!id) return;
-    batch.set(colRef.doc(id), s);
+    batch.set(colRef.doc(id).ref, s);
   });
 
   await batch.commit();

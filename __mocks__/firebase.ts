@@ -22,8 +22,11 @@ function ensureNested(path: string[]): any {
 
 class Document {
   path: string[];
+  ref: any;
   constructor(path: string[]) {
     this.path = path;
+    // Expose a ref property to mimic Firestore's DocumentReference structure
+    this.ref = this;
   }
   async get() {
     const data = getNested(this.path);
