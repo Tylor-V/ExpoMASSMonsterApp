@@ -12,7 +12,7 @@ import {
   ScrollView,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import MapView, {Marker} from 'react-native-maps';
+import { MapView, Marker } from 'expo-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import {addAccountabilityPoint} from '../firebase/userProfileHelpers';

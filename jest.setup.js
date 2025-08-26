@@ -1,5 +1,6 @@
 // jest.setup.js
 
+global.__DEV__ = true;
 const { Platform } = require('react-native');
 Platform.OS = 'android';
 Platform.select = (objs) => objs.android ?? objs.default;

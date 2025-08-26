@@ -1,11 +1,11 @@
+const expoPreset = require('jest-expo/jest-preset');
+
 module.exports = {
-  preset: 'react-native',
-  setupFiles: [
-    './jest.setup.js',
-  ],
+  ...expoPreset,
+  setupFiles: ['<rootDir>/jest.setup.js'],
   setupFilesAfterEnv: [
     '@testing-library/jest-native/extend-expect',
-    './jest.afterEnv.js',
+    '<rootDir>/jest.afterEnv.js',
   ],
   // Ensure Jest exits cleanly after all tests complete. This prevents
   // open handle warnings during CI or local runs.
@@ -27,7 +27,7 @@ module.exports = {
     '^@react-native-community/geolocation$': '<rootDir>/__mocks__/react-native-community-geolocation.js',
     '^@react-native-community/datetimepicker$': '<rootDir>/__mocks__/react-native-community-datetimepicker.js',
     '^@react-native-community/netinfo$': '<rootDir>/__mocks__/react-native-community-netinfo.js',
-    '^react-native-maps$': '<rootDir>/__mocks__/react-native-maps.js',
+    '^expo-maps$': '<rootDir>/__mocks__/expo-maps.js',
     '^lucide-react-native$': '<rootDir>/__mocks__/lucide-react-native.js',
     '^@env$': '<rootDir>/__mocks__/env.js',
     '^@expo/vector-icons$': '<rootDir>/__mocks__/@expo/vector-icons.js',

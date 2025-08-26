@@ -1,0 +1,1 @@
+module.exports = { MapView: 'MapView', Marker: 'Marker' };
