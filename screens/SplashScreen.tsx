@@ -1,7 +1,7 @@
 import { Asset } from 'expo-asset';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as NativeSplashScreen from 'expo-splash-screen';
-import { Video } from 'expo-video';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { Image } from 'expo-image';
 import React, { useEffect, useRef } from 'react';
 import {
@@ -33,7 +33,13 @@ export default function SplashScreen({navigation}) {
   const hasNavigated = useRef(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const timeoutRef = useRef<NodeJS.Timeout>();
-  const videoRef = useRef<Video>(null);
+  const player = useVideoPlayer(splashVideo, player => {
+    player.loop = false;
+    player.addListener('playToEnd', () => handleFinish());
+    player.addListener('statusChange', ({ status, error }) => {
+      if (status === 'error') handleFinish(true);
+    });
+  });
 
   // Preload the splash video so the first frame shows immediately
   useEffect(() => {
@@ -69,14 +75,6 @@ export default function SplashScreen({navigation}) {
       }
     });
   };
-  const onPlaybackStatusUpdate = (status: any) => {
-    if (!status.isLoaded) {
-      if (status.error) handleFinish(true);
-      return;
-    }
-    if (status.didJustFinish) handleFinish();
-  };
-
   useEffect(() => {
     const unsub = auth().onAuthStateChanged(async user => {
       if (user) {
@@ -113,7 +111,7 @@ export default function SplashScreen({navigation}) {
   useEffect(() => {
     if (videoReady) {
       try {
-        videoRef.current?.play();
+        player.play();
       } catch {
         handleFinish(true);
       }
@@ -124,14 +122,7 @@ export default function SplashScreen({navigation}) {
   return (
     <Animated.View style={[styles.container, {opacity: fadeAnim}]}>
       {videoReady ? (
-        <Video
-          ref={videoRef}
-          source={splashVideo}
-          style={styles.video}
-          contentFit="cover"
-          isLooping={false}
-          onPlaybackStatusUpdate={onPlaybackStatusUpdate}
-        />
+        <VideoView player={player} style={styles.video} contentFit="cover" />
       ) : (
         <Image source={splashPlaceholder} style={styles.video} contentFit="cover" />
       )}
@@ -141,7 +132,7 @@ export default function SplashScreen({navigation}) {
       />
       <TouchableOpacity
         style={StyleSheet.absoluteFill}
-        onPress={handleFinish}
+        onPress={() => handleFinish()}
         activeOpacity={1}
       />
       {!authChecked && (
