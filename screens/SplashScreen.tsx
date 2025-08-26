@@ -1,7 +1,7 @@
 import { Asset } from 'expo-asset';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as NativeSplashScreen from 'expo-splash-screen';
-import { Video } from 'expo-av';
+import { Video } from 'expo-video';
 import { Image } from 'expo-image';
 import React, { useEffect, useRef } from 'react';
 import {
@@ -112,7 +112,11 @@ export default function SplashScreen({navigation}) {
 
   useEffect(() => {
     if (videoReady) {
-      videoRef.current?.playAsync().catch(() => handleFinish(true));
+      try {
+        videoRef.current?.play();
+      } catch {
+        handleFinish(true);
+      }
       NativeSplashScreen.hideAsync().catch(() => null);
     }
   }, [videoReady]);
@@ -124,9 +128,8 @@ export default function SplashScreen({navigation}) {
           ref={videoRef}
           source={splashVideo}
           style={styles.video}
-          resizeMode="cover"
+          contentFit="cover"
           isLooping={false}
-          shouldPlay={false}
           onPlaybackStatusUpdate={onPlaybackStatusUpdate}
         />
       ) : (

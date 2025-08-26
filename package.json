@@ -23,6 +23,7 @@
     "@expo-google-fonts/inter": "^0.4.1",
     "@expo/vector-icons": "^14.1.0",
     "@react-native-async-storage/async-storage": "1.24.0",
+    "@react-native-community/datetimepicker": "8.4.1",
     "@react-native-community/slider": "4.5.6",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.6.3",
@@ -30,7 +31,6 @@
     "@react-navigation/native-stack": "^7.1.6",
     "color": "^5.0.0",
     "expo": "~53.0.22",
-    "expo-av": "~15.1.7",
     "expo-font": "~13.3.2",
     "expo-haptics": "~14.1.4",
     "expo-image": "~2.4.0",
@@ -46,13 +46,14 @@
     "react-native": "0.79.5",
     "react-native-confetti-cannon": "^1.5.2",
     "react-native-gesture-handler": "~2.24.0",
+    "react-native-maps": "1.20.1",
     "react-native-modal-datetime-picker": "^18.0.0",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
-    "react-native-maps": "1.20.1",
     "react-native-webview": "13.13.5",
-    "@react-native-community/datetimepicker": "8.4.1"
+    "expo-video": "~2.2.2",
+    "expo-audio": "~0.4.9"
   },
   "devDependencies": {
     "@testing-library/jest-native": "^5.4.3",

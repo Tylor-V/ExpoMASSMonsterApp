@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Video } from 'expo-av';
+import { Video } from 'expo-video';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,9 +14,17 @@ function FeedVideo({ uri, isActive }: { uri: string; isActive: boolean }) {
 
   useEffect(() => {
     if (isActive) {
-      ref.current?.playAsync().catch(() => null);
+      try {
+        ref.current?.play();
+      } catch {
+        // ignore play errors
+      }
     } else {
-      ref.current?.pauseAsync().catch(() => null);
+      try {
+        ref.current?.pause();
+      } catch {
+        // ignore pause errors
+      }
     }
   }, [isActive]);
 
@@ -25,7 +33,7 @@ function FeedVideo({ uri, isActive }: { uri: string; isActive: boolean }) {
       ref={ref}
       source={{ uri }}
       style={styles.video}
-      resizeMode="cover"
+      contentFit="cover"
       isLooping
       onError={(e) => console.error('Video playback error', e)}
     />

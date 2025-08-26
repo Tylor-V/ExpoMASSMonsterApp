@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Video } from 'expo-av';
+import { Video } from 'expo-video';
 import { Image } from 'expo-image';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -34,7 +34,11 @@ function StoryVideo({ uri }: { uri: string }) {
   const ref = useRef<Video>(null);
 
   useEffect(() => {
-    ref.current?.playAsync().catch(() => null);
+    try {
+      ref.current?.play();
+    } catch {
+      // ignore play errors
+    }
   }, [uri]);
 
   return (
@@ -42,7 +46,7 @@ function StoryVideo({ uri }: { uri: string }) {
       ref={ref}
       source={{ uri }}
       style={styles.img}
-      resizeMode="cover"
+      contentFit="cover"
       isLooping
       onError={(e) => console.error('Video playback error', e)}
     />
