@@ -197,6 +197,7 @@ const storyStyles = StyleSheet.create({
     height: 80,
     borderBottomColor: colors.grayLight,
     borderBottomWidth: 1,
+    marginBottom: 6,
   },
   storyCircle: {
     alignItems: 'center',
