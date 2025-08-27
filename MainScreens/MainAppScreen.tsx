@@ -22,13 +22,12 @@ const routes = [
   { key: 'profile', title: 'Profile', icon: 'person-outline' },
 ];
 
-const MainAppScreen = ({ navigation, news, newsLoaded }) => {
+const MainAppScreen = ({ navigation, news, newsLoaded, newsOpen, setNewsOpen }) => {
   const [tabIndex, setTabIndex] = useState(1); // Start on Calendar tab
   // -- NEW STATE --
   const [isCourseOpen, setIsCourseOpen] = useState(false);
 
   // Modal/Popup state
-  const [newsOpen, setNewsOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
 
   const user = useCurrentUserDoc();

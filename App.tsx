@@ -7,7 +7,7 @@ import {
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as NativeSplashScreen from 'expo-splash-screen';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import ForgotPasswordScreen from './LoginScreens/ForgotPasswordScreen';
 import LoginScreen from './LoginScreens/LoginScreen';
@@ -54,6 +54,7 @@ function AuthStackScreen() {
 
 function AppStackScreen() {
   const { news, loading } = useNews();
+  const [newsOpen, setNewsOpen] = useState(true);
 
   return (
     <AppStack.Navigator screenOptions={{ headerShown: false }}>
@@ -63,6 +64,8 @@ function AppStackScreen() {
             {...props}
             news={news}
             newsLoaded={!loading}
+            newsOpen={newsOpen}
+            setNewsOpen={setNewsOpen}
           />
         )}
       </AppStack.Screen>
