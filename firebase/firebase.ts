@@ -21,6 +21,7 @@ import {
   getDoc,
   getDocs,
   getFirestore,
+  initializeFirestore,
   increment,
   onSnapshot,
   serverTimestamp,
@@ -62,7 +63,16 @@ if (Platform.OS === 'web') {
         persistence: getReactNativePersistence(AsyncStorage),
       });
 }
-const db = getFirestore(app);
+let db;
+if (existingApps.length) {
+  db = getFirestore(app);
+} else {
+  db = initializeFirestore(app, {
+    // Auto-detect long polling to avoid WebChannel transport errors in RN
+    experimentalAutoDetectLongPolling: true,
+    useFetchStreams: false,
+  });
+}
 if (Platform.OS === 'web') {
   // Enable offline persistence on supported browsers
   import('firebase/firestore').then(({ enableIndexedDbPersistence }) => {
