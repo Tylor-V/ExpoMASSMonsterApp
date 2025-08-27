@@ -1,65 +1,61 @@
-import React, {
-  useState,
-  useMemo,
-  useEffect,
-  useRef,
-  useCallback,
-} from 'react';
-import type { ComponentProps } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  StyleSheet,
-  Modal,
-  ScrollView,
-  Switch,
-  Pressable,
-  TextInput,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ActivityIndicator,
-  Linking,
-  useWindowDimensions,
-  Animated,
-  LayoutChangeEvent,
-  DeviceEventEmitter,
-} from 'react-native';
-import { Image } from 'expo-image';
-import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import { getUserBadgeProgress } from '../badges/progressHelpers';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import WhiteBackgroundWrapper from '../components/WhiteBackgroundWrapper';
-import ProfileImage from '../components/ProfileImage';
-import { TAB_BAR_HEIGHT } from '../components/SwipeableTabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { colors, fonts } from '../theme';
+import { useNavigation } from '@react-navigation/native';
+import { Image } from 'expo-image';
+import type { ComponentProps } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
-  ANIM_MEDIUM,
-  ANIM_INSTANT,
-  ANIM_BUTTON_POP,
-  ANIM_BUTTON_PRESS,
-} from '../utils/animations';
+  ActivityIndicator,
+  Alert,
+  Animated,
+  DeviceEventEmitter,
+  FlatList,
+  KeyboardAvoidingView,
+  LayoutChangeEvent,
+  Linking,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { getUserBadgeProgress } from '../badges/progressHelpers';
 import CarouselNavigator from '../components/CarouselNavigator';
+import { TAB_BAR_HEIGHT } from '../components/SwipeableTabs';
+import WhiteBackgroundWrapper from '../components/WhiteBackgroundWrapper';
+import { LIFT_RATINGS } from '../constants/liftRatings';
 import { useAppContext } from '../firebase/AppContext';
 import { getTodayKey } from '../firebase/dateHelpers';
-import { auth } from '../firebase/firebase';
-import { firestore } from '../firebase/firebase';
+import { auth, firestore } from '../firebase/firebase';
 import {
-  saveCustomSplit,
-  saveShowWorkout,
-  saveSharedSplits,
   fetchSharedSplits,
-  addSharedSplit,
   removeSharedSplit,
+  saveCustomSplit,
   saveMySharedSplit,
-  saveWorkoutPlan,
+  saveSharedSplits,
+  saveShowWorkout,
+  saveWorkoutPlan
 } from '../firebase/userProfileHelpers';
-import { LIFT_RATINGS, type RatingMap } from '../constants/liftRatings';
+import { colors, fonts } from '../theme';
+import {
+  ANIM_BUTTON_POP,
+  ANIM_BUTTON_PRESS,
+  ANIM_MEDIUM
+} from '../utils/animations';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(Pressable);
 
@@ -2444,13 +2440,13 @@ const styles = StyleSheet.create({
     maxHeight: 420,
     justifyContent: 'flex-start',
     alignItems: 'stretch',
-    marginTop: 2,
-    marginBottom: 10,
+    marginTop: 22,
+    marginBottom: 27,
     borderRadius: 28,
     shadowColor: '#000',
     shadowOpacity: 0.14,
     shadowRadius: 16,
-    shadowOffset: { width: 0, height: 5 },
+    shadowOffset: { width: 0, height: 3 },
     elevation: 6,
     backgroundColor: colors.white,
     paddingHorizontal: 30,
@@ -2587,8 +2583,8 @@ const styles = StyleSheet.create({
   carouselDotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 6,
-    marginBottom: 4,
+    marginTop: -20,
+    marginBottom: 2,
   },
   drawerOverlay: {
     ...StyleSheet.absoluteFillObject,
