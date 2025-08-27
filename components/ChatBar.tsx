@@ -574,7 +574,12 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
           </TouchableOpacity>
         )}
         <TouchableOpacity onPress={onOpenGymFeed} style={{ marginHorizontal: 8 }}>
-          <Icon testID="gym-feed-button" name="videocam" size={28} color={colors.black} />
+          <Icon
+            testID="gym-feed-button"
+            name="film-outline"
+            size={28}
+            color={colors.black}
+          />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setOnlineUsersOpen(true)} style={{ marginHorizontal: 8 }}>
           <Image source={UsersIcon} style={{ width: 32, height: 32 }} contentFit="contain" />
