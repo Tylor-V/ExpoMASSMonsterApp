@@ -466,7 +466,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const chevronRotate = useRef(new Animated.Value(0)).current;
 
   const { width: screenWidth, height: windowHeight } = useWindowDimensions();
-  const CAROUSEL_SIDE_PADDING = 12;
   const CAROUSEL_CARD_MARGIN = 12;
   const containerWidth = screenWidth;
   const carouselWidth = containerWidth;
@@ -477,7 +476,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const carouselCardStyle = useMemo(
     () => [
       styles.carouselCard,
-      { width: carouselWidth - CAROUSEL_CARD_MARGIN * 2, marginRight: CAROUSEL_CARD_MARGIN },
+      {
+        width: carouselWidth - CAROUSEL_CARD_MARGIN * 2,
+        marginHorizontal: CAROUSEL_CARD_MARGIN,
+      },
     ],
     [carouselWidth],
   );
@@ -1621,7 +1623,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const renderCarouselItem = (item: string, idx: number) => (
     <View
       key={item}
-      style={{ width: carouselWidth, paddingHorizontal: CAROUSEL_SIDE_PADDING }}
+      style={{ width: carouselWidth, alignItems: 'center' }}
       onLayout={onCarouselItemLayout}
     >
       {item === 'massEvents' ? (
@@ -1681,7 +1683,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           styles.carouselContainer,
           {
             width: carouselWidth,
-            paddingHorizontal: CAROUSEL_SIDE_PADDING,
             minHeight: carouselHeight,
           },
         ]}
