@@ -19,13 +19,16 @@ jest.mock('../../MainScreens/ChatScreen', () => {
 });
 
 describe('ChatBar gym feed button', () => {
-  it('calls onOpenGymFeed when pressed', () => {
+  it('renders film icon and calls onOpenGymFeed when pressed', () => {
     mockPinnedMessages = [];
     const onOpenGymFeed = jest.fn();
     const { getByTestId } = render(
       <ChatBar onOpenDMInbox={() => {}} onOpenGymFeed={onOpenGymFeed} />,
     );
-    fireEvent.press(getByTestId('gym-feed-button'));
+    const icon = getByTestId('gym-feed-button');
+    expect(icon.props.name).toBe('film-outline');
+    expect(icon.props.color).toBe(colors.black);
+    fireEvent.press(icon);
     expect(onOpenGymFeed).toHaveBeenCalled();
   });
 });
