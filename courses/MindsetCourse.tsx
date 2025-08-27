@@ -11,7 +11,7 @@ import {
   Share,
   ActivityIndicator,
 } from 'react-native';
-import { Image } from 'expo-image';
+import ThemedImage from '../components/ThemedImage';
 import CoursePager, {CoursePagerHandle} from '../components/CoursePager';
 import CourseNav from '../components/CourseNav';
 import CourseOutlineSidebar from '../components/CourseOutlineSidebar';
@@ -964,7 +964,7 @@ export default function MindsetCourse({onBack}) {
           style={styles.fullScreenPage}
           activeOpacity={1}
           onPress={handlePress}>
-          <Image
+          <ThemedImage
             source={p.fullImage}
             style={styles.fullPageImg}
             contentFit="cover"
@@ -987,7 +987,7 @@ export default function MindsetCourse({onBack}) {
           paddingBottom: insets.bottom + 180,
         }}>
           {p.image && (
-          <Image
+          <ThemedImage
             source={p.image}
             style={styles.heroImg}
             contentFit="cover"

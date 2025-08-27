@@ -1,6 +1,5 @@
 import { Ionicons as Icon } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Dimensions,
   LayoutAnimation,
@@ -11,15 +10,17 @@ import {
   Text,
   TouchableOpacity,
   UIManager,
-  View,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import CourseNav from '../components/CourseNav';
 import CoursePager, { CoursePagerHandle } from '../components/CoursePager';
+import LoadingOverlay from '../components/LoadingOverlay';
 import { LIFT_RATINGS, type RatingMap } from '../constants/liftRatings';
 import { updateCourseProgress } from '../firebase/userProfileHelpers';
 import useCourseTopPad from "../hooks/useCourseTopPad";
+import useSavedCoursePage from '../hooks/useSavedCoursePage';
 import { colors } from '../theme';
 
 const {width} = Dimensions.get('window');
@@ -262,6 +263,14 @@ export default function PushPullLegsCourse({onBack}) {
   const insets = useSafeAreaInsets();
   const [fullscreenMedia, setFullscreenMedia] = useState(null);
   const pageCount = PAGES.length;
+  const { startPage, ready } = useSavedCoursePage('push-pull-legs', pageCount);
+
+  useEffect(() => {
+    if (ready) {
+      setPage(startPage);
+      pagerRef.current?.goToPageWithoutAnimation(startPage);
+    }
+  }, [ready, startPage]);
 
   const finish = () => {
     updateCourseProgress('push-pull-legs', 1);
@@ -273,6 +282,10 @@ export default function PushPullLegsCourse({onBack}) {
     updateCourseProgress('push-pull-legs', (idx + 1) / pageCount);
   };
 
+  if (!ready) {
+    return <LoadingOverlay />;
+  }
+  
   const RoutineCards = routines =>
     routines.map((r, i) => (
       <Expandable title={r.group} key={r.group + i} defaultOpen={i === 0}>
@@ -314,7 +327,7 @@ export default function PushPullLegsCourse({onBack}) {
           style={styles.fullScreenPage}
           activeOpacity={1}
           onPress={() => pagerRef.current?.goToPage(idx + 1)}>
-          <Image
+          <ThemedImage
             source={p.fullImage}
             style={styles.fullPageImg}
             contentFit="cover"
@@ -338,7 +351,7 @@ export default function PushPullLegsCourse({onBack}) {
                   })
                 }>
                 <View style={styles.heroContainer}>
-                  <Image
+                  <ThemedImage
                     source={p.image}
                     style={styles.heroImg}
                     contentFit="contain"
@@ -356,6 +369,12 @@ export default function PushPullLegsCourse({onBack}) {
                 style={styles.heroVideo}
                 allowsFullscreenVideo={false}
                 mediaPlaybackRequiresUserAction={false}
+                startInLoadingState
+                renderLoading={() => (
+                  <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#222'}}>
+                    <ActivityIndicator color={colors.accent} />
+                  </View>
+                )}
               />
             )}
             {/* PROGRAM CHIPS: Only on intro page */}
@@ -398,7 +417,7 @@ export default function PushPullLegsCourse({onBack}) {
                     source: p.referenceImg,
                   })
                 }>
-                <Image
+                <ThemedImage
                   source={p.referenceImg}
                   style={styles.refImg}
                   contentFit="contain"
@@ -441,7 +460,7 @@ export default function PushPullLegsCourse({onBack}) {
             <Icon name="arrow-back" size={32} color="#fff" />
           </TouchableOpacity>
           {fullscreenMedia?.type === 'image' && (
-            <Image
+            <ThemedImage
               source={fullscreenMedia.source}
               style={[
                 styles.fullscreenImg,
@@ -455,6 +474,12 @@ export default function PushPullLegsCourse({onBack}) {
               source={{uri: fullscreenMedia.source}}
               allowsFullscreenVideo
               style={styles.fullscreenVideo}
+              startInLoadingState
+              renderLoading={() => (
+                <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000'}}>
+                  <ActivityIndicator color={colors.accent} />
+                </View>
+              )}
             />
           )}
         </View>

@@ -1,4 +1,4 @@
-import React, {useState, useRef} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,12 @@ import {
   TouchableOpacity,
   ScrollView,
   LayoutAnimation,
+  ActivityIndicator,
 } from 'react-native';
-import { Image } from 'expo-image';
+import ThemedImage from '../components/ThemedImage';
+import LoadingOverlay from '../components/LoadingOverlay';
 import useCourseTopPad from "../hooks/useCourseTopPad";
+import useSavedCoursePage from '../hooks/useSavedCoursePage';
 
 import CoursePager, {CoursePagerHandle} from '../components/CoursePager';
 import CourseNav from '../components/CourseNav';
@@ -65,11 +68,23 @@ export default function FuelCourse({onBack}) {
   const pageCount = PAGES.length;
   const topPad = useCourseTopPad();
   const insets = useSafeAreaInsets();
+  const { startPage, ready } = useSavedCoursePage('fuel', pageCount);
+
+  useEffect(() => {
+    if (ready) {
+      setPage(startPage);
+      pagerRef.current?.goToPageWithoutAnimation(startPage);
+    }
+  }, [ready, startPage]);
 
   const handlePageChange = (idx: number) => {
     setPage(idx);
     updateCourseProgress('fuel', (idx + 1) / pageCount);
   };
+
+  if (!ready) {
+    return <LoadingOverlay />;
+  }
 
   const renderMeals = () => (
     <View style={{flexDirection: 'row', marginVertical: 10}}>
@@ -108,6 +123,12 @@ export default function FuelCourse({onBack}) {
               allowsFullscreenVideo={false}
               mediaPlaybackRequiresUserAction={false}
               onLoad={() => setIntroPlaying(true)}
+              startInLoadingState
+              renderLoading={() => (
+                <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#222'}}>
+                  <ActivityIndicator color={colors.accent} />
+                </View>
+              )}
             />
             <Text style={[styles.introTeaser, introPlaying && {opacity: 0.3}]}>
               Get ready to fuel your gains with proven strategies for a clean
@@ -118,7 +139,7 @@ export default function FuelCourse({onBack}) {
       case 'calories':
         return (
           <View style={{alignItems: 'center'}}>
-            <Image
+            <ThemedImage
               source={caloriesImg}
               style={styles.heroImg}
               contentFit="contain"
@@ -140,7 +161,7 @@ export default function FuelCourse({onBack}) {
               value={calories}
               onValueChange={setCalories}
             />
-            <Image
+            <ThemedImage
               source={massLogo}
               style={[
                 styles.massLogo,
@@ -164,7 +185,7 @@ export default function FuelCourse({onBack}) {
       case 'blueprint':
         return (
           <View style={{alignItems: 'center'}}>
-            <Image
+            <ThemedImage
               source={caloricMathImg}
               style={styles.heroImg}
               contentFit="contain"
@@ -191,7 +212,7 @@ export default function FuelCourse({onBack}) {
       case 'protein':
         return (
           <View style={{alignItems: 'center'}}>
-            <Image
+            <ThemedImage
               source={bricksImg}
               style={styles.heroImg}
               contentFit="contain"
@@ -219,7 +240,7 @@ export default function FuelCourse({onBack}) {
       case 'foods':
         return (
           <View style={{alignItems: 'center'}}>
-            <Image
+            <ThemedImage
               source={factsImg}
               style={styles.heroImg}
               contentFit="contain"
@@ -234,7 +255,7 @@ export default function FuelCourse({onBack}) {
       case 'whey':
         return (
           <View style={{alignItems: 'center'}}>
-            <Image
+            <ThemedImage
               source={wheyImg}
               style={styles.heroImg}
               contentFit="contain"
@@ -252,7 +273,7 @@ export default function FuelCourse({onBack}) {
       case 'casein':
         return (
           <View style={{alignItems: 'center'}}>
-            <Image
+            <ThemedImage
               source={caseinImg}
               style={styles.heroImg}
               contentFit="contain"
@@ -267,7 +288,7 @@ export default function FuelCourse({onBack}) {
       case 'plant':
         return (
           <View style={{alignItems: 'center'}}>
-            <Image
+            <ThemedImage
               source={plantImg}
               style={styles.heroImg}
               contentFit="contain"
@@ -276,7 +297,7 @@ export default function FuelCourse({onBack}) {
             <Text style={styles.text}>
               Plant: Pea, rice, hemp blends—vegan, high-fiber.
             </Text>
-            <Image
+            <ThemedImage
               source={blendImg}
               style={[styles.heroImg, {marginTop: 8}]}
               contentFit="contain"
@@ -289,7 +310,7 @@ export default function FuelCourse({onBack}) {
       case 'pre':
         return (
           <View style={{alignItems: 'center'}}>
-            <Image
+            <ThemedImage
               source={preImg}
               style={styles.heroImg}
               contentFit="contain"
@@ -304,7 +325,7 @@ export default function FuelCourse({onBack}) {
       case 'post':
         return (
           <View style={{alignItems: 'center'}}>
-            <Image
+            <ThemedImage
               source={postImg}
               style={styles.heroImg}
               contentFit="contain"
@@ -319,7 +340,7 @@ export default function FuelCourse({onBack}) {
       case 'boost':
         return (
           <View style={{alignItems: 'center'}}>
-            <Image
+            <ThemedImage
               source={caloricMathImg}
               style={styles.heroImg}
               contentFit="contain"
@@ -362,7 +383,7 @@ export default function FuelCourse({onBack}) {
           style={styles.fullScreenPage}
           activeOpacity={1}
           onPress={() => pagerRef.current?.goToPage(idx + 1)}>
-          <Image source={introImg} style={styles.fullPageImg} contentFit="cover" />
+          <ThemedImage source={introImg} style={styles.fullPageImg} contentFit="cover" />
         </TouchableOpacity>
       );
     }
@@ -376,7 +397,7 @@ export default function FuelCourse({onBack}) {
             updateCourseProgress('fuel', 1);
             onBack && onBack();
           }}>
-          <Image
+          <ThemedImage
             source={require('../assets/fuel-last-page.png')}
             style={styles.fullPageImg}
             contentFit="cover"

@@ -1,4 +1,4 @@
-import React, {useState, useRef} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,10 @@ import {
   TouchableOpacity,
   ScrollView,
 } from 'react-native';
-import { Image } from 'expo-image';
+import ThemedImage from '../components/ThemedImage';
+import LoadingOverlay from '../components/LoadingOverlay';
 import useCourseTopPad from "../hooks/useCourseTopPad";
+import useSavedCoursePage from '../hooks/useSavedCoursePage';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import CoursePager, {CoursePagerHandle} from '../components/CoursePager';
 import CourseNav from '../components/CourseNav';
@@ -149,20 +151,32 @@ const PAGES = [
 ];
 
 export default function WelcomeCourse({onBack}) {
-
   const [page, setPage] = useState(0);
   const pagerRef = useRef<CoursePagerHandle>(null);
   const topPad = useCourseTopPad();
+  const pageCount = PAGES.length;
+  const { startPage, ready } = useSavedCoursePage('welcome', pageCount);
+
+  useEffect(() => {
+    if (ready) {
+      setPage(startPage);
+      pagerRef.current?.goToPageWithoutAnimation(startPage);
+    }
+  }, [ready, startPage]);
 
   const handlePageChange = (idx: number) => {
     setPage(idx);
-    updateCourseProgress('welcome', (idx + 1) / PAGES.length);
+    updateCourseProgress('welcome', (idx + 1) / pageCount);
   };
 
   const handleFinish = () => {
     updateCourseProgress('welcome', 1);
     if (onBack) onBack();
   };
+
+  if (!ready) {
+    return <LoadingOverlay />;
+  }
 
   const pages = PAGES.map((p, idx) => {
     if (p.fullImage) {
@@ -179,7 +193,7 @@ export default function WelcomeCourse({onBack}) {
           style={styles.fullScreenPage}
           activeOpacity={1}
           onPress={handlePress}>
-          <Image
+          <ThemedImage
             source={p.fullImage}
             style={styles.fullPageImg}
             contentFit="cover"
@@ -193,7 +207,7 @@ export default function WelcomeCourse({onBack}) {
         style={[styles.page, {paddingTop: topPad}]}
         contentContainerStyle={{alignItems: 'center', justifyContent: 'flex-start', paddingBottom: 48}}>
         {p.image ? (
-          <Image
+          <ThemedImage
             source={p.image}
             style={styles.heroImg}
             contentFit="cover"
