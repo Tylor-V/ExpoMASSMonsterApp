@@ -3,8 +3,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   FlatList,
-  KeyboardAvoidingView,
   LayoutAnimation,
   Modal,
   Platform,
@@ -29,6 +29,7 @@ import WhiteBackgroundWrapper from '../components/WhiteBackgroundWrapper';
 import { auth, firestore } from '../firebase/firebase';
 import { useLastReadDM } from '../firebase/userChatReadHelpers';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
+import { useKeyboardAnimation } from '../hooks/useKeyboardAnimation';
 import { colors } from '../theme';
 import { dedupeById } from '../utils/dedupeById';
 import { formatDisplayName } from '../utils/displayName';
@@ -56,6 +57,7 @@ const DMChatScreen = ({ navigation, route }) => {
   const [previewUserId, setPreviewUserId] = useState<string | null>(null);
   const inputBarHeight = useChatInputBarHeight();
   const currentUser = useCurrentUserDoc();
+  const [keyboardOffset, keyboardHeight] = useKeyboardAnimation(20);
   const timeoutMs = currentUser?.timeoutUntil
     ? (typeof currentUser.timeoutUntil.toMillis === 'function'
         ? currentUser.timeoutUntil.toMillis()
@@ -287,7 +289,7 @@ const DMChatScreen = ({ navigation, route }) => {
           <Text style={styles.headerText}>{displayName}</Text>
         </TouchableOpacity>
       </View>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+      <View style={{ flex: 1 }}>
         <View style={{ flex: 1, padding: 4 }}>
           <View style={{ flex: 1 }}>
             {loading ? (
@@ -408,15 +410,15 @@ const DMChatScreen = ({ navigation, route }) => {
             </>
           );
         }}
-        contentContainerStyle={{ padding: 10, paddingBottom: inputBarHeight }}
-        ListFooterComponent={<View style={{ height: 0 }} />}
+        contentContainerStyle={{ padding: 10, paddingBottom: inputBarHeight + keyboardHeight }}
+        ListFooterComponent={<View style={{ height: keyboardHeight }} />}
               />
             )}
             {!loading && showJump && (
               <TouchableOpacity
                 style={[
                   styles.jumpToBottomBtn,
-                  { bottom: inputBarHeight + JUMP_BUTTON_OFFSET },
+                  { bottom: Animated.add(keyboardOffset, inputBarHeight + JUMP_BUTTON_OFFSET) },
                 ]}
                 onPress={handleJumpToBottom}
                 activeOpacity={0.88}
@@ -464,7 +466,7 @@ const DMChatScreen = ({ navigation, route }) => {
               </Modal>
             )}
           </View>
-          <View style={[styles.inputRow, isTimedOut && styles.disabledRow]}>
+          <Animated.View style={[styles.inputRow, isTimedOut && styles.disabledRow, { marginBottom: keyboardOffset }]}>
             <TextInput
               style={[styles.input, isTimedOut && styles.disabledInput]}
               value={text}
@@ -486,9 +488,9 @@ const DMChatScreen = ({ navigation, route }) => {
                 <Icon name="arrow-up" size={22} color={colors.white} />
               </LinearGradient>
             </TouchableOpacity>
-          </View>
-          </View>
-      </KeyboardAvoidingView>
+          </Animated.View>
+        </View>
+      </View>
       </View>
     </WhiteBackgroundWrapper>
     <UserPreviewModal
