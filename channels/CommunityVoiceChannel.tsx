@@ -1,23 +1,21 @@
+import { Ionicons as Icon } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Pressable,
   Dimensions,
-  Animated,
   FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons as Icon } from '@expo/vector-icons';
-import ProfileImage from '../components/ProfileImage';
-import { colors, fonts } from '../theme';
-import { ANIM_BUTTON_POP } from '../utils/animations';
-import { ROLE_COLORS } from '../constants/roles';
-import { getChatLevelColor } from '../utils/chatLevel';
 import BackgroundWrapper from '../components/BackgroundWrapper';
 import ComingSoonOverlay from '../components/ComingSoonOverlay';
+import ProfileImage from '../components/ProfileImage';
+import { ROLE_COLORS } from '../constants/roles';
+import { colors } from '../theme';
+import { getChatLevelColor } from '../utils/chatLevel';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 

@@ -829,11 +829,11 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                 <View
                   style={{
                     backgroundColor: getChatLevelColor(chatLevel),
-                    borderRadius: 4,
-                    paddingHorizontal: 8,
-                    marginRight: 6,
-                    marginLeft: 2,
-                    height: 24,
+                    borderRadius: 2,
+                    paddingHorizontal: 4,
+                    marginRight: 3,
+                    marginLeft: 1,
+                    paddingVertical: 2,
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
@@ -841,9 +841,9 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                   <Text
                     style={{
                       color: colors.white,
-                      fontSize: 16,
+                      fontSize: 12,
                       fontWeight: 'bold',
-                      letterSpacing: 1.6,
+                      letterSpacing: 0.8,
                     }}
                   >
                     Lv{chatLevel}
@@ -852,21 +852,21 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                 {user?.accountabilityStreak > 0 && (
                   <View
                     style={{
-                      backgroundColor: getChatLevelColor(chatLevel),
-                      borderRadius: 4,
-                      paddingHorizontal: 8,
-                      marginRight: 6,
-                      height: 24,
+                      backgroundColor: colors.yellow,
+                      borderRadius: 2,
+                      paddingHorizontal: 4,
+                      marginRight: 3,
+                      paddingVertical: 2,
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
                   >
                     <Text
                       style={{
-                        color: colors.white,
-                        fontSize: 16,
+                        color: colors.black,
+                        fontSize: 12,
                         fontWeight: 'bold',
-                        letterSpacing: 1.6,
+                        letterSpacing: 0.8,
                       }}
                     >
                       🔥{user.accountabilityStreak}
@@ -877,10 +877,10 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                   <View
                     style={{
                       backgroundColor: ROLE_COLORS[user.role],
-                      borderRadius: 4,
-                      paddingHorizontal: 8,
-                      marginRight: 6,
-                      height: 24,
+                      borderRadius: 2,
+                      paddingHorizontal: 4,
+                      marginRight: 3,
+                      paddingVertical: 2,
                       alignItems: 'center',
                       justifyContent: 'center',
                     }}
@@ -888,9 +888,9 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                     <Text
                       style={{
                         color: colors.white,
-                        fontSize: 16,
+                        fontSize: 12,
                         fontWeight: 'bold',
-                        letterSpacing: 1.6,
+                        letterSpacing: 0.8,
                       }}
                     >
                       {ROLE_TAGS[user.role]}
