@@ -1,5 +1,6 @@
-import { render } from '@testing-library/react-native';
+import { act, fireEvent, render } from '@testing-library/react-native';
 import React from 'react';
+import { View } from 'react-native';
 import { colors } from '../../theme';
 import ChatBar from '../ChatBar';
 
@@ -51,5 +52,20 @@ describe('ChatBar pinned button', () => {
     );
     const icon = getByTestId('pinned-button');
     expect(icon.props.color).toBe(colors.accent);
+  });
+
+  it('positions pinned dropdown below chat bar', () => {
+    mockPinnedMessages = [];
+    (View as any).prototype.measureInWindow = (cb: any) => cb(0, 20, 0, 40);
+    const { getByTestId } = render(
+      <ChatBar onOpenDMInbox={() => {}} onOpenGymFeed={() => {}} />,
+    );
+    act(() => {
+      fireEvent.press(getByTestId('pinned-button'));
+    });
+    const overlay = getByTestId('pinned-overlay');
+    const style = overlay.props.style;
+    const top = Array.isArray(style) ? style[1].top : style.top;
+    expect(top).toBe(60);
   });
 });

@@ -312,12 +312,20 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
   const [menuOpen, setMenuOpen] = useState(false);
   const arrowRef = useRef<View | null>(null);
   const headerRef = useRef<View | null>(null);
+  const barRef = useRef<View | null>(null);
   const [arrowCenterX, setArrowCenterX] = useState(0);
   const [headerBottomY, setHeaderBottomY] = useState(0);
   const [dropdownWidth, setDropdownWidth] = useState(0);
   const [showPinnedDropdown, setShowPinnedDropdown] = useState(false);
+  const [barBottomY, setBarBottomY] = useState(0);
   const dropdownAnim = useRef(new Animated.Value(0)).current;
   const overlayAnim = useRef(new Animated.Value(0)).current;
+
+  const updateBarBottomY = () => {
+    barRef.current?.measureInWindow((_x, y, _width, height) => {
+      setBarBottomY(y + height);
+    });
+  };
 
   const headerStyles = useMemo(
     () =>
@@ -485,9 +493,7 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
         ANIM_MEDIUM,
       );
     } else {
-headerRef.current?.measureInWindow((_x, y, _width, height) => {
-        setHeaderBottomY(y + height);
-      });
+      updateBarBottomY();
       setShowPinnedDropdown(true);
     }
   };
@@ -506,17 +512,18 @@ headerRef.current?.measureInWindow((_x, y, _width, height) => {
   return (
     <ScreenContainer padTop={false}>
       <View style={{ flex: 1 }}>
-      <View
-        style={headerStyles.headerBar}
-        ref={headerRef}
-        onLayout={() => {
-          if (!menuOpen) {
-            headerRef.current?.measureInWindow((x, y, width, height) =>
-              setHeaderBottomY(y + height),
-            );
-          }
-        }}
-      >
+      <View ref={barRef} onLayout={updateBarBottomY}>
+        <View
+          style={headerStyles.headerBar}
+          ref={headerRef}
+          onLayout={() => {
+            if (!menuOpen) {
+              headerRef.current?.measureInWindow((x, y, width, height) =>
+                setHeaderBottomY(y + height),
+              );
+            }
+          }}
+        >
         <Pressable
           style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 }}
           onPress={toggleMenu}
@@ -584,6 +591,11 @@ headerRef.current?.measureInWindow((_x, y, _width, height) => {
             {dmUnread && <View style={headerStyles.dmUnreadDot} />}
           </View>
         </TouchableOpacity>
+        </View>
+        {selectedChannel.type !== 'voice' &&
+          selectedChannel.type !== 'video' && (
+            <StoriesBar openStoriesViewer={openStoriesViewer} />
+          )}
       </View>
       {menuOpen && (
         <TouchableOpacity
@@ -652,23 +664,21 @@ headerRef.current?.measureInWindow((_x, y, _width, height) => {
       )}
       {selectedChannel.type !== 'voice' &&
         selectedChannel.type !== 'video' && (
-          <StoriesBar openStoriesViewer={openStoriesViewer} />
-        )}
-      {selectedChannel.type !== 'voice' &&
-        selectedChannel.type !== 'video' && (
           <>
             {showPinnedDropdown && (
               <AnimatedPressable
-                style={[pinnedStyles.pinnedOverlay, { top: headerBottomY, opacity: overlayAnim }]}
+                testID="pinned-overlay"
+                style={[pinnedStyles.pinnedOverlay, { top: barBottomY, opacity: overlayAnim }]}
                 onPress={togglePinnedDropdown}
               />
             )}
             {showPinnedDropdown && (
               <Animated.View
+                testID="pinned-dropdown"
                 style={[
                   pinnedStyles.pinnedDropdown,
                   {
-                    top: headerBottomY,
+                    top: barBottomY,
                     maxHeight: SCREEN_HEIGHT * 0.6,
                     opacity: dropdownAnim,
                     transform: [
