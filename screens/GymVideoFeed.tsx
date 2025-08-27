@@ -52,6 +52,10 @@ export default function GymVideoFeed({ navigation }) {
   const currentUserId = auth().currentUser?.uid;
   const insets = useSafeAreaInsets();
 
+  const handleBack = useCallback(() => {
+    navigation.navigate({ name: 'MainApp', params: { tabIndex: 0 }, merge: true });
+  }, [navigation]);
+
   useEffect(() => {
     setLoading(true);
     firestore()
@@ -221,8 +225,15 @@ export default function GymVideoFeed({ navigation }) {
   }).current;
 
   if (loading) return (
-    <View style={{ flex: 1, backgroundColor: '#181818', justifyContent: 'center', alignItems: 'center' }}>
+    <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }] }>
       <ActivityIndicator color="#FFCC00" size="large" />
+      <TouchableOpacity
+        style={[styles.backBtn, { top: insets.top + 49 }]}
+        onPress={handleBack}
+        accessibilityLabel="Back to Chat"
+      >
+        <Ionicons name="chevron-back" size={29} color="#232323" />
+      </TouchableOpacity>
     </View>
   );
 
@@ -232,6 +243,13 @@ export default function GymVideoFeed({ navigation }) {
       <TouchableOpacity style={styles.emptyBtn} onPress={handleUpload} disabled={uploading}>
         <Ionicons name="cloud-upload-outline" size={29} color="#232323" />
         <Text style={styles.uploadTxt}>{uploading ? 'Uploading...' : 'Upload Video'}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.backBtn, { top: insets.top + 49 }]}
+        onPress={handleBack}
+        accessibilityLabel="Back to Chat"
+      >
+        <Ionicons name="chevron-back" size={29} color="#232323" />
       </TouchableOpacity>
     </View>
   );
@@ -260,9 +278,10 @@ export default function GymVideoFeed({ navigation }) {
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.backBtn, { top: insets.top + 49 }]}
-        onPress={() => navigation.goBack()}
+        onPress={handleBack}
+        accessibilityLabel="Back to Chat"
       >
-         <Ionicons name="chevron-back" size={29} color="#232323" />
+        <Ionicons name="chevron-back" size={29} color="#232323" />
       </TouchableOpacity>
     </View>
   );
