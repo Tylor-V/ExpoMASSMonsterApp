@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 import React from 'react';
 
 jest.mock('expo-video', () => ({ Video: () => null }));
@@ -26,11 +26,13 @@ jest.mock('../../firebase/firebase', () => ({
 import GymVideoFeed from '../GymVideoFeed';
 
 describe('GymVideoFeed', () => {
-  it('navigates back to Chat tab when back button pressed', async () => {
-    const navigate = jest.fn();
-    const { getByLabelText } = render(<GymVideoFeed navigation={{ navigate }} />);
-    const backButton = await waitFor(() => getByLabelText('Back to Chat'));
+  it('goes back when the back button is pressed', async () => {
+    const goBack = jest.fn();
+    const { getByLabelText } = render(
+      <GymVideoFeed navigation={{ goBack, canGoBack: () => true, navigate: jest.fn() }} />,
+    );
+    const backButton = getByLabelText('Back to Chat');
     fireEvent.press(backButton);
-    expect(navigate).toHaveBeenCalledWith({ name: 'MainApp', params: { tabIndex: 0 }, merge: true });
+    expect(goBack).toHaveBeenCalled();
   });
 });
