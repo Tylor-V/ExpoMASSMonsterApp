@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, StyleSheet, StatusBar, Platform } from 'react-native';
 import SwipeableTabs from '../components/SwipeableTabs';
 import ChatBar from '../components/ChatBar';
@@ -22,8 +22,14 @@ const routes = [
   { key: 'profile', title: 'Profile', icon: 'person-outline' },
 ];
 
-const MainAppScreen = ({ navigation, news, newsLoaded, onNewsAdded }) => {
-  const [tabIndex, setTabIndex] = useState(1); // Start on Calendar tab
+const MainAppScreen = ({ navigation, route, news, newsLoaded, onNewsAdded }) => {
+  const initialTab = route?.params?.tabIndex ?? 1;
+  const [tabIndex, setTabIndex] = useState(initialTab); // Start on Calendar tab
+  useEffect(() => {
+    if (route?.params?.tabIndex !== undefined) {
+      setTabIndex(route.params.tabIndex);
+    }
+  }, [route?.params?.tabIndex]);
   // -- NEW STATE --
   const [isCourseOpen, setIsCourseOpen] = useState(false);
 
