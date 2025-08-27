@@ -45,7 +45,7 @@ export default function SwipeableTabs({
   tabIndex = 0,
   onTabChange,
   activeTintColor = colors.yellow,
-  inactiveTintColor = '#aaa',
+  inactiveTintColor = '#000',
   tabBarVisible = true,
   animationEnabled = false,
 }: SwipeableTabsProps) {
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.black,
+    backgroundColor: colors.white,
     shadowColor: '#000',
     shadowOpacity: 0.3,
     shadowOffset: { width: 0, height: -2 },
