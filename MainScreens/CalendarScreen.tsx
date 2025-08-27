@@ -1640,104 +1640,120 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   return (
     <WhiteBackgroundWrapper style={{ flex: 1 }} padBottom={!renderPlanDrawer}>
       <View
-        style={{ flex: 1, justifyContent: 'flex-start' }}
+        style={{ flex: 1 }}
         onLayout={e => setRootHeight(e.nativeEvent.layout.height)}
       >
-        <View
-          style={{ paddingTop: 12 }}
-          onLayout={e => setDaysRowHeight(e.nativeEvent.layout.height)}
-        >
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.daysRow}
-          >
-            {days.map((item, i) => renderDay({ item, index: i }))}
-          </ScrollView>
-        </View>
-      <FlatList
-        style={[
-          { flexGrow: 0, flexShrink: 0 },
-          eventListMaxHeight ? { maxHeight: eventListMaxHeight } : null,
-        ]}
-        data={dayEvents}
-        keyExtractor={item => item.id}
-        key={`event-columns-${eventNumColumns}`}
-        renderItem={renderEvent}
-        ListEmptyComponent={<Text style={styles.emptyText}>No events</Text>}
-        contentContainerStyle={{
-          paddingTop: 10,
-          paddingHorizontal: 6,
-          paddingBottom: 16,
-        }}
-        numColumns={eventNumColumns}
-        columnWrapperStyle={
-          eventNumColumns > 1 ? { justifyContent: 'space-between' } : undefined
-        }
-        ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-        scrollEnabled={eventListScrollable}
-      />
+        <View style={{ flex: 1, justifyContent: 'space-between' }}>
+          {/* Zone 1: days and events */}
+          <View>
+            <View
+              style={{ paddingTop: 12 }}
+              onLayout={e => setDaysRowHeight(e.nativeEvent.layout.height)}
+            >
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.daysRow}
+              >
+                {days.map((item, i) => renderDay({ item, index: i }))}
+              </ScrollView>
+            </View>
+            <FlatList
+              style={[
+                { flexGrow: 0, flexShrink: 0 },
+                eventListMaxHeight ? { maxHeight: eventListMaxHeight } : null,
+              ]}
+              data={dayEvents}
+              keyExtractor={item => item.id}
+              key={`event-columns-${eventNumColumns}`}
+              renderItem={renderEvent}
+              ListEmptyComponent={<Text style={styles.emptyText}>No events</Text>}
+              contentContainerStyle={{
+                paddingTop: 10,
+                paddingHorizontal: 6,
+                paddingBottom: 16,
+              }}
+              numColumns={eventNumColumns}
+              columnWrapperStyle={
+                eventNumColumns > 1 ? { justifyContent: 'space-between' } : undefined
+              }
+              ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+              scrollEnabled={eventListScrollable}
+            />
+          </View>
 
-      <View
-        style={[
-          styles.carouselContainer,
-          {
-            width: carouselWidth,
-            minHeight: carouselHeight,
-          },
-        ]}
-      >
-        <ScrollView
-          ref={carouselRef}
-          horizontal
-          pagingEnabled
-          scrollEnabled={false} // disables swipe, navigation is via arrows/dots
-          showsHorizontalScrollIndicator={false}
-        >
-          {carouselItems.map(renderCarouselItem)}
-        </ScrollView>
-        {carouselItems.length > 1 && (
-          <CarouselNavigator
-            index={carouselIndex}
-            length={carouselItems.length}
-            onIndexChange={goToIndex}
-            dotsRowStyle={styles.carouselDotsRow}
-            arrowSize={36}
-            dotSize={16}
-            // Optionally add leftOffset/rightOffset/inactiveColor/maxDots as in SplitSharing
-          />
-        )}
-      </View>
-      <View
-        style={[
-          styles.bottomRow,
-          {
-            paddingLeft: insets.left,
-            paddingRight: insets.right,
-            marginTop: 16,
-          },
-        ]}
-      >
-        <TouchableOpacity
-          style={styles.addBtn}
-          onPress={() => setShowScheduler(true)}
-        >
-          <Ionicons name="add-circle" size={24} color="#fff" />
-          <Text style={styles.addBtnTxt}>Schedule 1-on-1</Text>
-        </TouchableOpacity>
-        <View style={styles.workoutToggleRow}>
-          <Text style={styles.workoutToggleLabel}>Workout Splits</Text>
-          <Switch value={showWorkout} onValueChange={handleTogglePlans} />
-          <TouchableOpacity
-            style={styles.editBtn}
-            onPress={openPlanDrawerFromButton}
+          {/* Zone 2: carousel */}
+          <View
+            style={{
+              flexGrow: 1,
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
           >
-            <Text style={styles.editBtnTxt}>Splits</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+            <View
+              style={[
+                styles.carouselContainer,
+                {
+                  width: carouselWidth,
+                  minHeight: carouselHeight,
+                },
+              ]}
+            >
+              <ScrollView
+                ref={carouselRef}
+                horizontal
+                pagingEnabled
+                scrollEnabled={false} // disables swipe, navigation is via arrows/dots
+                showsHorizontalScrollIndicator={false}
+              >
+                {carouselItems.map(renderCarouselItem)}
+              </ScrollView>
+              {carouselItems.length > 1 && (
+                <CarouselNavigator
+                  index={carouselIndex}
+                  length={carouselItems.length}
+                  onIndexChange={goToIndex}
+                  dotsRowStyle={styles.carouselDotsRow}
+                  arrowSize={36}
+                  dotSize={16}
+                  // Optionally add leftOffset/rightOffset/inactiveColor/maxDots as in SplitSharing
+                />
+              )}
+            </View>
+          </View>
 
-      {showScheduler && (
+          {/* Zone 3: bottom actions */}
+          <View
+            style={[
+              styles.bottomRow,
+              {
+                paddingLeft: insets.left,
+                paddingRight: insets.right,
+                marginTop: 16,
+              },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={() => setShowScheduler(true)}
+            >
+              <Ionicons name="add-circle" size={24} color="#fff" />
+              <Text style={styles.addBtnTxt}>Schedule 1-on-1</Text>
+            </TouchableOpacity>
+            <View style={styles.workoutToggleRow}>
+              <Text style={styles.workoutToggleLabel}>Workout Splits</Text>
+              <Switch value={showWorkout} onValueChange={handleTogglePlans} />
+              <TouchableOpacity
+                style={styles.editBtn}
+                onPress={openPlanDrawerFromButton}
+              >
+                <Text style={styles.editBtnTxt}>Splits</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        {showScheduler && (
         <Modal visible={showScheduler} transparent animationType="slide">
           <KeyboardAvoidingView
             style={{ flex: 1 }}
@@ -2198,7 +2214,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     alignItems: 'center',
     width: '100%',
-    marginBottom: 8,
+    marginBottom: 16,
   },
   addBtn: {
     flexDirection: 'row',
