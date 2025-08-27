@@ -419,8 +419,6 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
       alignItems: 'center',
       justifyContent: 'space-between',
       backgroundColor: colors.accent,
-      borderBottomWidth: 1,
-      borderColor: colors.gray,
       alignSelf: 'stretch',
       paddingVertical: 4,
       paddingHorizontal: 12,
