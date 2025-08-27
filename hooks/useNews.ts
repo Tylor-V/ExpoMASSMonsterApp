@@ -9,10 +9,14 @@ export function useNews() {
     const unsubscribe = firestore()
       .collection('news')
       .where('active', '==', true)
-      .orderBy('created', 'desc')
       .onSnapshot(
         (snapshot: any) => {
-          const items = snapshot.docs.map((doc: any) => ({ id: doc.id, ...doc.data() }));
+          const items = snapshot.docs
+            .map((doc: any) => ({ id: doc.id, ...doc.data() }))
+            .sort(
+              (a: any, b: any) =>
+                (b.created?.toMillis?.() ?? 0) - (a.created?.toMillis?.() ?? 0)
+            );
           setNews(items);
           setLoading(false);
         },
