@@ -14,6 +14,7 @@ import LoginScreen from './LoginScreens/LoginScreen';
 import SignUpScreen from './LoginScreens/SignUpScreen';
 import MainAppScreen from './MainScreens/MainAppScreen';
 import { AppContextProvider } from './firebase/AppContext';
+import { CartProvider } from './hooks/useCart';
 import AccountScreen from './screens/AccountScreen';
 import AccountabilityFormScreen from './screens/AccountabilityFormScreen';
 import DMChatScreen from './screens/DMChatScreen';
@@ -107,13 +108,15 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppContextProvider>
-        <NavigationContainer>
-          <RootStack.Navigator screenOptions={{ headerShown: false }}>
-            <RootStack.Screen name="Splash" component={SplashScreen} />
-            <RootStack.Screen name="AuthStack" component={AuthStackScreen} />
-            <RootStack.Screen name="AppStack" component={AppStackScreen} />
-          </RootStack.Navigator>
-        </NavigationContainer>
+        <CartProvider>
+          <NavigationContainer>
+            <RootStack.Navigator screenOptions={{ headerShown: false }}>
+              <RootStack.Screen name="Splash" component={SplashScreen} />
+              <RootStack.Screen name="AuthStack" component={AuthStackScreen} />
+              <RootStack.Screen name="AppStack" component={AppStackScreen} />
+            </RootStack.Navigator>
+          </NavigationContainer>
+        </CartProvider>
       </AppContextProvider>
     </GestureHandlerRootView>
   );
