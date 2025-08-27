@@ -28,6 +28,7 @@ import { awardStreakXP, awardXP } from '../firebase/chatXPHelpers';
 import { auth, firestore } from '../firebase/firebase';
 import { useLastRead } from '../firebase/userChatReadHelpers';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
+import { useKeyboardAnimation } from '../hooks/useKeyboardAnimation';
 import { colors, fonts, gradients } from '../theme';
 import {
   ANIM_BUTTON_POP,
@@ -157,6 +158,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
   const insets = useSafeAreaInsets();
   const inputBarHeight = useChatInputBarHeight();
+  const [keyboardOffset] = useKeyboardAnimation(-10);
 
   const currentUserId = auth().currentUser?.uid;
   const flatListRef = useRef<FlatList>(null);
@@ -1043,7 +1045,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
               <TouchableOpacity
                 style={[
                   chatStyles.jumpToBottomBtn,
-                  { bottom: inputBarHeight + JUMP_BUTTON_OFFSET },
+                  { bottom: Animated.add(keyboardOffset, inputBarHeight + JUMP_BUTTON_OFFSET) },
                 ]}
                 onPress={handleJumpToBottom}
                 activeOpacity={0.88}
@@ -1090,12 +1092,12 @@ const AllChannels: React.FC<ChatScreenProps> = ({
             )}
           </View>
           {!readOnly && (
-            <View
+            <Animated.View
               style={[
                 chatStyles.inputRow,
                 chatStyles.floatingInputRow,
-                { bottom: -10 },
-              isTimedOut && chatStyles.disabledRow,
+                isTimedOut && chatStyles.disabledRow,
+                { bottom: keyboardOffset },
               ]}
             >
               <TextInput
@@ -1115,7 +1117,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                   <Ionicons name="arrow-up" size={22} color={colors.white} />
                 </LinearGradient>
               </TouchableOpacity>
-            </View>
+            </Animated.View>
           )}
         </View>
       </KeyboardAvoidingView>
