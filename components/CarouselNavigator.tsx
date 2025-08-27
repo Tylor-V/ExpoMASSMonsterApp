@@ -34,7 +34,7 @@ export default function CarouselNavigator({
 }: Props) {
   const dots = Array.from({ length: maxDots ? Math.min(length, maxDots) : length });
   return (
-    <>
+    <View pointerEvents="box-none" style={styles.container}>
       <TouchableOpacity
         testID="prev-arrow"
         style={[styles.arrow, { left: leftOffset, marginTop: -arrowSize * 0.75 }]}
@@ -81,15 +81,21 @@ export default function CarouselNavigator({
           />
         ))}
       </View>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    ...StyleSheet.absoluteFillObject,
+  },
   dotsRow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 8,
     marginBottom: 40,
   },
   dot: {
