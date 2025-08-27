@@ -316,17 +316,6 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
   const [headerBottomY, setHeaderBottomY] = useState(0);
   const [dropdownWidth, setDropdownWidth] = useState(0);
   const [showPinnedDropdown, setShowPinnedDropdown] = useState(false);
-  const pinnedBarRef = useRef<Pressable | null>(null);
-  const [pinnedBarBottomY, setPinnedBarBottomY] = useState(0);
-  const containerRef = useRef<View | null>(null);
-  const updatePinnedPosition = () => {
-    if (!pinnedBarRef.current || !containerRef.current) return;
-    pinnedBarRef.current.measureLayout(
-      containerRef.current,
-      (_x, y, _width, height) => setPinnedBarBottomY(y + height),
-      () => {},
-    );
-  };
   const dropdownAnim = useRef(new Animated.Value(0)).current;
   const overlayAnim = useRef(new Animated.Value(0)).current;
 
@@ -414,25 +403,6 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
   );
 
   const pinnedStyles = StyleSheet.create({
-    pinnedBar: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: colors.accent,
-      alignSelf: 'stretch',
-      paddingVertical: 4,
-      paddingHorizontal: 12,
-      shadowColor: colors.shadow,
-      shadowOpacity: 0.15,
-      shadowRadius: 3,
-      elevation: 1,
-      zIndex: 17,
-    },
-    pinnedBarText: {
-      color: colors.black,
-      fontSize: 16,
-      fontWeight: 'bold',
-    },
     pinnedDropdown: {
       position: 'absolute',
       left: 0,
@@ -515,8 +485,10 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
         ANIM_MEDIUM,
       );
     } else {
+headerRef.current?.measureInWindow((_x, y, _width, height) => {
+        setHeaderBottomY(y + height);
+      });
       setShowPinnedDropdown(true);
-      InteractionManager.runAfterInteractions(updatePinnedPosition);
     }
   };
 
@@ -533,7 +505,7 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
 
   return (
     <ScreenContainer padTop={false}>
-      <View ref={containerRef} style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
       <View
         style={headerStyles.headerBar}
         ref={headerRef}
@@ -596,6 +568,16 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
         <TouchableOpacity onPress={() => setOnlineUsersOpen(true)} style={{ marginHorizontal: 8 }}>
           <Image source={UsersIcon} style={{ width: 32, height: 32 }} contentFit="contain" />
         </TouchableOpacity>
+        {selectedChannel.type !== 'voice' && selectedChannel.type !== 'video' && (
+          <TouchableOpacity onPress={togglePinnedDropdown} style={{ marginHorizontal: 8 }}>
+            <FontAwesome
+              testID="pinned-button"
+              name="thumb-tack"
+              size={28}
+              color={pinnedMessages.length ? colors.accent : colors.black}
+            />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity onPress={onOpenDMInbox} style={{ marginHorizontal: 8 }}>
           <View style={{ position: 'relative' }}>
             <Image source={InboxIcon} style={{ width: 32, height: 32 }} contentFit="contain" />
@@ -672,95 +654,96 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
         selectedChannel.type !== 'video' && (
           <StoriesBar openStoriesViewer={openStoriesViewer} />
         )}
-      {pinnedMessages.length > 0 &&
-        selectedChannel.type !== 'voice' &&
+      {selectedChannel.type !== 'voice' &&
         selectedChannel.type !== 'video' && (
-        <>
-          <Pressable
-            ref={pinnedBarRef}
-            onLayout={updatePinnedPosition}
-            onPress={togglePinnedDropdown}
-            style={pinnedStyles.pinnedBar}
-          >
-            <Text style={pinnedStyles.pinnedBarText}>
-              {pinnedMessages.length} {pinnedMessages.length === 1 ? 'Pinned Message' : 'Pinned Messages'}
-            </Text>
-            <Animated.View style={{ transform: [{ rotate: showPinnedDropdown ? '180deg' : '0deg' }] }}>
-              <Icon name="chevron-down-outline" size={16} color={colors.black} />
-            </Animated.View>
-          </Pressable>
-          {showPinnedDropdown && (
-            <AnimatedPressable
-              style={[pinnedStyles.pinnedOverlay, { top: pinnedBarBottomY, opacity: overlayAnim }]}
-              onPress={togglePinnedDropdown}
-            />
-          )}
-          {showPinnedDropdown && (
-            <Animated.View
-              style={[
-                pinnedStyles.pinnedDropdown,
-                {
-                  top: pinnedBarBottomY,
-                  maxHeight: SCREEN_HEIGHT * 0.6,
-                  opacity: dropdownAnim,
-                  transform: [
-                    {
-                      translateY: dropdownAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [-SCREEN_HEIGHT * 0.6, 0],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            >
-              <ScrollView>
-                {pinnedMessages.map((pm, idx) => {
-                  const user = pinUsers[pm.userId] || {};
-                  const displayName = user.firstName
-                    ? `${user.firstName} ${user.lastName ? user.lastName.charAt(0) + '.' : ''}`
-                    : 'User';
-                  const d = pm.timestamp?.toDate ? pm.timestamp.toDate() : new Date(pm.timestamp);
-                  const time = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate())} ${d.toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}`;
-                  const previewText = String(
-                    selectedChannel.id === 'split-sharing' && pm.split?.name
-                      ? pm.split.name
-                      : pm.text || ''
-                  );
-                  return (
-                    <TouchableOpacity
-                      key={pm.id}
-                      style={[pinnedStyles.pinnedPreviewRow, idx !== pinnedMessages.length - 1 && pinnedStyles.pinnedDivider]}
-                      onPress={() => {
-                        togglePinnedDropdown();
-                        // Delay scrolling until dropdown closes and interactions settle
-                        setTimeout(() => {
-                          InteractionManager.runAfterInteractions(() => {
-                            scrollToMessageFn?.(String(pm.id));
-                          });
-                        }, ANIM_MEDIUM + 30);
-                      }}
-                      activeOpacity={0.7}
-                    >
-                      <FontAwesome name="thumb-tack" size={16} color={colors.yellow} style={pinnedStyles.pinnedPreviewIcon} />
-                      <View style={{ flex: 1 }}>
-                        <Text numberOfLines={2} style={pinnedStyles.pinnedPreviewText}>{previewText}</Text>
-                        <View style={{ flexDirection: 'row', marginTop: 2 }}>
-                          <Text style={pinnedStyles.pinnedPreviewSender}>{displayName}</Text>
-                          <Text style={pinnedStyles.pinnedPreviewTime}>{time}</Text>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
-            </Animated.View>
-          )}
-        </>
-      )}
+          <>
+            {showPinnedDropdown && (
+              <AnimatedPressable
+                style={[pinnedStyles.pinnedOverlay, { top: headerBottomY, opacity: overlayAnim }]}
+                onPress={togglePinnedDropdown}
+              />
+            )}
+            {showPinnedDropdown && (
+              <Animated.View
+                style={[
+                  pinnedStyles.pinnedDropdown,
+                  {
+                    top: headerBottomY,
+                    maxHeight: SCREEN_HEIGHT * 0.6,
+                    opacity: dropdownAnim,
+                    transform: [
+                      {
+                        translateY: dropdownAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [-SCREEN_HEIGHT * 0.6, 0],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                <ScrollView>
+                  {pinnedMessages.length ? (
+                    pinnedMessages.map((pm, idx) => {
+                      const user = pinUsers[pm.userId] || {};
+                      const displayName = user.firstName
+                        ? `${user.firstName} ${user.lastName ? user.lastName.charAt(0) + '.' : ''}`
+                        : 'User';
+                      const d = pm.timestamp?.toDate ? pm.timestamp.toDate() : new Date(pm.timestamp);
+                      const time = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate())} ${d.toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}`;
+                      const previewText = String(
+                        selectedChannel.id === 'split-sharing' && pm.split?.name
+                          ? pm.split.name
+                          : pm.text || ''
+                      );
+                      return (
+                        <TouchableOpacity
+                          key={pm.id}
+                          style={[
+                            pinnedStyles.pinnedPreviewRow,
+                            idx !== pinnedMessages.length - 1 && pinnedStyles.pinnedDivider,
+                          ]}
+                          onPress={() => {
+                            togglePinnedDropdown();
+                            setTimeout(() => {
+                              InteractionManager.runAfterInteractions(() => {
+                                scrollToMessageFn?.(String(pm.id));
+                              });
+                            }, ANIM_MEDIUM + 30);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <FontAwesome
+                            name="thumb-tack"
+                            size={16}
+                            color={colors.yellow}
+                            style={pinnedStyles.pinnedPreviewIcon}
+                          />
+                          <View style={{ flex: 1 }}>
+                            <Text numberOfLines={2} style={pinnedStyles.pinnedPreviewText}>
+                              {previewText}
+                            </Text>
+                            <View style={{ flexDirection: 'row', marginTop: 2 }}>
+                              <Text style={pinnedStyles.pinnedPreviewSender}>{displayName}</Text>
+                              <Text style={pinnedStyles.pinnedPreviewTime}>{time}</Text>
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })
+                  ) : (
+                    <View style={{ padding: 16 }}>
+                      <Text style={{ color: colors.gray }}>No pinned messages</Text>
+                    </View>
+                  )}
+                </ScrollView>
+              </Animated.View>
+            )}
+          </>
+        )}
       <StoriesViewer visible={storiesOpen} userId={storyUserId} onClose={() => setStoriesOpen(false)} />
       <View style={{ flex: 1 }}>
         <View style={{ flex: 1, minWidth: 0 }}>

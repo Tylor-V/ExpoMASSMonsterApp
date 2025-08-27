@@ -82,7 +82,14 @@ function StoreScreen({ navigation }) {
   const cartAnim = useRef(new Animated.Value(1)).current;
   const dotAnim = useRef(new Animated.Value(1)).current;
   const scrollY = useRef(new Animated.Value(0)).current;
-  const cartTotal = cartItems.reduce((t, i) => t + i.price * i.quantity, 0);
+  const cartTotal = useMemo(
+    () =>
+      cartItems.reduce(
+        (total, item) => total + Number(item.price) * item.quantity,
+        0,
+      ),
+    [cartItems],
+  );
 
   useEffect(() => {
     Animated.parallel([
