@@ -18,6 +18,18 @@ jest.mock('../../MainScreens/ChatScreen', () => {
   };
 });
 
+describe('ChatBar gym feed button', () => {
+  it('calls onOpenGymFeed when pressed', () => {
+    mockPinnedMessages = [];
+    const onOpenGymFeed = jest.fn();
+    const { getByTestId } = render(
+      <ChatBar onOpenDMInbox={() => {}} onOpenGymFeed={onOpenGymFeed} />,
+    );
+    fireEvent.press(getByTestId('gym-feed-button'));
+    expect(onOpenGymFeed).toHaveBeenCalled();
+  });
+});
+
 jest.mock('../../firebase/firebase', () => ({
   firestore: () => ({
     collection: () => ({
