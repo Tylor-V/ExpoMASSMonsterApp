@@ -825,61 +825,15 @@ const AllChannels: React.FC<ChatScreenProps> = ({
               >
                 {item.text}
               </Text>
-              <View style={chatStyles.footerRow}>
-                <View
-                  style={{
-                    backgroundColor: getChatLevelColor(chatLevel),
-                    borderRadius: 2,
-                    paddingHorizontal: 4,
-                    marginRight: 3,
-                    marginLeft: 1,
-                    paddingVertical: 2,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: colors.white,
-                      fontSize: 12,
-                      fontWeight: 'bold',
-                      letterSpacing: 0.8,
-                    }}
-                  >
-                    Lv{chatLevel}
-                  </Text>
-                </View>
-                {user?.accountabilityStreak > 0 && (
+              <View style={{ alignSelf: 'flex-end', alignItems: 'flex-end' }}>
+                <View style={chatStyles.footerRow}>
                   <View
                     style={{
-                      backgroundColor: colors.yellow,
+                      backgroundColor: getChatLevelColor(chatLevel),
                       borderRadius: 2,
                       paddingHorizontal: 4,
                       marginRight: 3,
-                      paddingVertical: 2,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: colors.black,
-                        fontSize: 12,
-                        fontWeight: 'bold',
-                        letterSpacing: 0.8,
-                      }}
-                    >
-                      🔥{user.accountabilityStreak}
-                    </Text>
-                  </View>
-                )}
-                {ROLE_TAGS[user?.role] && (
-                  <View
-                    style={{
-                      backgroundColor: ROLE_COLORS[user.role],
-                      borderRadius: 2,
-                      paddingHorizontal: 4,
-                      marginRight: 3,
+                      marginLeft: 1,
                       paddingVertical: 2,
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -893,10 +847,58 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                         letterSpacing: 0.8,
                       }}
                     >
-                      {ROLE_TAGS[user.role]}
+                      Lv{chatLevel}
                     </Text>
                   </View>
-                )}
+                  {user?.accountabilityStreak > 0 && (
+                    <View
+                      style={{
+                        backgroundColor: colors.yellow,
+                        borderRadius: 2,
+                        paddingHorizontal: 4,
+                        marginRight: 3,
+                        paddingVertical: 2,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: colors.black,
+                          fontSize: 12,
+                          fontWeight: 'bold',
+                          letterSpacing: 0.8,
+                        }}
+                      >
+                        🔥{user.accountabilityStreak}
+                      </Text>
+                    </View>
+                  )}
+                  {ROLE_TAGS[user?.role] && (
+                    <View
+                      style={{
+                        backgroundColor: ROLE_COLORS[user.role],
+                        borderRadius: 2,
+                        paddingHorizontal: 4,
+                        marginRight: 3,
+                        paddingVertical: 2,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: colors.white,
+                          fontSize: 12,
+                          fontWeight: 'bold',
+                          letterSpacing: 0.8,
+                        }}
+                      >
+                        {ROLE_TAGS[user.role]}
+                      </Text>
+                    </View>
+                  )}
+                </View>
                 <Text style={chatStyles.timestamp}>{formattedTime}</Text>
               </View>
             </AnimatedLinearGradient>
