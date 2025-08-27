@@ -629,7 +629,7 @@ const FULLSCREEN_PAGES = PAGES.map((p, i) => (p.fullImage ? i : -1)).filter(
 );
 const PROBLEM_PAGE_INDEX = PAGES.findIndex(p => p.problemBlock);
 
-export default function MindsetCourse({onBack}) {
+export default function MindsetCourse({ onBack, restart = false }) {
   const [page, setPage] = useState(0);
   const pagerRef = useRef<CoursePagerHandle>(null);
   const scrollRefs = useRef<Array<ScrollView | null>>([]);
@@ -667,6 +667,11 @@ export default function MindsetCourse({onBack}) {
   // Initialize from saved progress
   useEffect(() => {
     if (!user || initialSet) return;
+    if (restart) {
+      setPage(0);
+      setInitialSet(true);
+      return;
+    }
     const last = user.mindsetChapterCompleted || 1;
     setChaptersCompleted(
       Array(CHAPTER_COUNT)
@@ -677,7 +682,7 @@ export default function MindsetCourse({onBack}) {
     setPage(start);
     if (last < 1) updateMindsetChapter(1);
     setInitialSet(true);
-  }, [user, initialSet]);
+  }, [user, initialSet, restart]);
 
   useEffect(() => {
     if (initialSet) {

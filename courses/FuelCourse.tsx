@@ -57,7 +57,7 @@ const PAGES = [
   'final',
 ];
 
-export default function FuelCourse({onBack}) {
+export default function FuelCourse({ onBack, restart = false }) {
   const [page, setPage] = useState(0);
   const pagerRef = useRef<CoursePagerHandle>(null);
   const [calories, setCalories] = useState(2500);
@@ -68,7 +68,7 @@ export default function FuelCourse({onBack}) {
   const pageCount = PAGES.length;
   const topPad = useCourseTopPad();
   const insets = useSafeAreaInsets();
-  const { startPage, ready } = useSavedCoursePage('fuel', pageCount);
+  const { startPage, ready } = useSavedCoursePage('fuel', pageCount, restart);
 
   useEffect(() => {
     if (ready) {

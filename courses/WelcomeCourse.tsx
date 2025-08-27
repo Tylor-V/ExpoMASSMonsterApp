@@ -150,12 +150,12 @@ const PAGES = [
   },
 ];
 
-export default function WelcomeCourse({onBack}) {
+export default function WelcomeCourse({ onBack, restart = false }) {
   const [page, setPage] = useState(0);
   const pagerRef = useRef<CoursePagerHandle>(null);
   const topPad = useCourseTopPad();
   const pageCount = PAGES.length;
-  const { startPage, ready } = useSavedCoursePage('welcome', pageCount);
+  const { startPage, ready } = useSavedCoursePage('welcome', pageCount, restart);
 
   useEffect(() => {
     if (ready) {

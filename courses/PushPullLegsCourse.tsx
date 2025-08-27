@@ -256,14 +256,14 @@ const PAGES = [
   },
 ];
 
-export default function PushPullLegsCourse({onBack}) {
+export default function PushPullLegsCourse({ onBack, restart = false }) {
   const [page, setPage] = useState(0);
   const pagerRef = useRef<CoursePagerHandle>(null);
   const topPad = useCourseTopPad();
   const insets = useSafeAreaInsets();
   const [fullscreenMedia, setFullscreenMedia] = useState(null);
   const pageCount = PAGES.length;
-  const { startPage, ready } = useSavedCoursePage('push-pull-legs', pageCount);
+  const { startPage, ready } = useSavedCoursePage('push-pull-legs', pageCount, restart);
 
   useEffect(() => {
     if (ready) {
