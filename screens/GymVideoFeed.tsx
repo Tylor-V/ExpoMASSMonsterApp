@@ -6,6 +6,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, firestore, storage } from '../firebase/firebase';
+import { colors } from '../theme';
 
 const { height, width } = Dimensions.get('window');
 
@@ -232,7 +233,7 @@ export default function GymVideoFeed({ navigation }) {
         onPress={handleBack}
         accessibilityLabel="Back to Chat"
       >
-        <Ionicons name="chevron-back" size={29} color="#232323" />
+        <Ionicons name="chevron-back" size={29} color={colors.grayLight} />
       </TouchableOpacity>
     </View>
   );
@@ -249,7 +250,7 @@ export default function GymVideoFeed({ navigation }) {
         onPress={handleBack}
         accessibilityLabel="Back to Chat"
       >
-        <Ionicons name="chevron-back" size={29} color="#232323" />
+        <Ionicons name="chevron-back" size={29} color={colors.grayLight} />
       </TouchableOpacity>
     </View>
   );
@@ -281,7 +282,7 @@ export default function GymVideoFeed({ navigation }) {
         onPress={handleBack}
         accessibilityLabel="Back to Chat"
       >
-        <Ionicons name="chevron-back" size={29} color="#232323" />
+        <Ionicons name="chevron-back" size={29} color={colors.grayLight} />
       </TouchableOpacity>
     </View>
   );
@@ -344,5 +345,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
   },
   uploadTxt: { color: '#232323', fontWeight: 'bold', fontSize: 16, marginLeft: 7 },
-  backBtn: { position: 'absolute', left: 19, backgroundColor: '#FFCC00', borderRadius: 22, padding: 7, zIndex: 22 },
+  backBtn: { position: 'absolute', left: 19, padding: 7, zIndex: 22 },
 });
