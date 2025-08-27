@@ -1679,13 +1679,13 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           </View>
 
           {/* Zone 2: carousel */}
-          <View
-            style={{
-              flexGrow: 1,
-              justifyContent: 'center',
-              alignItems: 'center',
-            }}
-          >
+            <View
+              style={{
+                flexGrow: 1,
+                justifyContent: 'flex-start',
+                alignItems: 'center',
+              }}
+            >
             <View
               style={[
                 styles.carouselContainer,
