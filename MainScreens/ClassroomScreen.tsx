@@ -1,27 +1,27 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
   Animated,
   Dimensions,
+  FlatList,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Image } from 'expo-image';
+import FuelBanner from '../assets/fuel-banner.jpg';
+import MassUniversityLogo from '../assets/mass-univeristy-logo.png';
+import MindsetBanner from '../assets/mindset-banner.jpg';
+import PPLBanner from '../assets/ppl-banner.jpg';
+import WelcomeBanner from '../assets/welcome-banner.jpg';
 import WhiteBackgroundWrapper from '../components/WhiteBackgroundWrapper';
-import WelcomeCourse from '../courses/WelcomeCourse';
-import PushPullLegsCourse from '../courses/PushPullLegsCourse';
 import FuelCourse from '../courses/FuelCourse';
 import MindsetCourse from '../courses/MindsetCourse';
-import WelcomeBanner from '../assets/welcome-banner.jpg';
-import PPLBanner from '../assets/ppl-banner.jpg';
-import FuelBanner from '../assets/fuel-banner.jpg';
-import MindsetBanner from '../assets/mindset-banner.jpg';
-import MassUniversityLogo from '../assets/mass-univeristy-logo.png';
+import PushPullLegsCourse from '../courses/PushPullLegsCourse';
+import WelcomeCourse from '../courses/WelcomeCourse';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import { colors } from '../theme';
-import { Ionicons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -60,6 +60,7 @@ const COURSES = [
 function ClassroomScreen({ onRequestTabChange, onCourseOpenChange }) {
   const [openCourseId, setOpenCourseId] = useState(null);
   const [currentCourse, setCurrentCourse] = useState(null);
+  const [restartCourse, setRestartCourse] = useState(false);
   const user = useCurrentUserDoc();
   const anim = useRef(new Animated.Value(0)).current;
 
@@ -137,12 +138,26 @@ function ClassroomScreen({ onRequestTabChange, onCourseOpenChange }) {
                     style={styles.goToCourseBtn}
                     onPress={() => {
                       setOpenCourseId(null);
+                      setRestartCourse(false);
                       setCurrentCourse(item);
                       if (onCourseOpenChange) onCourseOpenChange(true);
                     }}
                   >
                     <Text style={styles.goToCourseText}>Go to Course</Text>
                   </TouchableOpacity>
+                  {progress > 0 && (
+                    <TouchableOpacity
+                      style={styles.restartCourseBtn}
+                      onPress={() => {
+                        setOpenCourseId(null);
+                        setRestartCourse(true);
+                        setCurrentCourse(item);
+                        if (onCourseOpenChange) onCourseOpenChange(true);
+                      }}
+                    >
+                      <Text style={styles.restartCourseText}>Restart Course</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )}
             </View>
@@ -151,14 +166,16 @@ function ClassroomScreen({ onRequestTabChange, onCourseOpenChange }) {
         />
       </Animated.View>
       {CourseComponent && (
-        <Animated.View style={[StyleSheet.absoluteFillObject, { transform: [{ translateX: courseTranslate }] }]}> 
+        <Animated.View style={[StyleSheet.absoluteFillObject, { transform: [{ translateX: courseTranslate }] }]}>
           <CourseComponent
             onBack={() => {
               setCurrentCourse(null);
               setOpenCourseId(null);
+              setRestartCourse(false);
               if (onCourseOpenChange) onCourseOpenChange(false);
               if (onRequestTabChange) onRequestTabChange(2);
             }}
+            restart={restartCourse}
           />
         </Animated.View>
       )}
@@ -243,6 +260,22 @@ const styles = StyleSheet.create({
   },
   goToCourseText: {
     color: colors.textDark,
+    fontWeight: 'bold',
+    fontSize: 16,
+    letterSpacing: 0.5,
+    },
+  restartCourseBtn: {
+    marginTop: 8,
+    backgroundColor: colors.white,
+    borderRadius: 24,
+    alignItems: 'center',
+    paddingVertical: 14,
+    width: '100%',
+    borderWidth: 2,
+    borderColor: colors.accent,
+  },
+  restartCourseText: {
+    color: colors.accent,
     fontWeight: 'bold',
     fontSize: 16,
     letterSpacing: 0.5,
