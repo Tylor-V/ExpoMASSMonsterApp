@@ -7,7 +7,7 @@ import {
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as NativeSplashScreen from 'expo-splash-screen';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import ForgotPasswordScreen from './LoginScreens/ForgotPasswordScreen';
 import LoginScreen from './LoginScreens/LoginScreen';
@@ -31,6 +31,7 @@ import SplitEditorScreen from './screens/SplitEditorScreen';
 import TermsPrivacyScreen from './screens/TermsPrivacyScreen';
 import WorkoutHistoryScreen from './screens/WorkoutHistoryScreen';
 import { preloadGlobals } from './utils/preloadTools';
+import { useNews } from './hooks/useNews';
 
 // Keep the native splash screen visible until the first render
 NativeSplashScreen.preventAutoHideAsync().catch(err =>
@@ -52,8 +53,7 @@ function AuthStackScreen() {
 }
 
 function AppStackScreen() {
-  const [news, setNews] = useState<any[]>([]);
-  const handleNewsAdded = useCallback((item: any) => setNews((prev) => [item, ...prev]), []);
+  const { news, loading } = useNews();
 
   return (
     <AppStack.Navigator screenOptions={{ headerShown: false }}>
@@ -62,8 +62,7 @@ function AppStackScreen() {
           <MainAppScreen
             {...props}
             news={news}
-            newsLoaded={true}
-            onNewsAdded={handleNewsAdded}
+            newsLoaded={!loading}
           />
         )}
       </AppStack.Screen>
