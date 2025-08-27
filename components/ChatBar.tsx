@@ -563,9 +563,6 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
           </View>
           {anyUnread && <View style={headerStyles.unreadDot} />}
         </Pressable>
-        <TouchableOpacity onPress={() => setOnlineUsersOpen(true)} style={{ marginHorizontal: 8 }}>
-          <Image source={UsersIcon} style={{ width: 32, height: 32 }} contentFit="contain" />
-        </TouchableOpacity>
         {selectedChannel.type !== 'voice' && selectedChannel.type !== 'video' && (
           <TouchableOpacity onPress={togglePinnedDropdown} style={{ marginHorizontal: 8 }}>
             <FontAwesome
@@ -576,6 +573,9 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
             />
           </TouchableOpacity>
         )}
+        <TouchableOpacity onPress={() => setOnlineUsersOpen(true)} style={{ marginHorizontal: 8 }}>
+          <Image source={UsersIcon} style={{ width: 32, height: 32 }} contentFit="contain" />
+        </TouchableOpacity>
         <TouchableOpacity onPress={onOpenDMInbox} style={{ marginHorizontal: 8 }}>
           <View style={{ position: 'relative' }}>
             <Image source={InboxIcon} style={{ width: 32, height: 32 }} contentFit="contain" />

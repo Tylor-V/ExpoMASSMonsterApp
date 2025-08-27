@@ -1165,7 +1165,7 @@ export const chatStyles = StyleSheet.create({
   },
   pinnedBubble: {
     borderWidth: 4,
-    borderColor: colors.purple,
+    borderColor: colors.accent,
     shadowColor: colors.goldGlow,
     shadowOpacity: 1.0,
     shadowRadius: 14,
