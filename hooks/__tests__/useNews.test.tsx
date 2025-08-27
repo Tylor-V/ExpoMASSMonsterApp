@@ -7,14 +7,17 @@ jest.mock('../../firebase/firebase', () => ({
   firestore: () => ({
     collection: () => ({
       where: () => ({
-        orderBy: () => ({
-          onSnapshot: (cb: any) => {
-            cb({
-              docs: [{ id: '1', data: () => ({ message: 'Test news' }) }],
-            });
-            return () => {};
-          },
-        }),
+        onSnapshot: (cb: any) => {
+          cb({
+            docs: [
+              {
+                id: '1',
+                data: () => ({ message: 'Test news', created: { toMillis: () => 1 } }),
+              },
+            ],
+          });
+          return () => {};
+        },
       }),
     }),
   }),
