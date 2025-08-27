@@ -347,13 +347,6 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
           fontWeight: 'bold',
           color: colors.background,
         },
-        chatSuffix: {
-          fontSize: 20,
-          fontWeight: '700',
-          fontWeight: 'bold',
-          color: colors.background,
-          marginLeft: 2,
-        },
         headerArrowBtn: { marginLeft: 1, alignSelf: 'center', padding: 2 },
         unreadDot: {
           width: 8,
@@ -543,16 +536,14 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
                 color={colors.accent}
                 style={{ marginLeft: 4 }}
               />
-              ) : selectedChannel.type === 'video' ? (
+            ) : selectedChannel.type === 'video' ? (
               <Icon
                 name="videocam"
                 size={16}
                 color={colors.accent}
                 style={{ marginLeft: 4 }}
               />
-            ) : (
-              <Text style={headerStyles.chatSuffix}>-CHAT</Text>
-            )}
+            ) : null}
           <View
             ref={arrowRef}
             style={headerStyles.headerArrowBtn}
