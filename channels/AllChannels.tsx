@@ -1140,7 +1140,7 @@ export const chatStyles = StyleSheet.create({
   },
   bubble: {
     borderRadius: 24,
-    paddingHorizontal: 18,
+    paddingHorizontal: 20,
     paddingVertical: 12,
     marginHorizontal: 3,
     minWidth: 120,
@@ -1190,6 +1190,7 @@ export const chatStyles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
     marginRight: 4,
+    marginVertical: 2,
   },
   metaRow: {
     flexDirection: 'row',
@@ -1200,14 +1201,16 @@ export const chatStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-end',
-    marginTop: 2,
+    marginTop: 8,
+    marginLeft: 26,
   },
   timestamp: {
     color: colors.gray,
     fontSize: 10,
     fontWeight: '400',
     fontFamily: fonts.regular,
-    marginTop: 1,
+    marginTop: 6,
+    marginBottom: -4,
   },
   inputRow: {
     flexDirection: 'row',
