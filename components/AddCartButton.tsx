@@ -45,7 +45,7 @@ function AddCartButton({ item, style }: Props) {
         <Ionicons name="cart" size={24} color={colors.black} />
       </Pressable>
       {qty > 0 && (
-        <View style={styles.badge} accessibilityLabel={`quantity-${qty}`}>\
+        <View style={styles.badge} accessibilityLabel={`quantity-${qty}`}>
           <Text style={styles.badgeText}>{qty}</Text>
         </View>
       )}
