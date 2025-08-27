@@ -933,14 +933,16 @@ const AllChannels: React.FC<ChatScreenProps> = ({
             </>
           )}
         </View>
-          {(reactions.length > 0 || (!isOwnMessage && !reactions.some(r => r.userId === currentUserId))) && (
-          <Animated.View
-            pointerEvents={actionTargetId === item.id ? 'none' : 'auto'}
-            style={[
-              chatStyles.reactionRow,
-              { opacity: reactionOpacityMap[item.id] || 1 },
-            ]}
-          >
+        {actionTargetId !== item.id &&
+          (reactions.length > 0 ||
+            (!isOwnMessage && !reactions.some(r => r.userId === currentUserId))) && (
+            <Animated.View
+              pointerEvents={actionTargetId === item.id ? 'none' : 'auto'}
+              style={[
+                chatStyles.reactionRow,
+                { opacity: reactionOpacityMap[item.id] || 1 },
+              ]}
+            >
             {Array.from(new Set(reactions.map(r => r.emoji))).map(emoji => {
               const count = reactions.filter(r => r.emoji === emoji).length;
               const userReacted = reactions.some(
@@ -972,8 +974,8 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                 <Ionicons name="add-circle-outline" size={18} color="#888" />
               </TouchableOpacity>
             )}
-          </Animated.View>
-        )}
+            </Animated.View>
+          )}
         </View>
         </>
       );
