@@ -1,16 +1,16 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, StyleSheet, StatusBar, Platform } from 'react-native';
-import SwipeableTabs from '../components/SwipeableTabs';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import ChatBar from '../components/ChatBar';
-import ClassroomScreen from './ClassroomScreen';
-import ProfileScreen from './ProfileScreen';
-import StoreScreen from './StoreScreen';
-import CalendarScreen from './CalendarScreen';
 import NewsModal from '../components/NewsModal';
 import ProfileModal from '../components/ProfileModal';
+import SwipeableTabs from '../components/SwipeableTabs';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import usePresence from '../hooks/usePresence';
 import { colors } from '../theme';
+import CalendarScreen from './CalendarScreen';
+import ClassroomScreen from './ClassroomScreen';
+import ProfileScreen from './ProfileScreen';
+import StoreScreen from './StoreScreen';
 
 const BACKGROUND_COLOR = colors.black;
 
@@ -22,14 +22,8 @@ const routes = [
   { key: 'profile', title: 'Profile', icon: 'person-outline' },
 ];
 
-const MainAppScreen = ({ navigation, route, news, newsLoaded, onNewsAdded }) => {
-  const initialTab = route?.params?.tabIndex ?? 1;
-  const [tabIndex, setTabIndex] = useState(initialTab); // Start on Calendar tab
-  useEffect(() => {
-    if (route?.params?.tabIndex !== undefined) {
-      setTabIndex(route.params.tabIndex);
-    }
-  }, [route?.params?.tabIndex]);
+const MainAppScreen = ({ navigation, news, newsLoaded }) => {
+  const [tabIndex, setTabIndex] = useState(1); // Start on Calendar tab
   // -- NEW STATE --
   const [isCourseOpen, setIsCourseOpen] = useState(false);
 
@@ -75,14 +69,9 @@ const MainAppScreen = ({ navigation, route, news, newsLoaded, onNewsAdded }) => 
   );
   const CalendarScene = useCallback(
     () => (
-      <CalendarScreen
-        news={news}
-        newsLoaded={newsLoaded}
-        user={user}
-        onNewsAdded={onNewsAdded}
-      />
+      <CalendarScreen news={news} newsLoaded={newsLoaded} user={user} />
     ),
-    [news, newsLoaded, user, onNewsAdded]
+    [news, newsLoaded, user]
   );
 
   const scenes = useMemo(
