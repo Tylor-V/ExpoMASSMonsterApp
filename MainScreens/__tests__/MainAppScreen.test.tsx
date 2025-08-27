@@ -38,7 +38,13 @@ describe('MainAppScreen', () => {
   it('switches to Chat tab when pressed', async () => {
     const navigation = { navigate: jest.fn() } as any;
     const { getByLabelText, getByText } = render(
-      <MainAppScreen navigation={navigation} news={[]} newsLoaded />,
+      <MainAppScreen
+        navigation={navigation}
+        news={[]}
+        newsLoaded
+        newsOpen={false}
+        setNewsOpen={jest.fn()}
+      />,
     );
     fireEvent.press(getByLabelText('Chat'));
     await waitFor(() => getByText('Chat Active'));
