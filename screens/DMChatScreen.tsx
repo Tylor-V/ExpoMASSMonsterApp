@@ -355,8 +355,10 @@ const DMChatScreen = ({ navigation, route }) => {
                     </LinearGradient>
                   </Pressable>
                 </View>
-                {(reactions.length > 0 || (!isMe && !reactions.some(r => r.userId === currentUserId))) && (
-                  <View style={styles.reactionRow}>
+                {actionTargetId !== item.id &&
+                  (reactions.length > 0 ||
+                    (!isMe && !reactions.some(r => r.userId === currentUserId))) && (
+                    <View style={styles.reactionRow}>
                     {Array.from(new Set(reactions.map(r => r.emoji))).map(emoji => {
                       const count = reactions.filter(r => r.emoji === emoji).length;
                       const userReacted = reactions.some(
@@ -386,8 +388,8 @@ const DMChatScreen = ({ navigation, route }) => {
                         <Icon name="add-circle-outline" size={18} color="#888" />
                       </TouchableOpacity>
                     )}
-                  </View>
-                )}
+                    </View>
+                  )}
                 {actionTargetId === item.id && (
                   <>
                     <Pressable

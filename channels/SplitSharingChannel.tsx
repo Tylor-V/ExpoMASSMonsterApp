@@ -512,42 +512,44 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
                 </Animated.View>
               )}
             </TouchableOpacity>
-            <View
-              style={[
-                styles.reactionRow,
-                isOwnMessage ? styles.reactionRowOwn : styles.reactionRowOther,
-              ]}
-            >
-              <View style={styles.saveCountWrap}>
-                <Ionicons name="bookmark" size={14} color={colors.accent} />
-                <Text style={styles.saveCountText}>{item.saveCount ?? 0}</Text>
-              </View>
-                {Array.from(new Set((item.reactions || []).map(r => r.emoji))).map(emoji => {
-                  const count = (item.reactions || []).filter(r => r.emoji === emoji).length;
-                  const userReacted = (item.reactions || []).some(
-                    r => r.emoji === emoji && r.userId === currentUserId,
-                  );
-                  return (
-                    <TouchableOpacity
-                      key={emoji}
-                      style={[styles.reactionBubble, userReacted && styles.reactionHighlight]}
-                      onPress={() => {
-                        if (!isOwnMessage) addReaction(emoji);
-                      }}
-                      disabled={isOwnMessage}
-                      activeOpacity={0.6}
-                    >
-                      <Text style={{ fontSize: 15 }}>{emoji}</Text>
-                      <Text style={{ fontSize: 10, color: '#666', marginLeft: 2 }}>{count}</Text>
+            {actionTargetId !== item.id && (
+              <View
+                style={[
+                  styles.reactionRow,
+                  isOwnMessage ? styles.reactionRowOwn : styles.reactionRowOther,
+                ]}
+              >
+                <View style={styles.saveCountWrap}>
+                  <Ionicons name="bookmark" size={14} color={colors.accent} />
+                  <Text style={styles.saveCountText}>{item.saveCount ?? 0}</Text>
+                </View>
+                  {Array.from(new Set((item.reactions || []).map(r => r.emoji))).map(emoji => {
+                    const count = (item.reactions || []).filter(r => r.emoji === emoji).length;
+                    const userReacted = (item.reactions || []).some(
+                      r => r.emoji === emoji && r.userId === currentUserId,
+                    );
+                    return (
+                      <TouchableOpacity
+                        key={emoji}
+                        style={[styles.reactionBubble, userReacted && styles.reactionHighlight]}
+                        onPress={() => {
+                          if (!isOwnMessage) addReaction(emoji);
+                        }}
+                        disabled={isOwnMessage}
+                        activeOpacity={0.6}
+                      >
+                        <Text style={{ fontSize: 15 }}>{emoji}</Text>
+                        <Text style={{ fontSize: 10, color: '#666', marginLeft: 2 }}>{count}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  {!isOwnMessage && !(item.reactions || []).some(r => r.userId === currentUserId) && (
+                    <TouchableOpacity onPress={openReactionPicker} style={[styles.reactionBubble, styles.reactionAddBtn]}>
+                      <Ionicons name="add-circle-outline" size={18} color="#888" />
                     </TouchableOpacity>
-                  );
-                })}
-                {!isOwnMessage && !(item.reactions || []).some(r => r.userId === currentUserId) && (
-                  <TouchableOpacity onPress={openReactionPicker} style={[styles.reactionBubble, styles.reactionAddBtn]}>
-                    <Ionicons name="add-circle-outline" size={18} color="#888" />
-                  </TouchableOpacity>
-                )}
+                  )}
               </View>
+            )}
             {actionTargetId === item.id && (
               <>
                 <Pressable style={StyleSheet.absoluteFill} onPress={stopActions} />
