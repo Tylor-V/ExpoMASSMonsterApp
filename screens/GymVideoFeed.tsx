@@ -52,9 +52,15 @@ export default function GymVideoFeed({ navigation }) {
   const [currentUserRole, setCurrentUserRole] = useState('member');
   const currentUserId = auth().currentUser?.uid;
   const insets = useSafeAreaInsets();
-
+  // Return to the previous screen (typically the chat tab) preserving the user's
+  // last visited channel. If there is no screen to go back to, fall back to
+  // navigating to the chat tab explicitly.
   const handleBack = useCallback(() => {
-    navigation.navigate({ name: 'MainApp', params: { tabIndex: 0 }, merge: true });
+    if (navigation.canGoBack?.()) {
+      navigation.goBack();
+    } else {
+      navigation.navigate({ name: 'MainApp', params: { tabIndex: 0 }, merge: true });
+    }
   }, [navigation]);
 
   useEffect(() => {
