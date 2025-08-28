@@ -1,5 +1,5 @@
 import { Ionicons as Icon } from '@expo/vector-icons';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -17,7 +17,16 @@ import { getUserBadgeProgress } from '../badges/progressHelpers';
 
 const NewsModal = ({ visible, onClose, news, loading, user }) => {
   const insets = useSafeAreaInsets();
-  const badgeProgress = getUserBadgeProgress(user);
+  const badgeProgress = useMemo(() => {
+    if (!visible) return [];
+    return getUserBadgeProgress(user);
+  }, [visible, user]);
+
+  const data = useMemo(
+    () => [...(news ?? []), ...(badgeProgress as any)],
+    [news, badgeProgress]
+  );
+
   const renderItem = useCallback(
     ({ item }) => (
       <View style={styles.newsCard}>
@@ -56,7 +65,7 @@ const NewsModal = ({ visible, onClose, news, loading, user }) => {
           <FlatList
             style={{ flex: 1 }}
             contentContainerStyle={{ padding: 24 }}
-            data={[...(news ?? []), ...(badgeProgress as any)]}
+            data={data}
             keyExtractor={(item, idx) => item.id || `badge-${idx}`}
             renderItem={({ item }) =>
               item.message ? (

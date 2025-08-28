@@ -52,10 +52,7 @@ function AuthStackScreen() {
   );
 }
 
-function AppStackScreen() {
-  const { news, loading } = useNews();
-  const [newsOpen, setNewsOpen] = useState(true);
-
+function AppStackScreen({ news, newsLoaded, newsOpen, setNewsOpen }) {
   return (
     <AppStack.Navigator screenOptions={{ headerShown: false }}>
       <AppStack.Screen name="MainApp">
@@ -63,7 +60,7 @@ function AppStackScreen() {
           <MainAppScreen
             {...props}
             news={news}
-            newsLoaded={!loading}
+            newsLoaded={newsLoaded}
             newsOpen={newsOpen}
             setNewsOpen={setNewsOpen}
           />
@@ -93,20 +90,26 @@ export default function App() {
     'Inter-SemiBold': Inter_600SemiBold,
     'Inter-Bold': Inter_700Bold,
   });
+  const { news, loading } = useNews();
+  const [newsOpen, setNewsOpen] = useState(true);
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
 
   useEffect(() => {
-    if (fontsLoaded) {
-      (async () => {
-        await preloadGlobals();
-        await NativeSplashScreen.hideAsync();
-      })();
+    preloadGlobals().finally(() => setAssetsLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    if (fontsLoaded && assetsLoaded) {
+      NativeSplashScreen.hideAsync().catch(err =>
+        console.error('Failed to hide splash', err)
+      );
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, assetsLoaded]);
 
   if (!fontsLoaded) {
     return null;
   }
-  
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <AppContextProvider>
@@ -115,7 +118,16 @@ export default function App() {
             <RootStack.Navigator screenOptions={{ headerShown: false }}>
               <RootStack.Screen name="Splash" component={SplashScreen} />
               <RootStack.Screen name="AuthStack" component={AuthStackScreen} />
-              <RootStack.Screen name="AppStack" component={AppStackScreen} />
+              <RootStack.Screen name="AppStack">
+                {() => (
+                  <AppStackScreen
+                    news={news}
+                    newsLoaded={!loading}
+                    newsOpen={newsOpen}
+                    setNewsOpen={setNewsOpen}
+                  />
+                )}
+              </RootStack.Screen>
             </RootStack.Navigator>
           </NavigationContainer>
         </CartProvider>
