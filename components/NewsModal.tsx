@@ -1,20 +1,22 @@
 import { Ionicons as Icon } from '@expo/vector-icons';
 import React, { useCallback } from 'react';
 import {
-    ActivityIndicator,
-    FlatList,
-    Modal,
-    Pressable,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme';
 
 import { getUserBadgeProgress } from '../badges/progressHelpers';
 
 const NewsModal = ({ visible, onClose, news, loading, user }) => {
+  const insets = useSafeAreaInsets();
   const badgeProgress = getUserBadgeProgress(user);
   const renderItem = useCallback(
     ({ item }) => (
@@ -30,100 +32,95 @@ const NewsModal = ({ visible, onClose, news, loading, user }) => {
   return (
     <Modal
       visible={visible}
-      animationType="fade"
-      transparent
-      statusBarTranslucent
+      animationType="slide"
+      presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.overlay} onPress={onClose}>
-        <View style={styles.modalBox}>
-          <View style={styles.headerRow}>
-            <View style={styles.headerLeft}>
-              <Icon
-                name="megaphone-outline"
-                size={24}
-                color="#000"
-                style={{ marginRight: 16 }}
-              />
-              <Text style={styles.headerText}>MASS News</Text>
-            </View>
-          </View>
-          {loading ? (
-            <ActivityIndicator color={colors.accent} size="large" style={{ marginTop: 30 }} />
-          ) : (
-            <FlatList
-              data={[...(news ?? []), ...(badgeProgress as any)]}
-              keyExtractor={(item, idx) => item.id || `badge-${idx}`}
-              renderItem={({ item }) =>
-                item.message ? (
-                  renderItem({ item })
-                ) : (
-                  <View style={styles.badgeCard}>
-                    <View style={styles.badgeRow}>
-                      <Image source={item.image} style={styles.badgeImage} />
-                      <Text style={styles.badgeTitle}>{item.id} Badge</Text>
-                    </View>
-                    <View style={styles.badgeContent}>
-                      <View style={styles.progressTrack}>
-                        <View style={[styles.progressBar, { width: `${Math.round(item.progress * 100)}%` }]} />
-                      </View>
-                      <Text style={styles.badgePercent}>{Math.round(item.progress * 100)}%</Text>
-                    </View>
-                    <Text style={styles.requirements}>{item.requirements}</Text>
-                  </View>
-                )
-              }
-              ListEmptyComponent={<Text style={styles.emptyText}>No new announcements.</Text>}
-              initialNumToRender={5}
-            />
-          )}
+      <View
+        style={[
+          styles.container,
+          { paddingTop: insets.top, paddingBottom: insets.bottom },
+        ]}
+      >
+        <View style={styles.headerBar}>
+          <TouchableOpacity onPress={onClose} style={styles.backBtn}>
+            <Icon name="chevron-back" size={24} color={colors.white} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>MASS NEWS</Text>
         </View>
-      </Pressable>
+        {loading ? (
+          <ActivityIndicator
+            color={colors.accent}
+            size="large"
+            style={{ marginTop: 30 }}
+          />
+        ) : (
+          <FlatList
+            style={{ flex: 1 }}
+            contentContainerStyle={{ padding: 24 }}
+            data={[...(news ?? []), ...(badgeProgress as any)]}
+            keyExtractor={(item, idx) => item.id || `badge-${idx}`}
+            renderItem={({ item }) =>
+              item.message ? (
+                renderItem({ item })
+              ) : (
+                <View style={styles.badgeCard}>
+                  <View style={styles.badgeRow}>
+                    <Image source={item.image} style={styles.badgeImage} />
+                    <Text style={styles.badgeTitle}>{item.id} Badge</Text>
+                  </View>
+                  <View style={styles.badgeContent}>
+                    <View style={styles.progressTrack}>
+                      <View
+                        style={[
+                          styles.progressBar,
+                          { width: `${Math.round(item.progress * 100)}%` },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.badgePercent}>
+                      {Math.round(item.progress * 100)}%
+                    </Text>
+                  </View>
+                  <Text style={styles.requirements}>{item.requirements}</Text>
+                </View>
+              )
+            }
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>No new announcements.</Text>
+            }
+            initialNumToRender={5}
+          />
+        )}
+      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  container: {
     flex: 1,
-    backgroundColor: 'rgba(13,13,13,0.93)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: colors.white,
   },
-  modalBox: {
-    backgroundColor: 'rgba(255,255,255,0.6)',
-    borderRadius: 14,
-    width: '94%',
-    maxWidth: 390,
-    padding: 24,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 13,
-    maxHeight: '85%',
-  },
-  headerRow: {
+  headerBar: {
+    height: 56,
+    backgroundColor: colors.textDark,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.accent,
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    marginHorizontal: -24,
-    marginTop: -24,
-    marginBottom: 20,
+    paddingHorizontal: 16,
   },
-  headerText: {
-    color: colors.black,
+  backBtn: {
+    marginRight: 16,
+  },
+  headerTitle: {
+    color: colors.white,
+    fontSize: 20,
     fontWeight: 'bold',
-    fontSize: 21,
-    letterSpacing: 0.7,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    flex: 1,
+    textAlign: 'center',
+    marginRight: 40,
   },
   newsCard: {
     backgroundColor: colors.purple,

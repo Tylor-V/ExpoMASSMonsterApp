@@ -20,6 +20,9 @@ const CARD_WIDTH = width - 32; // match product grid width
 const CARD_HEIGHT = CARD_WIDTH * 1.25; // 4:5 ratio
 const SIDE_PAD = (width - CARD_WIDTH) / 2;
 const ITEM_LENGTH = CARD_WIDTH + 20;
+// Use equal horizontal margins on cards so the first and last items center
+// when scrolling. The content container removes half the spacing to account
+// for the card margins.
 const CONTENT_CONTAINER_STYLE = { paddingHorizontal: SIDE_PAD - 10 };
 
 type CardProps = {
@@ -124,7 +127,8 @@ const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    marginRight: 20,
+    // Use symmetric margins so the carousel items stay centered on screen
+    marginHorizontal: 10,
     backgroundColor: 'rgba(255,255,255,0.92)',
     borderRadius: 22,
     overflow: 'hidden',

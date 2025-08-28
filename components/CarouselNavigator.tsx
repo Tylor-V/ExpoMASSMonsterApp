@@ -6,7 +6,10 @@ import { colors } from '../theme';
 type Props = {
   index: number;
   length: number;
-  onIndexChange: (idx: number) => void;
+  // Allow callers to provide either an absolute index or a function that
+  // derives the next index from the current one. This prevents stale values
+  // when multiple navigation actions fire before re-render.
+  onIndexChange: (idx: number | ((cur: number) => number)) => void;
   leftOffset?: number;
   rightOffset?: number;
   dotsRowStyle?: ViewStyle;
@@ -38,7 +41,7 @@ export default function CarouselNavigator({
       <TouchableOpacity
         testID="prev-arrow"
         style={[styles.arrow, { left: leftOffset, marginTop: -arrowSize * 0.75 }]}
-        onPress={() => onIndexChange(index - 1)}
+        onPress={() => onIndexChange(cur => cur - 1)}
         disabled={index === 0}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
@@ -52,7 +55,7 @@ export default function CarouselNavigator({
       <TouchableOpacity
         testID="next-arrow"
         style={[styles.arrow, { right: rightOffset, marginTop: -arrowSize * 0.75 }]}
-        onPress={() => onIndexChange(index + 1)}
+        onPress={() => onIndexChange(cur => cur + 1)}
         disabled={index === length - 1}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
