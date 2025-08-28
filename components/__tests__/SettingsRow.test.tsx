@@ -9,7 +9,6 @@ describe('SettingsRow', () => {
       <SettingsRow icon="person-outline" label="Account" onPress={onPress} />
     );
     fireEvent.press(getByText('Account'));
-    jest.runAllTimers();
     expect(onPress).toHaveBeenCalled();
   });
 });

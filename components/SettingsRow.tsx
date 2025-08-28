@@ -1,6 +1,6 @@
 import { Ionicons as Icon } from '@expo/vector-icons';
-import React, { useState } from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 export type SettingsRowProps = {
   icon: string;
@@ -21,29 +21,21 @@ const SettingsRow: React.FC<SettingsRowProps> = ({
   chevronColor = '#B0B0B0',
   red = false,
 }) => {
-  const [pressed, setPressed] = useState(false);
-
-  const handlePress = () => {
-    setPressed(true);
-    setTimeout(() => {
-      setPressed(false);
-      onPress?.();
-    }, 100);
-  };
+  const handlePress = useCallback(() => {
+    onPress?.();
+  }, [onPress]);
 
   return (
-    <TouchableOpacity activeOpacity={1} onPress={handlePress}>
-      <View style={[styles.row, { backgroundColor: pressed ? '#F5F5F5' : '#FFFFFF' }]}>
-        <Icon name={icon} size={24} color={iconColor} />
-        <Text style={[styles.rowLabel, { color: red ? '#E53935' : labelColor }]}>{label}</Text>
-        <Icon
-          name="chevron-forward"
-          size={20}
-          color={red ? '#E53935' : chevronColor}
-          style={{ marginLeft: 'auto' }}
-        />
-      </View>
-    </TouchableOpacity>
+    <Pressable onPress={handlePress} style={({ pressed }) => [styles.row, { backgroundColor: pressed ? '#F5F5F5' : '#FFFFFF' }]}> 
+      <Icon name={icon} size={24} color={iconColor} />
+      <Text style={[styles.rowLabel, { color: red ? '#E53935' : labelColor }]}>{label}</Text>
+      <Icon
+        name="chevron-forward"
+        size={20}
+        color={red ? '#E53935' : chevronColor}
+        style={{ marginLeft: 'auto' }}
+      />
+    </Pressable>
   );
 };
 

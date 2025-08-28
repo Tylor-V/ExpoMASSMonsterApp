@@ -20,7 +20,6 @@ describe('SettingsScreen', () => {
   it('navigates to Account when Account row pressed', () => {
     const { getByText } = render(<SettingsScreen />);
     fireEvent.press(getByText('Account'));
-    jest.runAllTimers();
     expect(mockNavigate).toHaveBeenCalledWith('Account');
   });
 });
