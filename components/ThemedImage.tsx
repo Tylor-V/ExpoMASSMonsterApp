@@ -3,11 +3,15 @@ import React, { useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { colors } from '../theme';
 
-export default function ThemedImage({ style, ...rest }: ImageProps) {
+export function ThemedImage({ style, ...rest }: ImageProps) {
   const [loaded, setLoaded] = useState(false);
   return (
-    <View style={[style, { overflow: 'hidden' }]}> 
-      <Image {...rest} style={StyleSheet.absoluteFill} onLoadEnd={() => setLoaded(true)} />
+    <View style={[style, { overflow: 'hidden' }]}>
+      <Image
+        {...rest}
+        style={StyleSheet.absoluteFill}
+        onLoadEnd={() => setLoaded(true)}
+      />
       {!loaded && (
         <View style={[StyleSheet.absoluteFill, styles.center]}>
           <ActivityIndicator color={colors.accent} />
@@ -16,6 +20,8 @@ export default function ThemedImage({ style, ...rest }: ImageProps) {
     </View>
   );
 }
+
+export default ThemedImage;
 
 const styles = StyleSheet.create({
   center: {
