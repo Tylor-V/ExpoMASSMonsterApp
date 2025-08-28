@@ -554,7 +554,7 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
                 </Text>
                 <Icon
                   name="share-outline"
-                  size={16}
+                  size={26}
                   color={colors.accent}
                   style={{ marginLeft: 4 }}
                 />
