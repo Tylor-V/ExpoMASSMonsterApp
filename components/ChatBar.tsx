@@ -17,7 +17,6 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import HashIcon from '../assets/hashtag-icon.png';
 import InboxIcon from '../assets/inbox.png';
 import UsersIcon from '../assets/users.png';
 import { auth, firestore, storage } from '../firebase/firebase';
@@ -542,10 +541,11 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
           style={{ flexDirection: 'row', alignItems: 'center', flex: 1, marginRight: 10 }}
           onPress={toggleMenu}
         >
-            <Image
-              source={HashIcon}
-              style={{ width: 18, height: 20, marginRight: -3, marginBottom: -2 }}
-              contentFit="contain"
+            <FontAwesome
+              name="hashtag"
+              size={20}
+              color={colors.background}
+              style={{ marginRight: -3, marginBottom: -2 }}
             />
             <Text style={headerStyles.headerTitle} numberOfLines={1}>
               {selectedChannel.name}
