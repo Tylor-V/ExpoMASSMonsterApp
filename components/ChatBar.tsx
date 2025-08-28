@@ -560,6 +560,12 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
                   color={colors.accent}
                   style={{ marginLeft: 4 }}
                 />
+                <Text
+                  style={[headerStyles.headerTitle, { marginLeft: 2 }]}
+                  numberOfLines={1}
+                >
+                  {"'s"}
+                </Text>
               </>
             ) : (
               <>
