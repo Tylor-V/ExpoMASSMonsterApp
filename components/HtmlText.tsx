@@ -1,7 +1,12 @@
 import React from 'react';
-import { Text, TextStyle } from 'react-native';
-import { htmlToSegments } from '../utils/htmlToSegments';
-import { fonts } from '../theme';
+import {
+  useWindowDimensions,
+  TextStyle,
+  StyleSheet,
+  View,
+} from 'react-native';
+import RenderHTML from 'react-native-render-html';
+import { fonts, colors } from '../theme';
 
 type HtmlTextProps = {
   html: string;
@@ -9,21 +14,40 @@ type HtmlTextProps = {
 };
 
 export default function HtmlText({ html, style }: HtmlTextProps) {
-  const segments = htmlToSegments(html);
+  const { width } = useWindowDimensions();
+  const baseStyle = Array.isArray(style) ? Object.assign({}, ...style) : style || {};
+  const baseFontSize = (baseStyle as TextStyle).fontSize ?? 14;
   return (
-    <Text style={style} testID="html-text">
-      {segments.map((seg, i) => (
-        <Text
-          key={i}
-          style={
-            seg.bold
-              ? [style, { fontFamily: fonts.bold, fontWeight: 'bold' }]
-              : style
-          }
-        >
-          {seg.text}
-        </Text>
-      ))}
-    </Text>
+    <RenderHTML
+      testID="html-text"
+      contentWidth={width}
+      source={{ html: `<div>${html}</div>` }}
+      baseStyle={{ fontFamily: fonts.regular, ...baseStyle }}
+      tagsStyles={{
+        strong: { fontFamily: fonts.bold, fontWeight: 'bold' },
+        b: { fontFamily: fonts.bold, fontWeight: 'bold' },
+        em: { fontStyle: 'italic', fontFamily: fonts.regular },
+        i: { fontStyle: 'italic', fontFamily: fonts.regular },
+        h1: { fontFamily: fonts.bold, fontSize: baseFontSize * 1.6 },
+        h2: { fontFamily: fonts.bold, fontSize: baseFontSize * 1.4 },
+        h3: { fontFamily: fonts.bold, fontSize: baseFontSize * 1.2 },
+        h4: { fontFamily: fonts.bold, fontSize: baseFontSize * 1.1 },
+        h5: { fontFamily: fonts.bold, fontSize: baseFontSize },
+        h6: { fontFamily: fonts.bold, fontSize: baseFontSize * 0.9 },
+      }}
+      renderers={{
+        hr: () => (
+          <View
+            testID="html-hr"
+            style={{
+              borderBottomColor: colors.grayLight,
+              borderBottomWidth: StyleSheet.hairlineWidth,
+              marginVertical: 8,
+            }}
+          />
+        ),
+      }}
+    />
   );
 }
+
