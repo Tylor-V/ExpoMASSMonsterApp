@@ -1,6 +1,6 @@
 import { FontAwesome, Ionicons as Icon } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { launchImageLibrary } from 'expo-image-picker';
+import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -108,8 +108,10 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
   }, [uploading]);
 
   const handleUploadStory = async () => {
-    const res = await launchImageLibrary({ mediaType: 'mixed' });
-    if (res.didCancel || !res.assets?.length) return;
+    const res = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images', 'videos'] as ImagePicker.MediaType[],
+    });
+    if (res.canceled || !res.assets?.length) return;
     const file = res.assets[0];
     if (!file.uri) return;
     const since = Date.now() - 24 * 60 * 60 * 1000;
