@@ -611,9 +611,9 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
         {selectedChannel.type !== 'voice' && selectedChannel.type !== 'video' && (
           <TouchableOpacity onPress={togglePinnedDropdown} style={{ marginHorizontal: 8 }}>
             <View style={{ position: 'relative' }}>
-              <Icon
+              <FontAwesome
                 testID="pinned-button"
-                name={pinnedMessages.length ? 'pin' : 'pin-outline'}
+                name="thumb-tack"
                 size={28}
                 color={pinnedMessages.length ? colors.accent : colors.gray}
               />
