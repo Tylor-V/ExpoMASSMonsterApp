@@ -336,7 +336,8 @@ const ProfileScreen = () => {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      // Updated to use new MediaType API
+      mediaTypes: 'images',
       quality: 1,
     });
     if (!result.canceled && result.assets?.length) {

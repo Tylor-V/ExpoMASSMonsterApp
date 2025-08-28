@@ -17,6 +17,7 @@ import { WebView } from 'react-native-webview';
 import CourseNav from '../components/CourseNav';
 import CoursePager, { CoursePagerHandle } from '../components/CoursePager';
 import LoadingOverlay from '../components/LoadingOverlay';
+import ThemedImage from '../components/ThemedImage';
 import { LIFT_RATINGS, type RatingMap } from '../constants/liftRatings';
 import { updateCourseProgress } from '../firebase/userProfileHelpers';
 import useCourseTopPad from "../hooks/useCourseTopPad";

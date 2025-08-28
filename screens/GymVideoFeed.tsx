@@ -103,7 +103,8 @@ export default function GymVideoFeed({ navigation }) {
       return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      // Use the new MediaType API instead of deprecated MediaTypeOptions
+      mediaTypes: 'videos',
     });
     if (res.canceled || !res.assets?.length) return;
     const file = res.assets[0];
