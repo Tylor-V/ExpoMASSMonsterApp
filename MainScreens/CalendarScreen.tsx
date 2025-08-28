@@ -954,7 +954,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const openCustomBuilder = () => {
     navigation.navigate('SplitEditor', {
       initialSplit: null,
-      onSave: handleCustomPlanSaved,
     });
   };
 
@@ -968,6 +967,11 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       console.error('Failed to save custom split', err)
     );
   };
+
+  useEffect(() => {
+    const sub = DeviceEventEmitter.addListener('customSplitSaved', handleCustomPlanSaved);
+    return () => sub.remove();
+  }, [handleCustomPlanSaved]);
 
   const openPlanDrawerFromButton = async () => {
     setShowPlanDrawer(true);
@@ -1006,7 +1010,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     if (!customSplit) return;
     navigation.navigate('SplitEditor', {
       initialSplit: customSplit,
-      onSave: handleCustomPlanSaved,
     });
   };
 
