@@ -596,6 +596,7 @@ const styles = StyleSheet.create({
     width: '100%',
     flexBasis: '100%',
     marginBottom: 24,
+    alignItems: 'center',
   },
   featuredCarousel: { marginBottom: 0 },
   card: {
