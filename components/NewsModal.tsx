@@ -49,11 +49,9 @@ const NewsModal = ({ visible, onClose, news, loading, user }) => {
           <Text style={styles.headerTitle}>MASS NEWS</Text>
         </View>
         {loading ? (
-          <ActivityIndicator
-            color={colors.accent}
-            size="large"
-            style={{ marginTop: 30 }}
-          />
+          <View style={styles.loaderWrapper}>
+            <ActivityIndicator color={colors.accent} size="large" />
+          </View>
         ) : (
           <FlatList
             style={{ flex: 1 }}
@@ -92,6 +90,17 @@ const NewsModal = ({ visible, onClose, news, loading, user }) => {
             initialNumToRender={5}
           />
         )}
+
+        <View style={styles.footer}>
+          <View style={styles.footerRow}>
+            <Text style={styles.footerText}>MASS MONSTER LLC</Text>
+            <Image
+              source={require('../assets/mass-logo.png')}
+              style={styles.footerLogo}
+            />
+          </View>
+          <Text style={styles.versionText}>App Version 0.3</Text>
+        </View>
       </View>
     </Modal>
   );
@@ -178,6 +187,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 28,
     fontSize: 15,
+  },
+  loaderWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  footer: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  footerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  footerText: {
+    color: colors.textDark,
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginRight: 8,
+  },
+  footerLogo: { width: 24, height: 24 },
+  versionText: {
+    color: colors.textMuted,
+    fontSize: 12,
   },
 });
 
