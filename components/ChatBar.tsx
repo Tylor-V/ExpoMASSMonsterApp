@@ -605,11 +605,11 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
         {selectedChannel.type !== 'voice' && selectedChannel.type !== 'video' && (
           <TouchableOpacity onPress={togglePinnedDropdown} style={{ marginHorizontal: 8 }}>
             <View style={{ position: 'relative' }}>
-              <FontAwesome
+              <Icon
                 testID="pinned-button"
-                name="thumb-tack"
+                name={pinnedMessages.length ? 'pin' : 'pin-outline'}
                 size={28}
-                color={pinnedMessages.length ? colors.accent : colors.black}
+                color={pinnedMessages.length ? colors.accent : colors.gray}
               />
               {pinnedMessages.length > 0 && (
                 <View testID="pinned-count-badge" style={pinnedStyles.pinBadge}>
