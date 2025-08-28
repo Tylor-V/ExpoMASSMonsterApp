@@ -4,5 +4,6 @@
     "source.organizeImports": "explicit",
     "source.sortMembers": "explicit"
   },
-  "terminal.integrated.cwd": "C:\\Users\\ice42\\ExpoMASSMonsterApp"
+  "terminal.integrated.cwd": "C:\\Users\\ice42\\ExpoMASSMonsterApp",
+  "chatgpt.openOnStartup": true
 }
