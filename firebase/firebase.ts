@@ -64,14 +64,18 @@ if (Platform.OS === 'web') {
       });
 }
 let db;
-if (existingApps.length) {
+if (Platform.OS === 'web') {
   db = getFirestore(app);
 } else {
-  db = initializeFirestore(app, {
-    // Auto-detect long polling to avoid WebChannel transport errors in RN
-    experimentalAutoDetectLongPolling: true,
-    useFetchStreams: false,
-  });
+  try {
+    db = initializeFirestore(app, {
+      // Force long polling to avoid WebChannel transport errors in RN
+      experimentalForceLongPolling: true,
+      useFetchStreams: false,
+    });
+  } catch (err) {
+    db = getFirestore(app);
+  }
 }
 if (Platform.OS === 'web') {
   // Enable offline persistence on supported browsers

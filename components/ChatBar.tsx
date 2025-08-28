@@ -454,6 +454,27 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
       backgroundColor: 'rgba(20,20,20,0.85)',
       zIndex: 15,
     },
+    pinBadge: {
+      position: 'absolute',
+      top: -4,
+      right: -4,
+      backgroundColor: colors.accent,
+      borderColor: colors.white,
+      borderWidth: 1,
+      borderRadius: 10,
+      minWidth: 16,
+      height: 16,
+      paddingHorizontal: 2,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    pinBadgeText: {
+      color: colors.white,
+      fontSize: 10,
+      fontFamily: fonts.bold,
+      textAlign: 'center',
+      includeFontPadding: false,
+    },
   });
 
   const toggleMenu = () => {
@@ -565,12 +586,21 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
         </Pressable>
         {selectedChannel.type !== 'voice' && selectedChannel.type !== 'video' && (
           <TouchableOpacity onPress={togglePinnedDropdown} style={{ marginHorizontal: 8 }}>
-            <FontAwesome
-              testID="pinned-button"
-              name="thumb-tack"
-              size={28}
-              color={pinnedMessages.length ? colors.accent : colors.black}
-            />
+            <View style={{ position: 'relative' }}>
+              <FontAwesome
+                testID="pinned-button"
+                name="thumb-tack"
+                size={28}
+                color={pinnedMessages.length ? colors.accent : colors.black}
+              />
+              {pinnedMessages.length > 0 && (
+                <View testID="pinned-count-badge" style={pinnedStyles.pinBadge}>
+                  <Text testID="pinned-count-text" style={pinnedStyles.pinBadgeText}>
+                    {pinnedMessages.length}
+                  </Text>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
         )}
         <TouchableOpacity onPress={onOpenGymFeed} style={{ marginHorizontal: 8 }}>

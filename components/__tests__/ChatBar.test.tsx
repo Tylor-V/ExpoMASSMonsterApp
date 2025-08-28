@@ -51,22 +51,25 @@ jest.mock('../../firebase/firebase', () => ({
 }));
 
 describe('ChatBar pinned button', () => {
-  it('renders black thumbtack when no pinned messages', () => {
+  it('renders black thumbtack and no badge when no pinned messages', () => {
     mockPinnedMessages = [];
-    const { getByTestId } = render(
+    const { getByTestId, queryByTestId } = render(
       <ChatBar onOpenDMInbox={() => {}} onOpenGymFeed={() => {}} />,
     );
     const icon = getByTestId('pinned-button');
     expect(icon.props.color).toBe(colors.black);
+    expect(queryByTestId('pinned-count-badge')).toBeNull();
   });
 
-  it('renders accent thumbtack when pinned messages exist', () => {
-    mockPinnedMessages = [{ id: '1' }];
+  it('renders accent thumbtack and badge when pinned messages exist', () => {
+    mockPinnedMessages = [{ id: '1' }, { id: '2' }];
     const { getByTestId } = render(
       <ChatBar onOpenDMInbox={() => {}} onOpenGymFeed={() => {}} />,
     );
     const icon = getByTestId('pinned-button');
     expect(icon.props.color).toBe(colors.accent);
+    const badgeText = getByTestId('pinned-count-text');
+    expect(badgeText.props.children).toBe(2);
   });
 
   it('positions pinned dropdown below chat bar', () => {
