@@ -718,9 +718,13 @@ const styles = StyleSheet.create({
   liftBadgeText: { fontSize: 10, color: colors.textDark },
   moreLifts: { fontSize: 12, color: colors.gray, marginTop: 4 },
   dayDotsRow: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: -20,
+    marginBottom: 0,
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 4,
   },
   saveIconBtn: {
     position: 'absolute',
