@@ -547,24 +547,40 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
               color={colors.background}
               style={{ marginRight: -3, marginBottom: -2 }}
             />
-            <Text style={headerStyles.headerTitle} numberOfLines={1}>
-              {selectedChannel.name}
-            </Text>
-            {selectedChannel.type === 'voice' ? (
-              <Icon
-                name="volume-high"
-                size={16}
-                color={colors.accent}
-                style={{ marginLeft: 4 }}
-              />
-            ) : selectedChannel.type === 'video' ? (
-              <Icon
-                name="videocam"
-                size={16}
-                color={colors.accent}
-                style={{ marginLeft: 4 }}
-              />
-            ) : null}
+            {selectedChannel.id === 'split-sharing' ? (
+              <>
+                <Text style={headerStyles.headerTitle} numberOfLines={1}>
+                  SPLIT
+                </Text>
+                <Icon
+                  name="share-outline"
+                  size={16}
+                  color={colors.accent}
+                  style={{ marginLeft: 4 }}
+                />
+              </>
+            ) : (
+              <>
+                <Text style={headerStyles.headerTitle} numberOfLines={1}>
+                  {selectedChannel.name}
+                </Text>
+                {selectedChannel.type === 'voice' ? (
+                  <Icon
+                    name="volume-high"
+                    size={16}
+                    color={colors.accent}
+                    style={{ marginLeft: 4 }}
+                  />
+                ) : selectedChannel.type === 'video' ? (
+                  <Icon
+                    name="videocam"
+                    size={16}
+                    color={colors.accent}
+                    style={{ marginLeft: 4 }}
+                  />
+                ) : null}
+              </>
+            )}
           <View
             ref={arrowRef}
             style={headerStyles.headerArrowBtn}
