@@ -36,11 +36,12 @@ export default function CarouselNavigator({
   dotSize = 10,
 }: Props) {
   const dots = Array.from({ length: maxDots ? Math.min(length, maxDots) : length });
+  const arrowOffset = arrowSize / 2 + 4; // center arrow including padding
   return (
     <View pointerEvents="box-none" style={styles.container}>
       <TouchableOpacity
         testID="prev-arrow"
-        style={[styles.arrow, { left: leftOffset, marginTop: -arrowSize * 0.75 }]}
+        style={[styles.arrow, { left: leftOffset, transform: [{ translateY: -arrowOffset }] }]}
         onPress={() => onIndexChange(cur => cur - 1)}
         disabled={index === 0}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -54,7 +55,7 @@ export default function CarouselNavigator({
       </TouchableOpacity>
       <TouchableOpacity
         testID="next-arrow"
-        style={[styles.arrow, { right: rightOffset, marginTop: -arrowSize * 0.75 }]}
+        style={[styles.arrow, { right: rightOffset, transform: [{ translateY: -arrowOffset }] }]}
         onPress={() => onIndexChange(cur => cur + 1)}
         disabled={index === length - 1}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -110,7 +111,6 @@ const styles = StyleSheet.create({
   arrow: {
     position: 'absolute',
     top: '50%',
-    marginTop: -18,
     zIndex: 10,
     padding: 4,
   },

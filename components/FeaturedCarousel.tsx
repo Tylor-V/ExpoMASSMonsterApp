@@ -86,8 +86,8 @@ function FeaturedCarousel({ products, onSelect, style, arrowSize = 24, dotSize =
   ), []);
 
   return (
-    <View style={style}>
-      <Animated.View style={{ transform: [{ translateX: slideAnim }] }}>
+    <View style={[styles.container, style]}>
+      <Animated.View style={[styles.inner, { transform: [{ translateX: slideAnim }] }]}> 
         <FlatList
           testID="featured-carousel"
           ref={ref}
@@ -101,6 +101,7 @@ function FeaturedCarousel({ products, onSelect, style, arrowSize = 24, dotSize =
           renderItem={renderItem}
           contentContainerStyle={CONTENT_CONTAINER_STYLE}
           getItemLayout={getItemLayout}
+          style={{ width }}
         />
       </Animated.View>
       {products.length > 1 && (
@@ -124,6 +125,11 @@ function FeaturedCarousel({ products, onSelect, style, arrowSize = 24, dotSize =
 export default memo(FeaturedCarousel);
 
 const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  inner: { width: '100%' },
   card: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
