@@ -44,5 +44,6 @@ describe('StoreScreen product images', () => {
 
     expect(productImage).toBeTruthy();
     expect(productImage?.props.placeholder).toBe(placeholder);
+    expect(productImage?.props.contentFit).toBe('cover');
   });
 });

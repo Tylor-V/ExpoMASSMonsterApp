@@ -270,6 +270,8 @@ function StoreScreen({ navigation }) {
           <Image
             source={{ uri: item.images?.[0]?.url }}
             placeholder={require('../assets/mass-logo.png')}
+            contentFit="cover"
+            placeholderContentFit="contain"
             style={styles.cardImg}
           />
           <View style={styles.cardBody}>
@@ -458,6 +460,9 @@ function StoreScreen({ navigation }) {
                 </Pressable>
                 <Image
                   source={{ uri: modalItem.images?.[imgIndex]?.url }}
+                  placeholder={require('../assets/mass-logo.png')}
+                  contentFit="contain"
+                  placeholderContentFit="contain"
                   style={styles.modalImg}
                 />
                 <Pressable onPress={nextImg} style={styles.carouselArrow}>
