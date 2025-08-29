@@ -1,3 +1,4 @@
+<<<<<<< ours
 <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g clip-path="url(#clip0_3407_17)">
 <path d="M24 47.5C36.9787 47.5 47.5 36.9787 47.5 24C47.5 11.0213 36.9787 0.5 24 0.5C11.0213 0.5 0.5 11.0213 0.5 24C0.5 36.9787 11.0213 47.5 24 47.5Z" fill="white" stroke="#333F48"/>
@@ -15,4 +16,9 @@
 <rect width="36" height="22.176" fill="white" transform="translate(7 12)"/>
 </clipPath>
 </defs>
+=======
+<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="12" cy="12" r="10" stroke="#000" stroke-width="2" fill="none"/>
+  <path d="M8 7v10M8 12l8-5M8 12l8 5" stroke="#000" stroke-width="2" fill="none"/>
+>>>>>>> theirs
 </svg>
