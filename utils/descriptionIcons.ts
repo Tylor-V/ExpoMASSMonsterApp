@@ -5,6 +5,8 @@ export const DESCRIPTION_ICONS: DescriptionIcon[] = [
   { text: 'Contains soy', asset: require('../assets/icon-allergy-Soy.svg') },
   { text: 'Vegetable capsule', asset: require('../assets/vegetarian-capsules.svg') },
   { text: 'non-GMO', asset: require('../assets/gmo_icon.svg') },
+  { text: 'Vegetarian-friendly', asset: require('../assets/icon-allergy-Vegan.svg') },
+  { text: 'Kosher', asset: require('../assets/icon-halal-free.svg') },
 ];
 
 export function getDescriptionIcons(description: string | undefined): DescriptionIcon[] {
