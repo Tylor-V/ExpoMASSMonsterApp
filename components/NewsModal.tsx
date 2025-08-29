@@ -106,6 +106,7 @@ const NewsModal = ({ visible, onClose, news, loading, user }) => {
             <Image
               source={require('../assets/mass-logo.png')}
               style={styles.footerLogo}
+              contentFit="contain"
             />
           </View>
           <Text style={styles.versionText}>App Version 0.3</Text>
@@ -218,7 +219,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginRight: 8,
   },
-  footerLogo: { width: 24, height: 24 },
+  footerLogo: {
+    height: 24,
+    aspectRatio: 1024 / 650,
+  },
   versionText: {
     color: colors.textMuted,
     fontSize: 12,
