@@ -38,7 +38,6 @@ import {
 import { getChatLevelColor } from '../utils/chatLevel';
 import { dedupeById } from '../utils/dedupeById';
 
-const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 import { enforceSelectedBadges, MAX_DISPLAY_BADGES } from '../badges/UnlockableBadges';
 
@@ -686,8 +685,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       : new Date(item.timestamp);
     const formattedTime = `${String(messageDate.getMonth() + 1).padStart(2, '0')}/${String(messageDate.getDate()).padStart(2, '0')} ${messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
-    const ownGradient = [colors.background, colors.background];
-    const otherBubble = { backgroundColor: '#FFFFFF' };
+    
 
     const showUnreadHere = hasUnreadMarker && (index === firstUnreadIndex + 1);
     if (renderCustomMessage) {
@@ -757,230 +755,199 @@ const AllChannels: React.FC<ChatScreenProps> = ({
               marginTop: ACTION_SPACING / 2,
             },
           ]}
-        >
         <View
-          style={[
-            chatStyles.messageRow,
-            reactions.length > 0 && { marginBottom: 2 }
-          ]}
+  style={[
+    chatStyles.messageRow,
+    reactions.length > 0 && { marginBottom: 2 }
+  ]}
+>
+  {!isOwnMessage && (
+    <TouchableOpacity onPress={() => handleUserPreview(item.userId)} activeOpacity={0.8}>
+      <ProfileImage
+        uri={profilePicUrl}
+        style={chatStyles.profilePic}
+        isCurrentUser={false}
+      />
+    </TouchableOpacity>
+  )}
+  <TouchableOpacity
+    onLongPress={() => handleLongPress(item.id, item)}
+    delayLongPress={400}
+    activeOpacity={1}
+    style={[
+      chatStyles.messageBox,
+      isOwnMessage ? chatStyles.ownMessageBox : chatStyles.otherMessageBox,
+      item.pinned && chatStyles.pinnedMessage,
+      actionTargetId === item.id && {
+        transform: [{ rotate: wiggleAnim.interpolate({ inputRange: [-1, 1], outputRange: ['-2deg', '2deg'] }) }],
+      },
+    ]}
+  >
+    <View style={chatStyles.metaRow}>
+      <TouchableOpacity onPress={() => handleUserPreview(item.userId)} disabled={isOwnMessage}>
+        <Text style={[chatStyles.username, { color: nameColor }]}>
+          {isOwnMessage ? 'Me' : displayName}
+        </Text>
+      </TouchableOpacity>
+      {badges && badges.length > 0 && (
+        <View style={{ flexDirection: 'row', marginLeft: 5 }}>
+          {badges.slice(0, MAX_DISPLAY_BADGES).map((b, i) => (
+            <BadgeImage
+              key={b}
+              badgeKey={b}
+              style={[{ width: 19, height: 19, marginLeft: i ? 4 : 0 }, chatStyles.badgeHighlight]}
+            />
+          ))}
+        </View>
+      )}
+    </View>
+    <Text style={[chatStyles.messageText, isOwnMessage && chatStyles.ownMessageText]}>
+      {item.text}
+    </Text>
+    {actionTargetId !== item.id &&
+      (reactions.length > 0 ||
+        (!isOwnMessage && !reactions.some(r => r.userId === currentUserId))) && (
+        <Animated.View
+          pointerEvents={actionTargetId === item.id ? 'none' : 'auto'}
+          style={[chatStyles.reactionRow, { opacity: reactionOpacityMap[item.id] || 1 }]}
         >
-           {!isOwnMessage && (
-            <TouchableOpacity onPress={() => handleUserPreview(item.userId)} activeOpacity={0.8}>
-              <ProfileImage
-                uri={profilePicUrl}
-                style={chatStyles.profilePic}
-                isCurrentUser={false}
-              />
+          {Array.from(new Set(reactions.map(r => r.emoji))).map(emoji => {
+            const count = reactions.filter(r => r.emoji === emoji).length;
+            const userReacted = reactions.some(
+              r => r.emoji === emoji && r.userId === currentUserId,
+            );
+            return (
+              <TouchableOpacity
+                key={emoji}
+                style={[chatStyles.reactionBubble, userReacted && chatStyles.reactionHighlight]}
+                onPress={() => {
+                  if (!isOwnMessage) handleAddReaction(item.id, emoji);
+                }}
+                disabled={isOwnMessage}
+                activeOpacity={0.6}
+              >
+                <Text style={{ fontSize: 15 }}>{emoji}</Text>
+                <Text style={{ fontSize: 10, color: '#666', marginLeft: 2 }}>{count}</Text>
+              </TouchableOpacity>
+            );
+          })}
+          {!isOwnMessage && !reactions.some(r => r.userId === currentUserId) && (
+            <TouchableOpacity
+              onPress={() => setReactionTargetId(item.id)}
+              style={[chatStyles.reactionBubble, chatStyles.reactionAddBtn]}
+            >
+              <Ionicons name="add-circle-outline" size={18} color="#888" />
             </TouchableOpacity>
           )}
-          <TouchableOpacity
-            onLongPress={() => handleLongPress(item.id, item)}
-            delayLongPress={400}
-            activeOpacity={1}
-            style={[
-              chatStyles.bubbleWrapper,
-              (badges?.length >= 3 || item.text.length > 120) && chatStyles.wideBubble,
-              actionTargetId === item.id && {
-                transform: [{ rotate: wiggleAnim.interpolate({ inputRange: [-1, 1], outputRange: ['-2deg', '2deg'] }) }],
-              },
-            ]}
+        </Animated.View>
+      )}
+    <View style={{ alignSelf: 'flex-end', alignItems: 'flex-end' }}>
+      <View style={chatStyles.footerRow}>
+        <View
+          style={{
+            backgroundColor: getChatLevelColor(chatLevel),
+            borderRadius: 2,
+            paddingHorizontal: 4,
+            marginRight: 3,
+            marginLeft: 1,
+            paddingVertical: 2,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text
+            style={{
+              color: colors.white,
+              fontSize: 12,
+              fontWeight: 'bold',
+              letterSpacing: 0.8,
+            }}
           >
-            <AnimatedLinearGradient
-              colors={isOwnMessage ? ownGradient : ['#FFFFFF', '#FFFFFF']}
-              start={{ x: 1, y: 0.2 }}
-              end={{ x: 0, y: 1.1 }}
-              style={[
-                chatStyles.bubble,
-                isOwnMessage ? chatStyles.ownBubble : otherBubble,
-                item.pinned && chatStyles.pinnedBubble,
-                { shadowOpacity: isOwnMessage ? 0.11 : 0.05 },
-              ]}
-            >
-              <View style={chatStyles.metaRow}>
-                 <TouchableOpacity onPress={() => handleUserPreview(item.userId)} disabled={isOwnMessage}>
-                  <Text style={[
-                    chatStyles.username,
-                    { color: nameColor }
-                  ]}>
-                    {isOwnMessage ? 'Me' : displayName}
-                  </Text>
-                </TouchableOpacity>
-                {badges && badges.length > 0 && (
-                  <View style={{ flexDirection: 'row', marginLeft: 5 }}>
-                    {badges.slice(0, MAX_DISPLAY_BADGES).map((b, i) => (
-                      <BadgeImage
-                        key={b}
-                        badgeKey={b}
-                        style={[
-                          { width: 19, height: 19, marginLeft: i ? 4 : 0 },
-                          chatStyles.badgeHighlight,
-                        ]}
-                      />
-                    ))}
-                  </View>
-                )}
-              </View>
-              <Text style={[
-                chatStyles.messageText,
-                isOwnMessage && chatStyles.ownMessageText,
-              ]}
-              >
-                {item.text}
-              </Text>
-              <View style={{ alignSelf: 'flex-end', alignItems: 'flex-end' }}>
-                <View style={chatStyles.footerRow}>
-                  <View
-                    style={{
-                      backgroundColor: getChatLevelColor(chatLevel),
-                      borderRadius: 2,
-                      paddingHorizontal: 4,
-                      marginRight: 3,
-                      marginLeft: 1,
-                      paddingVertical: 2,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: colors.white,
-                        fontSize: 12,
-                        fontWeight: 'bold',
-                        letterSpacing: 0.8,
-                      }}
-                    >
-                      Lv{chatLevel}
-                    </Text>
-                  </View>
-                  {user?.accountabilityStreak > 0 && (
-                    <View
-                      style={{
-                        backgroundColor: colors.yellow,
-                        borderRadius: 2,
-                        paddingHorizontal: 4,
-                        marginRight: 3,
-                        paddingVertical: 2,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: colors.black,
-                          fontSize: 12,
-                          fontWeight: 'bold',
-                          letterSpacing: 0.8,
-                        }}
-                      >
-                        🔥{user.accountabilityStreak}
-                      </Text>
-                    </View>
-                  )}
-                  {ROLE_TAGS[user?.role] && (
-                    <View
-                      style={{
-                        backgroundColor: ROLE_COLORS[user.role],
-                        borderRadius: 2,
-                        paddingHorizontal: 4,
-                        marginRight: 3,
-                        paddingVertical: 2,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: colors.white,
-                          fontSize: 12,
-                          fontWeight: 'bold',
-                          letterSpacing: 0.8,
-                        }}
-                      >
-                        {ROLE_TAGS[user.role]}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                <Text style={chatStyles.timestamp}>{formattedTime}</Text>
-              </View>
-            </AnimatedLinearGradient>
-            {item.pinned && (
-              <Animated.View
-                pointerEvents="none"
-                style={[
-                  chatStyles.pinnedIconWrap,
-                  { transform: [{ scale: pinnedScale }] },
-                ]}
-              >
-                <FontAwesome name="thumb-tack" size={18} color={colors.gold} />
-              </Animated.View>
-            )}
-          </TouchableOpacity>
-          {actionTargetId === item.id && (
-            <>
-              <Pressable style={StyleSheet.absoluteFill} onPress={stopActions} />
-              <View style={chatStyles.actionButtons}>
-                {currentUserRole === 'moderator' && (
-                  <Pressable
-                    onPress={() => {
-                      pinMessage(item.id, item.pinned);
-                    }}
-                    style={chatStyles.actionBtn}
-                  >
-                    <FontAwesome name="thumb-tack" size={22} color={colors.gold} />
-                  </Pressable>
-                )}
-                <Pressable onPress={() => confirmDelete(item.id)} style={chatStyles.actionBtn}>
-                  <Ionicons name="trash-outline" size={22} color={colors.delete} />
-                </Pressable>
-              </View>
-            </>
-          )}
+            Lv{chatLevel}
+          </Text>
         </View>
-        {actionTargetId !== item.id &&
-          (reactions.length > 0 ||
-            (!isOwnMessage && !reactions.some(r => r.userId === currentUserId))) && (
-            <Animated.View
-              pointerEvents={actionTargetId === item.id ? 'none' : 'auto'}
-              style={[
-                chatStyles.reactionRow,
-                { opacity: reactionOpacityMap[item.id] || 1 },
-              ]}
+        {user?.accountabilityStreak > 0 && (
+          <View
+            style={{
+              backgroundColor: colors.yellow,
+              borderRadius: 2,
+              paddingHorizontal: 4,
+              marginRight: 3,
+              paddingVertical: 2,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text
+              style={{
+                color: colors.black,
+                fontSize: 12,
+                fontWeight: 'bold',
+                letterSpacing: 0.8,
+              }}
             >
-            {Array.from(new Set(reactions.map(r => r.emoji))).map(emoji => {
-              const count = reactions.filter(r => r.emoji === emoji).length;
-              const userReacted = reactions.some(
-                r => r.emoji === emoji && r.userId === currentUserId,
-              );
-              return (
-                <TouchableOpacity
-                  key={emoji}
-                  style={[
-                    chatStyles.reactionBubble,
-                    userReacted && chatStyles.reactionHighlight,
-                  ]}
-                  onPress={() => {
-                    if (!isOwnMessage) handleAddReaction(item.id, emoji);
-                  }}
-                  disabled={isOwnMessage}
-                  activeOpacity={0.6}
-                >
-                  <Text style={{ fontSize: 15 }}>{emoji}</Text>
-                  <Text style={{ fontSize: 10, color: '#666', marginLeft: 2 }}>{count}</Text>
-                </TouchableOpacity>
-              );
-            })}
-            {!isOwnMessage && !reactions.some(r => r.userId === currentUserId) && (
-              <TouchableOpacity
-                onPress={() => setReactionTargetId(item.id)}
-                style={[chatStyles.reactionBubble, chatStyles.reactionAddBtn]}
-              >
-                <Ionicons name="add-circle-outline" size={18} color="#888" />
-              </TouchableOpacity>
-            )}
-            </Animated.View>
-          )}
-        </View>
+              🔥{user.accountabilityStreak}
+            </Text>
+          </View>
+        )}
+        {ROLE_TAGS[user?.role] && (
+          <View
+            style={{
+              backgroundColor: ROLE_COLORS[user.role],
+              borderRadius: 2,
+              paddingHorizontal: 4,
+              marginRight: 3,
+              paddingVertical: 2,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text
+              style={{
+                color: colors.white,
+                fontSize: 12,
+                fontWeight: 'bold',
+                letterSpacing: 0.8,
+              }}
+            >
+              {ROLE_TAGS[user.role]}
+            </Text>
+          </View>
+        )}
+      </View>
+      <Text style={chatStyles.timestamp}>{formattedTime}</Text>
+    </View>
+    {item.pinned && (
+      <Animated.View
+        pointerEvents="none"
+        style={[chatStyles.pinnedIconWrap, { transform: [{ scale: pinnedScale }] }]}
+      >
+        <FontAwesome name="thumb-tack" size={18} color={colors.gold} />
+      </Animated.View>
+    )}
+  </TouchableOpacity>
+  {actionTargetId === item.id && (
+    <>
+      <Pressable style={StyleSheet.absoluteFill} onPress={stopActions} />
+      <View style={chatStyles.actionButtons}>
+        {currentUserRole === 'moderator' && (
+          <Pressable
+            onPress={() => {
+              pinMessage(item.id, item.pinned);
+            }}
+            style={chatStyles.actionBtn}
+          >
+            <FontAwesome name="thumb-tack" size={22} color={colors.gold} />
+          </Pressable>
+        )}
+        <Pressable onPress={() => confirmDelete(item.id)} style={chatStyles.actionBtn}>
+          <Ionicons name="trash-outline" size={22} color={colors.delete} />
+        </Pressable>
+      </View>
+    </>
+  )}
+</View>
+
         </>
       );
     }, [
@@ -1140,41 +1107,22 @@ export const chatStyles = StyleSheet.create({
   messageContainer: {
     marginBottom: 11,
   },
-  bubble: {
-    borderRadius: 24,
+  messageBox: {
+    flex: 1,
     paddingHorizontal: 20,
     paddingVertical: 12,
     marginHorizontal: 3,
-    minWidth: 120,
-    minHeight: 52,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 12,
-    shadowOpacity: 0.18,
-    elevation: 3,
-    maxWidth: '98%',
-    position: 'relative',
+    backgroundColor: colors.white,
   },
-  bubbleWrapper: {
-    maxWidth: '84%',
-    flexShrink: 1,
+  ownMessageBox: {
+    backgroundColor: colors.black,
   },
-  wideBubble: {
-    maxWidth: '96%',
+  otherMessageBox: {
+    backgroundColor: colors.white,
   },
-  ownBubble: {
-    alignSelf: 'flex-end',
-    backgroundColor: colors.background,
-    maxWidth: '98%',
-  },
-  pinnedBubble: {
+  pinnedMessage: {
     borderWidth: 4,
     borderColor: colors.accent,
-    shadowColor: colors.goldGlow,
-    shadowOpacity: 1.0,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 6,
   },
   messageText: {
     color: colors.textDark,
@@ -1186,7 +1134,7 @@ export const chatStyles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   ownMessageText: {
-    color: colors.accent,
+    color: colors.white,
   },
   username: {
     fontWeight: 'bold',

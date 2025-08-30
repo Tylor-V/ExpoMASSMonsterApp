@@ -42,6 +42,11 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 const ACTION_SPACING = 60;
 
+const formatTimestamp = (ts: any) => {
+  const d = ts?.toDate ? ts.toDate() : new Date(ts);
+  return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+};
+
 
 const DMChatScreen = ({ navigation, route }) => {
   const { threadId, otherUser = {}, onBack } = route.params || {};
@@ -304,12 +309,11 @@ const DMChatScreen = ({ navigation, route }) => {
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
                 onContentSizeChange={() => { if (isAtBottomRef.current) scrollToLatest(false); }}
-                renderItem={({ item, index }) => {
-                  const isMe = item.userId === currentUserId;
-                  const showUnreadHere = hasUnreadMarker && index === firstUnreadIndex + 1;
-                  const ownGradient = [colors.background, colors.background];
-                  const otherBubble = { backgroundColor: colors.white };
-                  const reactions = item.reactions || [];
+                  renderItem={({ item, index }) => {
+                    const isMe = item.userId === currentUserId;
+                    const showUnreadHere = hasUnreadMarker && index === firstUnreadIndex + 1;
+                    const reactions = item.reactions || [];
+                    const formattedTime = formatTimestamp(item.timestamp);
           return (
             <>
               {showUnreadHere && (
@@ -319,22 +323,16 @@ const DMChatScreen = ({ navigation, route }) => {
                   </View>
                 </View>
               )}
-              <View
-                style={[
-                  styles.messageContainer,
-                  isMe
-                    ? { alignItems: 'flex-end', alignSelf: 'flex-end' }
-                    : { alignItems: 'flex-start', alignSelf: 'flex-start' },
-                    actionTargetId === item.id && {
-                    marginBottom: ACTION_SPACING,
-                    marginTop: ACTION_SPACING / 2,
-                  },
-                ]}
-              >
                 <View
                   style={[
-                    styles.messageRow,
-                    reactions.length > 0 && { marginBottom: 2 },
+                    styles.messageContainer,
+                    isMe
+                      ? { alignItems: 'flex-end', alignSelf: 'flex-end' }
+                      : { alignItems: 'flex-start', alignSelf: 'flex-start' },
+                    actionTargetId === item.id && {
+                      marginBottom: ACTION_SPACING,
+                      marginTop: ACTION_SPACING / 2,
+                    },
                   ]}
                 >
                   <Pressable
@@ -345,67 +343,68 @@ const DMChatScreen = ({ navigation, route }) => {
                       }
                     }}
                   >
-                    <LinearGradient
-                      colors={isMe ? ownGradient : [colors.white, colors.white]}
-                      start={{ x: 1, y: 0.2 }}
-                      end={{ x: 0, y: 1.1 }}
-                      style={[styles.bubble, isMe ? styles.ownBubble : otherBubble]}
+                    <View
+                      style={[
+                        styles.messageBox,
+                        isMe ? styles.ownMessageBox : styles.otherMessageBox,
+                        reactions.length > 0 && { marginBottom: 2 },
+                      ]}
                     >
                       <Text style={[styles.messageText, isMe && styles.ownMessageText]}>
                         {item.text}
                       </Text>
-                    </LinearGradient>
+                      {actionTargetId !== item.id &&
+                        (reactions.length > 0 ||
+                          (!isMe && !reactions.some(r => r.userId === currentUserId))) && (
+                          <View style={styles.reactionRow}>
+                            {Array.from(new Set(reactions.map(r => r.emoji))).map(emoji => {
+                              const count = reactions.filter(r => r.emoji === emoji).length;
+                              const userReacted = reactions.some(
+                                r => r.emoji === emoji && r.userId === currentUserId,
+                              );
+                              return (
+                                <TouchableOpacity
+                                  key={emoji}
+                                  style=[
+                                    styles.reactionBubble,
+                                    userReacted && styles.reactionHighlight,
+                                  ]
+                                  onPress={() => !isMe && handleAddReaction(item.id, emoji)}
+                                  disabled={isMe}
+                                  activeOpacity={0.6}
+                                >
+                                  <Text style={{ fontSize: 15 }}>{emoji}</Text>
+                                  <Text style={{ fontSize: 10, color: '#666', marginLeft: 2 }}>{count}</Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                            {!isMe && !reactions.some(r => r.userId === currentUserId) && (
+                              <TouchableOpacity
+                                onPress={() => setReactionTargetId(item.id)}
+                                style={[styles.reactionBubble, styles.reactionAddBtn]}
+                              >
+                                <Icon name="add-circle-outline" size={18} color="#888" />
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        )}
+                      <Text style={styles.timestamp}>{formattedTime}</Text>
+                    </View>
                   </Pressable>
-                </View>
-                {actionTargetId !== item.id &&
-                  (reactions.length > 0 ||
-                    (!isMe && !reactions.some(r => r.userId === currentUserId))) && (
-                    <View style={styles.reactionRow}>
-                    {Array.from(new Set(reactions.map(r => r.emoji))).map(emoji => {
-                      const count = reactions.filter(r => r.emoji === emoji).length;
-                      const userReacted = reactions.some(
-                        r => r.emoji === emoji && r.userId === currentUserId,
-                      );
-                      return (
-                        <TouchableOpacity
-                          key={emoji}
-                          style={[
-                            styles.reactionBubble,
-                            userReacted && styles.reactionHighlight,
-                          ]}
-                          onPress={() => !isMe && handleAddReaction(item.id, emoji)}
-                          disabled={isMe}
-                          activeOpacity={0.6}
-                        >
-                          <Text style={{ fontSize: 15 }}>{emoji}</Text>
-                          <Text style={{ fontSize: 10, color: '#666', marginLeft: 2 }}>{count}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                    {!isMe && !reactions.some(r => r.userId === currentUserId) && (
-                      <TouchableOpacity
-                        onPress={() => setReactionTargetId(item.id)}
-                        style={[styles.reactionBubble, styles.reactionAddBtn]}
-                      >
-                        <Icon name="add-circle-outline" size={18} color="#888" />
-                      </TouchableOpacity>
-                    )}
-                    </View>
+                  {actionTargetId === item.id && (
+                    <>
+                      <Pressable
+                        style={StyleSheet.absoluteFill}
+                        onPress={stopActions}
+                      />
+                      <View style={styles.actionButtons}>
+                        <Pressable onPress={() => confirmDelete(item.id)} style={styles.actionBtn}>
+                          <Icon name="trash-outline" size={22} color={colors.delete} />
+                        </Pressable>
+                      </View>
+                    </>
                   )}
-                {actionTargetId === item.id && (
-                  <>
-                    <Pressable
-                      style={StyleSheet.absoluteFill}
-                      onPress={stopActions}
-                    />
-                    <View style={styles.actionButtons}>
-                      <Pressable onPress={() => confirmDelete(item.id)} style={styles.actionBtn}>
-                        <Icon name="trash-outline" size={22} color={colors.delete} />
-                      </Pressable>
-                    </View>
-                  </>
-                )}
-              </View>
+                </View>
 
             </>
           );
