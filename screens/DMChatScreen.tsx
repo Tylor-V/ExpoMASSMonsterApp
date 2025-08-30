@@ -365,10 +365,10 @@ const DMChatScreen = ({ navigation, route }) => {
                               return (
                                 <TouchableOpacity
                                   key={emoji}
-                                  style=[
+                                  style={[
                                     styles.reactionBubble,
                                     userReacted && styles.reactionHighlight,
-                                  ]
+                                  ]}
                                   onPress={() => !isMe && handleAddReaction(item.id, emoji)}
                                   disabled={isMe}
                                   activeOpacity={0.6}
