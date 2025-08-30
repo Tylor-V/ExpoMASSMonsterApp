@@ -1,6 +1,13 @@
-import { FontAwesome, Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FontAwesome, Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Alert,
   Animated,
@@ -17,48 +24,48 @@ import {
   TouchableOpacity,
   UIManager,
   View,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import BadgeImage from '../components/BadgeImage';
-import ChannelWrapper from '../components/ChannelWrapper';
-import ProfileImage from '../components/ProfileImage';
-import UserPreviewModal from '../components/UserPreviewModal';
-import { ROLE_COLORS, ROLE_TAGS } from '../constants/roles';
-import { awardStreakXP, awardXP } from '../firebase/chatXPHelpers';
-import { auth, firestore } from '../firebase/firebase';
-import { useLastRead } from '../firebase/userChatReadHelpers';
-import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
-import { useKeyboardAnimation } from '../hooks/useKeyboardAnimation';
-import { colors, fonts, gradients } from '../theme';
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import BadgeImage from "../components/BadgeImage";
+import ChannelWrapper from "../components/ChannelWrapper";
+import ProfileImage from "../components/ProfileImage";
+import UserPreviewModal from "../components/UserPreviewModal";
+import { ROLE_COLORS, ROLE_TAGS } from "../constants/roles";
+import { awardStreakXP, awardXP } from "../firebase/chatXPHelpers";
+import { auth, firestore } from "../firebase/firebase";
+import { useLastRead } from "../firebase/userChatReadHelpers";
+import { useCurrentUserDoc } from "../hooks/useCurrentUserDoc";
+import { useKeyboardAnimation } from "../hooks/useKeyboardAnimation";
+import { colors, fonts, gradients } from "../theme";
+import { ANIM_BUTTON_POP, ANIM_SHORT, ANIM_WIGGLE } from "../utils/animations";
+import { getChatLevelColor } from "../utils/chatLevel";
+import { dedupeById } from "../utils/dedupeById";
+
 import {
-  ANIM_BUTTON_POP,
-  ANIM_SHORT,
-  ANIM_WIGGLE
-} from '../utils/animations';
-import { getChatLevelColor } from '../utils/chatLevel';
-import { dedupeById } from '../utils/dedupeById';
+  enforceSelectedBadges,
+  MAX_DISPLAY_BADGES,
+} from "../badges/UnlockableBadges";
 
+const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-import { enforceSelectedBadges, MAX_DISPLAY_BADGES } from '../badges/UnlockableBadges';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-
-
-const EMOJI_LIST = ['💪', '🔥', '😂', '👏', '😎', '🥇', '😍'];
+const EMOJI_LIST = ["💪", "🔥", "😂", "👏", "😎", "🥇", "😍"];
 
 function parseSelectedBadges(val: any): string[] {
   if (Array.isArray(val)) return val;
-  if (val && typeof val === 'object') return Object.values(val);
+  if (val && typeof val === "object") return Object.values(val);
   return [];
 }
 
 function parseBadges(val: any): string[] {
   if (Array.isArray(val)) return val;
-  if (val && typeof val === 'object') return Object.values(val);
+  if (val && typeof val === "object") return Object.values(val);
   return [];
 }
 
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
@@ -66,7 +73,6 @@ const ACTION_SPACING = 60;
 
 // Vertical offset for the "Jump to Latest" button
 export const JUMP_BUTTON_OFFSET = 80;
-
 
 type UserInfo = {
   firstName: string;
@@ -100,7 +106,9 @@ type ChatScreenProps = {
   isActive?: boolean;
   onHeightChange?: (height: number) => void;
   readOnly?: boolean;
-  renderCustomMessage?: (params: CustomRenderParams) => React.ReactElement | null;
+  renderCustomMessage?: (
+    params: CustomRenderParams,
+  ) => React.ReactElement | null;
   onPinnedMessagesChange?: (msgs: any[]) => void;
   onRegisterScrollToMessage?: (fn: (id: string) => void) => void;
 };
@@ -113,7 +121,7 @@ const BG_GRADIENT = gradients.chat;
 
 const formatTimestamp = (ts: any) => {
   const d = ts?.toDate ? ts.toDate() : new Date(ts);
-  return `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate())} ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate())} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 };
 
 const AllChannels: React.FC<ChatScreenProps> = ({
@@ -127,11 +135,11 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 }) => {
   const [messages, setMessages] = useState<any[]>([]);
   const [userMap, setUserMap] = useState<UserMap>({});
-  const [text, setText] = useState('');
-  const [currentUserRole, setCurrentUserRole] = useState<string>('member');
+  const [text, setText] = useState("");
+  const [currentUserRole, setCurrentUserRole] = useState<string>("member");
   const currentUser = useCurrentUserDoc();
   const timeoutMs = currentUser?.timeoutUntil
-    ? (typeof currentUser.timeoutUntil.toMillis === 'function'
+    ? (typeof currentUser.timeoutUntil.toMillis === "function"
         ? currentUser.timeoutUntil.toMillis()
         : currentUser.timeoutUntil) - Date.now()
     : 0;
@@ -140,7 +148,9 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   const mLeft = Math.floor((timeoutMs % 3600000) / 60000);
   const [showJump, setShowJump] = useState(false);
   const [showNewMarker, setShowNewMarker] = useState(false);
-  const [lastReadMessageId, setLastReadMessageId] = useState<string | null>(null);
+  const [lastReadMessageId, setLastReadMessageId] = useState<string | null>(
+    null,
+  );
   const [lastRead, markAsRead] = useLastRead(channelId);
   const initialLastReadLoaded = useRef(false);
   const initialScrollDone = useRef(false);
@@ -163,9 +173,6 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   const flatListRef = useRef<FlatList>(null);
   const isAtBottomRef = useRef(true);
 
-
-
-
   const scrollToLatest = useCallback((animated = true) => {
     flatListRef.current?.scrollToEnd({ animated });
     isAtBottomRef.current = true;
@@ -174,61 +181,68 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   const scrollToMessage = useCallback(
     (msgId: string | number) => {
       const targetId = String(msgId);
-      const index = messages.findIndex(m => String(m.id) === targetId);
+      const index = messages.findIndex((m) => String(m.id) === targetId);
       if (index !== -1 && flatListRef.current) {
         try {
-          flatListRef.current.scrollToIndex({ index: Number(index), animated: true });
+          flatListRef.current.scrollToIndex({
+            index: Number(index),
+            animated: true,
+          });
         } catch (err) {
-          console.warn('Failed to scroll to pinned message', err);
+          console.warn("Failed to scroll to pinned message", err);
         }
       }
     },
-    [messages]
+    [messages],
   );
 
   useEffect(() => {
     onRegisterScrollToMessage?.(scrollToMessage);
   }, [scrollToMessage, onRegisterScrollToMessage]);
 
-  const latestMessageId = messages.length ? messages[messages.length - 1]?.id : null;
-  const latestMessageUserId = messages.length ? messages[messages.length - 1]?.userId : null;
-
-
+  const latestMessageId = messages.length
+    ? messages[messages.length - 1]?.id
+    : null;
+  const latestMessageUserId = messages.length
+    ? messages[messages.length - 1]?.userId
+    : null;
 
   // Fetch pinned messages
   useEffect(() => {
     if (!channelId) return;
     const unsubscribe = firestore()
-      .collection('channels')
+      .collection("channels")
       .doc(channelId)
-      .collection('messages')
-      .where('pinned', '==', true)
-      .onSnapshot(snapshot => {
+      .collection("messages")
+      .where("pinned", "==", true)
+      .onSnapshot((snapshot) => {
         if (snapshot && snapshot.docs) {
           const pins = dedupeById(
-            snapshot.docs.map(doc => {
-              const data = doc.data();
-              return {
-                id: String(doc.id),
-                ...data,
-                timestamp: data.timestamp?.toMillis
-                  ? data.timestamp.toMillis()
-                  : data.timestamp,
-                pinnedAt: data.pinnedAt?.toMillis
-                  ? data.pinnedAt.toMillis()
-                  : data.pinnedAt,
-              };
-            }).sort((a, b) => {
-              const getMillis = (v: any) =>
-                typeof v === 'number'
-                  ? v
-                  : v?.toMillis
-                    ? v.toMillis()
-                    : v
-                      ? new Date(v).getTime()
-                      : 0;
-              return getMillis(a.pinnedAt) - getMillis(b.pinnedAt);
-            })
+            snapshot.docs
+              .map((doc) => {
+                const data = doc.data();
+                return {
+                  id: String(doc.id),
+                  ...data,
+                  timestamp: data.timestamp?.toMillis
+                    ? data.timestamp.toMillis()
+                    : data.timestamp,
+                  pinnedAt: data.pinnedAt?.toMillis
+                    ? data.pinnedAt.toMillis()
+                    : data.pinnedAt,
+                };
+              })
+              .sort((a, b) => {
+                const getMillis = (v: any) =>
+                  typeof v === "number"
+                    ? v
+                    : v?.toMillis
+                      ? v.toMillis()
+                      : v
+                        ? new Date(v).getTime()
+                        : 0;
+                return getMillis(a.pinnedAt) - getMillis(b.pinnedAt);
+              }),
           );
           setPinnedMessages(pins);
           onPinnedMessagesChange?.(pins);
@@ -239,17 +253,17 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       });
     return unsubscribe;
   }, [channelId]);
-  
+
   // Fetch messages in real-time
   useEffect(() => {
     if (!channelId) return;
     const unsubscribe = firestore()
-      .collection('channels')
+      .collection("channels")
       .doc(channelId)
-      .collection('messages')
+      .collection("messages")
       // Load newest messages first
-      .orderBy('timestamp', 'desc')
-      .onSnapshot(snapshot => {
+      .orderBy("timestamp", "desc")
+      .onSnapshot((snapshot) => {
         if (snapshot && snapshot.docs) {
           const getMillis = (ts: any) => {
             if (!ts) return Number.MAX_SAFE_INTEGER;
@@ -257,7 +271,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
             return new Date(ts).getTime();
           };
           const msgs = snapshot.docs
-            .map(doc => ({ id: doc.id, ...doc.data() }))
+            .map((doc) => ({ id: doc.id, ...doc.data() }))
             .sort((a, b) => getMillis(a.timestamp) - getMillis(b.timestamp));
           setMessages(dedupeById(msgs));
         } else {
@@ -270,19 +284,19 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   // Fetch user info for every message sender and listen for updates
   useEffect(() => {
     if (!messages.length) return;
-    const uniqueUids = [...new Set(messages.map(m => m.userId))];
+    const uniqueUids = [...new Set(messages.map((m) => m.userId))];
 
-    uniqueUids.forEach(uid => {
+    uniqueUids.forEach((uid) => {
       if (!userListenersRef.current[uid]) {
-        const userRef = firestore().collection('users').doc(uid);
+        const userRef = firestore().collection("users").doc(uid);
 
         // Prefetch data for instant display
         userRef
           .get()
-          .then(doc => {
+          .then((doc) => {
             if (doc.exists) {
               const data = doc.data() || {};
-              setUserMap(prev => ({
+              setUserMap((prev) => ({
                 ...prev,
                 [uid]: {
                   ...(prev[uid] || {}),
@@ -293,12 +307,12 @@ const AllChannels: React.FC<ChatScreenProps> = ({
               }));
             }
           })
-          .catch(err => console.error('Failed to fetch user data', err));
+          .catch((err) => console.error("Failed to fetch user data", err));
 
-        userListenersRef.current[uid] = userRef.onSnapshot(doc => {
+        userListenersRef.current[uid] = userRef.onSnapshot((doc) => {
           if (doc.exists) {
             const data = doc.data() || {};
-            setUserMap(prev => ({
+            setUserMap((prev) => ({
               ...prev,
               [uid]: {
                 ...(prev[uid] || {}),
@@ -318,13 +332,13 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   useEffect(() => {
     if (!currentUserId) return;
     const unsubscribe = firestore()
-      .collection('users')
+      .collection("users")
       .doc(currentUserId)
-      .onSnapshot(doc => {
+      .onSnapshot((doc) => {
         if (doc.exists) {
           const data = doc.data() || {};
-          setCurrentUserRole(data.role || 'member');
-          setUserMap(prev => ({
+          setCurrentUserRole(data.role || "member");
+          setUserMap((prev) => ({
             ...prev,
             [currentUserId]: {
               ...(prev[currentUserId] || {}),
@@ -344,7 +358,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       scrollToLatest(false);
     }
   }, [userMap, pinnedMessages]);
-  
+
   // Reset state when channel changes
   useEffect(() => {
     initialLastReadLoaded.current = false;
@@ -357,7 +371,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
   useEffect(() => {
     return () => {
-      Object.values(userListenersRef.current).forEach(unsub => unsub());
+      Object.values(userListenersRef.current).forEach((unsub) => unsub());
       userListenersRef.current = {};
     };
   }, [channelId]);
@@ -376,8 +390,8 @@ const AllChannels: React.FC<ChatScreenProps> = ({
     scrollToLatest(false);
     initialScrollDone.current = true;
   }, [messages, isActive]);
-  
-// Auto-scroll to bottom on initial load, channel change, or when tab becomes active
+
+  // Auto-scroll to bottom on initial load, channel change, or when tab becomes active
   useEffect(() => {
     if (isActive && messages.length > 0) {
       scrollToLatest(true);
@@ -407,7 +421,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       }
     };
   }, [channelId, latestMessageId]);
-  
+
   // Ensure we show latest messages when tab becomes active
   useEffect(() => {
     if (isActive) {
@@ -434,7 +448,13 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       }
     }
     // eslint-disable-next-line
-  }, [messages, currentUserId, latestMessageUserId, lastReadMessageId, latestMessageId]);
+  }, [
+    messages,
+    currentUserId,
+    latestMessageUserId,
+    lastReadMessageId,
+    latestMessageId,
+  ]);
 
   // FlatList scroll event: detect if user is not at the bottom
   const handleScroll = (e: any) => {
@@ -456,7 +476,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
   const handleJumpToBottom = () => {
     scrollToLatest(true);
-     isAtBottomRef.current = true;
+    isAtBottomRef.current = true;
     setShowJump(false);
     setShowNewMarker(false);
     if (latestMessageId) {
@@ -468,14 +488,20 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   // --- MESSAGE SEND LOGIC ---
   const sendMessage = async () => {
     if (isTimedOut) {
-      Alert.alert('Timed Out', `You cannot send messages for ${hLeft}h ${mLeft}m.`);
+      Alert.alert(
+        "Timed Out",
+        `You cannot send messages for ${hLeft}h ${mLeft}m.`,
+      );
       return;
     }
     if (readOnly) {
-      Alert.alert('Read Only', 'You can only share splits here from the Calendar.');
+      Alert.alert(
+        "Read Only",
+        "You can only share splits here from the Calendar.",
+      );
       return;
     }
-    if (text.trim() === '') {
+    if (text.trim() === "") {
       Alert.alert("Empty message", "Please type something to send.");
       return;
     }
@@ -491,23 +517,23 @@ const AllChannels: React.FC<ChatScreenProps> = ({
     try {
       // Add message to Firestore
       await firestore()
-        .collection('channels')
+        .collection("channels")
         .doc(channelId)
-        .collection('messages')
+        .collection("messages")
         .add({
           userId: currentUserId,
           text: text.trim(),
           timestamp: firestore.FieldValue.serverTimestamp(),
           reactions: [],
           pinned: false,
-          mediaUrl: '',
+          mediaUrl: "",
         });
       // Award XP for message (spam-protected)
-      await awardXP(currentUserId, 'message');
+      await awardXP(currentUserId, "message");
       // Award streak XP (once per day)
       await awardStreakXP(currentUserId);
 
-      setText('');
+      setText("");
       scrollToLatest(true);
     } catch (e) {
       console.error("Failed to send message:", e);
@@ -518,24 +544,24 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   // --- HANDLE REACTIONS ---
   const handleAddReaction = async (msgId: string, emoji: string) => {
     const msgRef = firestore()
-      .collection('channels')
+      .collection("channels")
       .doc(channelId)
-      .collection('messages')
+      .collection("messages")
       .doc(msgId);
     const doc = await msgRef.get();
     if (!doc.exists) return;
     const messageUserId = doc.data().userId;
     if (messageUserId === currentUserId) return;
     const reactions = doc.data().reactions || [];
-    const existing = reactions.find(r => r.userId === currentUserId);
+    const existing = reactions.find((r) => r.userId === currentUserId);
     let newReactions;
     if (existing) {
       if (existing.emoji === emoji) {
         // Remove current reaction
-        newReactions = reactions.filter(r => r.userId !== currentUserId);
+        newReactions = reactions.filter((r) => r.userId !== currentUserId);
       } else {
         // Replace with new emoji
-        newReactions = reactions.map(r =>
+        newReactions = reactions.map((r) =>
           r.userId === currentUserId ? { emoji, userId: currentUserId } : r,
         );
       }
@@ -546,14 +572,17 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
     // Award XP to message owner (not self), unique per user per message
     if (messageUserId && messageUserId !== currentUserId) {
-      await awardXP(messageUserId, 'reaction', { reactorId: currentUserId, messageId: msgId });
+      await awardXP(messageUserId, "reaction", {
+        reactorId: currentUserId,
+        messageId: msgId,
+      });
     }
   };
 
   // --- PIN / DELETE LOGIC ---
   const handleLongPress = useCallback(
     (msgId: string, item: any) => {
-      if (currentUserRole !== 'moderator' && item.userId !== currentUserId) {
+      if (currentUserRole !== "moderator" && item.userId !== currentUserId) {
         return;
       }
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -573,10 +602,10 @@ const AllChannels: React.FC<ChatScreenProps> = ({
             useNativeDriver: true,
             isInteraction: false,
           }),
-        ])
+        ]),
       ).start();
     },
-    [channelId, currentUserRole, currentUserId]
+    [channelId, currentUserRole, currentUserId],
   );
 
   const stopActions = useCallback(() => {
@@ -612,29 +641,29 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       return;
     }
     await firestore()
-      .collection('channels')
+      .collection("channels")
       .doc(channelId)
-      .collection('messages')
+      .collection("messages")
       .doc(msgId)
       .update(
         pinned
           ? { pinned: false, pinnedAt: firestore.FieldValue.delete() }
-          : { pinned: true, pinnedAt: firestore.FieldValue.serverTimestamp() }
+          : { pinned: true, pinnedAt: firestore.FieldValue.serverTimestamp() },
       );
-      stopActions();
+    stopActions();
   };
 
   const confirmDelete = (msgId: string) => {
-    Alert.alert('Delete Message', 'Are you sure?', [
-      { text: 'Cancel', style: 'cancel', onPress: stopActions },
+    Alert.alert("Delete Message", "Are you sure?", [
+      { text: "Cancel", style: "cancel", onPress: stopActions },
       {
-        text: 'Delete',
-        style: 'destructive',
+        text: "Delete",
+        style: "destructive",
         onPress: async () => {
           await firestore()
-            .collection('channels')
+            .collection("channels")
             .doc(channelId)
-            .collection('messages')
+            .collection("messages")
             .doc(msgId)
             .delete();
           stopActions();
@@ -650,307 +679,387 @@ const AllChannels: React.FC<ChatScreenProps> = ({
     }
   };
 
-
-
-  const firstUnreadIndex = messages.findIndex(m => m.id === lastReadMessageId);
-  const hasUnreadMarker = showNewMarker && firstUnreadIndex !== -1 && firstUnreadIndex < messages.length - 1;
+  const firstUnreadIndex = messages.findIndex(
+    (m) => m.id === lastReadMessageId,
+  );
+  const hasUnreadMarker =
+    showNewMarker &&
+    firstUnreadIndex !== -1 &&
+    firstUnreadIndex < messages.length - 1;
 
   // --- UI COLOR SCHEME ---
   const ChatMessage = useCallback(
     ({ item, index }: { item: any; index: number }) => {
-    const user = userMap[item.userId];
-    let displayName = 'Unknown';
-    let isModerator = false;
-    let chatLevel = 1;
-    let profilePicUrl = '';
-    let badges: string[] = [];
-    if (user) {
-      displayName = `${user.firstName} ${user.lastName?.charAt(0) || ''}.`;
-      isModerator = user.role === 'moderator';
-      chatLevel = user.chatLevel || 1;
-      profilePicUrl = user.profilePicUrl || '';
-      badges = enforceSelectedBadges(
-        Array.isArray(user.selectedBadges) ? user.selectedBadges : [],
-        user,
-      );
-    }
-    const isOwnMessage = item.userId === currentUserId;
-    const nameColor = isOwnMessage
-      ? colors.white
-      : isModerator
-        ? colors.accent
-        : colors.black;
-    const messageDate = item.timestamp?.toDate
-      ? item.timestamp.toDate()
-      : new Date(item.timestamp);
-    const formattedTime = `${String(messageDate.getMonth() + 1).padStart(2, '0')}/${String(messageDate.getDate()).padStart(2, '0')} ${messageDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-
-    
-
-    const showUnreadHere = hasUnreadMarker && (index === firstUnreadIndex + 1);
-    if (renderCustomMessage) {
-      const custom = renderCustomMessage({
-        item,
-        index,
-        isLast: index === messages.length - 1,
-        isOwnMessage,
-        showUnreadHere,
-        user,
-        addReaction: (emoji: string) => handleAddReaction(item.id, emoji),
-        openReactionPicker: () => setReactionTargetId(item.id),
-      });
-      if (custom) {
-        return custom;
+      const user = userMap[item.userId];
+      let displayName = "Unknown";
+      let isModerator = false;
+      let chatLevel = 1;
+      let profilePicUrl = "";
+      let badges: string[] = [];
+      if (user) {
+        displayName = `${user.firstName} ${user.lastName?.charAt(0) || ""}.`;
+        isModerator = user.role === "moderator";
+        chatLevel = user.chatLevel || 1;
+        profilePicUrl = user.profilePicUrl || "";
+        badges = enforceSelectedBadges(
+          Array.isArray(user.selectedBadges) ? user.selectedBadges : [],
+          user,
+        );
       }
-    }
-    const reactions = item.reactions || [];
-    if (!reactionOpacityMap[item.id]) {
-      reactionOpacityMap[item.id] = new Animated.Value(1);
-    }
+      const isOwnMessage = item.userId === currentUserId;
+      const nameColor = isOwnMessage
+        ? colors.white
+        : isModerator
+          ? colors.accent
+          : colors.black;
+      const messageDate = item.timestamp?.toDate
+        ? item.timestamp.toDate()
+        : new Date(item.timestamp);
+      const formattedTime = `${String(messageDate.getMonth() + 1).padStart(2, "0")}/${String(messageDate.getDate()).padStart(2, "0")} ${messageDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 
-    const pinnedScale = useRef(new Animated.Value(item.pinned ? 1 : 0)).current;
-    const prevPinned = useRef(item.pinned);
-
-    useEffect(() => {
-      if (item.pinned && !prevPinned.current) {
-        Animated.sequence([
-          Animated.timing(pinnedScale, {
-            toValue: 1.2,
-            duration: ANIM_BUTTON_POP,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pinnedScale, {
-            toValue: 1,
-            duration: ANIM_BUTTON_POP,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      } else if (!item.pinned && prevPinned.current) {
-        Animated.timing(pinnedScale, {
-          toValue: 0,
-          duration: ANIM_SHORT,
-          useNativeDriver: true,
-        }).start();
+      const showUnreadHere = hasUnreadMarker && index === firstUnreadIndex + 1;
+      if (renderCustomMessage) {
+        const custom = renderCustomMessage({
+          item,
+          index,
+          isLast: index === messages.length - 1,
+          isOwnMessage,
+          showUnreadHere,
+          user,
+          addReaction: (emoji: string) => handleAddReaction(item.id, emoji),
+          openReactionPicker: () => setReactionTargetId(item.id),
+        });
+        if (custom) {
+          return custom;
+        }
       }
-      prevPinned.current = item.pinned;
-    }, [item.pinned, pinnedScale]);
+      const reactions = item.reactions || [];
+      if (!reactionOpacityMap[item.id]) {
+        reactionOpacityMap[item.id] = new Animated.Value(1);
+      }
 
-    return (
-      <>
-        {showUnreadHere && (
-          <View style={chatStyles.unreadMarkerRow}>
-            <View style={chatStyles.unreadMarker}>
-              <Text style={chatStyles.unreadMarkerText}>New Messages</Text>
+      const pinnedScale = useRef(
+        new Animated.Value(item.pinned ? 1 : 0),
+      ).current;
+      const prevPinned = useRef(item.pinned);
+
+      useEffect(() => {
+        if (item.pinned && !prevPinned.current) {
+          Animated.sequence([
+            Animated.timing(pinnedScale, {
+              toValue: 1.2,
+              duration: ANIM_BUTTON_POP,
+              useNativeDriver: true,
+            }),
+            Animated.timing(pinnedScale, {
+              toValue: 1,
+              duration: ANIM_BUTTON_POP,
+              useNativeDriver: true,
+            }),
+          ]).start();
+        } else if (!item.pinned && prevPinned.current) {
+          Animated.timing(pinnedScale, {
+            toValue: 0,
+            duration: ANIM_SHORT,
+            useNativeDriver: true,
+          }).start();
+        }
+        prevPinned.current = item.pinned;
+      }, [item.pinned, pinnedScale]);
+
+      return (
+        <>
+          {showUnreadHere && (
+            <View style={chatStyles.unreadMarkerRow}>
+              <View style={chatStyles.unreadMarker}>
+                <Text style={chatStyles.unreadMarkerText}>New Messages</Text>
+              </View>
+            </View>
+          )}
+          <View
+            style={[
+              chatStyles.messageContainer,
+              isOwnMessage
+                ? { alignItems: "flex-end", alignSelf: "flex-end" }
+                : { alignItems: "flex-start", alignSelf: "flex-start" },
+              actionTargetId === item.id && {
+                marginBottom: ACTION_SPACING,
+                marginTop: ACTION_SPACING / 2,
+              },
+            ]}
+          >
+            <View
+              style={[
+                chatStyles.messageRow,
+                reactions.length > 0 && { marginBottom: 2 },
+              ]}
+            >
+              {!isOwnMessage && (
+                <TouchableOpacity
+                  onPress={() => handleUserPreview(item.userId)}
+                  activeOpacity={0.8}
+                >
+                  <ProfileImage
+                    uri={profilePicUrl}
+                    style={chatStyles.profilePic}
+                    isCurrentUser={false}
+                  />
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                onLongPress={() => handleLongPress(item.id, item)}
+                delayLongPress={400}
+                activeOpacity={1}
+                style={[
+                  chatStyles.messageBox,
+                  isOwnMessage
+                    ? chatStyles.ownMessageBox
+                    : chatStyles.otherMessageBox,
+                  item.pinned && chatStyles.pinnedMessage,
+                  actionTargetId === item.id && {
+                    transform: [
+                      {
+                        rotate: wiggleAnim.interpolate({
+                          inputRange: [-1, 1],
+                          outputRange: ["-2deg", "2deg"],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                <View style={chatStyles.metaRow}>
+                  <TouchableOpacity
+                    onPress={() => handleUserPreview(item.userId)}
+                    disabled={isOwnMessage}
+                  >
+                    <Text style={[chatStyles.username, { color: nameColor }]}>
+                      {isOwnMessage ? "Me" : displayName}
+                    </Text>
+                  </TouchableOpacity>
+                  {badges && badges.length > 0 && (
+                    <View style={{ flexDirection: "row", marginLeft: 5 }}>
+                      {badges.slice(0, MAX_DISPLAY_BADGES).map((b, i) => (
+                        <BadgeImage
+                          key={b}
+                          badgeKey={b}
+                          style={[
+                            { width: 19, height: 19, marginLeft: i ? 4 : 0 },
+                            chatStyles.badgeHighlight,
+                          ]}
+                        />
+                      ))}
+                    </View>
+                  )}
+                </View>
+                <Text
+                  style={[
+                    chatStyles.messageText,
+                    isOwnMessage && chatStyles.ownMessageText,
+                  ]}
+                >
+                  {item.text}
+                </Text>
+                {actionTargetId !== item.id &&
+                  (reactions.length > 0 ||
+                    (!isOwnMessage &&
+                      !reactions.some((r) => r.userId === currentUserId))) && (
+                    <Animated.View
+                      pointerEvents={
+                        actionTargetId === item.id ? "none" : "auto"
+                      }
+                      style={[
+                        chatStyles.reactionRow,
+                        { opacity: reactionOpacityMap[item.id] || 1 },
+                      ]}
+                    >
+                      {Array.from(new Set(reactions.map((r) => r.emoji))).map(
+                        (emoji) => {
+                          const count = reactions.filter(
+                            (r) => r.emoji === emoji,
+                          ).length;
+                          const userReacted = reactions.some(
+                            (r) =>
+                              r.emoji === emoji && r.userId === currentUserId,
+                          );
+                          return (
+                            <TouchableOpacity
+                              key={emoji}
+                              style={[
+                                chatStyles.reactionBubble,
+                                userReacted && chatStyles.reactionHighlight,
+                              ]}
+                              onPress={() => {
+                                if (!isOwnMessage)
+                                  handleAddReaction(item.id, emoji);
+                              }}
+                              disabled={isOwnMessage}
+                              activeOpacity={0.6}
+                            >
+                              <Text style={{ fontSize: 15 }}>{emoji}</Text>
+                              <Text
+                                style={{
+                                  fontSize: 10,
+                                  color: "#666",
+                                  marginLeft: 2,
+                                }}
+                              >
+                                {count}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        },
+                      )}
+                      {!isOwnMessage &&
+                        !reactions.some((r) => r.userId === currentUserId) && (
+                          <TouchableOpacity
+                            onPress={() => setReactionTargetId(item.id)}
+                            style={[
+                              chatStyles.reactionBubble,
+                              chatStyles.reactionAddBtn,
+                            ]}
+                          >
+                            <Ionicons
+                              name="add-circle-outline"
+                              size={18}
+                              color="#888"
+                            />
+                          </TouchableOpacity>
+                        )}
+                    </Animated.View>
+                  )}
+                <View style={{ alignSelf: "flex-end", alignItems: "flex-end" }}>
+                  <View style={chatStyles.footerRow}>
+                    <View
+                      style={{
+                        backgroundColor: getChatLevelColor(chatLevel),
+                        borderRadius: 2,
+                        paddingHorizontal: 4,
+                        marginRight: 3,
+                        marginLeft: 1,
+                        paddingVertical: 2,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: colors.white,
+                          fontSize: 12,
+                          fontWeight: "bold",
+                          letterSpacing: 0.8,
+                        }}
+                      >
+                        Lv{chatLevel}
+                      </Text>
+                    </View>
+                    {user?.accountabilityStreak > 0 && (
+                      <View
+                        style={{
+                          backgroundColor: colors.yellow,
+                          borderRadius: 2,
+                          paddingHorizontal: 4,
+                          marginRight: 3,
+                          paddingVertical: 2,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: colors.black,
+                            fontSize: 12,
+                            fontWeight: "bold",
+                            letterSpacing: 0.8,
+                          }}
+                        >
+                          🔥{user.accountabilityStreak}
+                        </Text>
+                      </View>
+                    )}
+                    {ROLE_TAGS[user?.role] && (
+                      <View
+                        style={{
+                          backgroundColor: ROLE_COLORS[user.role],
+                          borderRadius: 2,
+                          paddingHorizontal: 4,
+                          marginRight: 3,
+                          paddingVertical: 2,
+                          alignItems: "center",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Text
+                          style={{
+                            color: colors.white,
+                            fontSize: 12,
+                            fontWeight: "bold",
+                            letterSpacing: 0.8,
+                          }}
+                        >
+                          {ROLE_TAGS[user.role]}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={chatStyles.timestamp}>{formattedTime}</Text>
+                </View>
+                {item.pinned && (
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      chatStyles.pinnedIconWrap,
+                      { transform: [{ scale: pinnedScale }] },
+                    ]}
+                  >
+                    <FontAwesome
+                      name="thumb-tack"
+                      size={18}
+                      color={colors.gold}
+                    />
+                  </Animated.View>
+                )}
+              </TouchableOpacity>
+              {actionTargetId === item.id && (
+                <>
+                  <Pressable
+                    style={StyleSheet.absoluteFill}
+                    onPress={stopActions}
+                  />
+                  <View style={chatStyles.actionButtons}>
+                    {currentUserRole === "moderator" && (
+                      <Pressable
+                        onPress={() => {
+                          pinMessage(item.id, item.pinned);
+                        }}
+                        style={chatStyles.actionBtn}
+                      >
+                        <FontAwesome
+                          name="thumb-tack"
+                          size={22}
+                          color={colors.gold}
+                        />
+                      </Pressable>
+                    )}
+                    <Pressable
+                      onPress={() => confirmDelete(item.id)}
+                      style={chatStyles.actionBtn}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={22}
+                        color={colors.delete}
+                      />
+                    </Pressable>
+                  </View>
+                </>
+              )}
             </View>
           </View>
-        )}
-        <View
-          style={[
-            chatStyles.messageContainer,
-            isOwnMessage
-              ? { alignItems: 'flex-end', alignSelf: 'flex-end' }
-              : { alignItems: 'flex-start', alignSelf: 'flex-start' },
-              actionTargetId === item.id && {
-              marginBottom: ACTION_SPACING,
-              marginTop: ACTION_SPACING / 2,
-            },
-          ]}
-        <View
-  style={[
-    chatStyles.messageRow,
-    reactions.length > 0 && { marginBottom: 2 }
-  ]}
->
-  {!isOwnMessage && (
-    <TouchableOpacity onPress={() => handleUserPreview(item.userId)} activeOpacity={0.8}>
-      <ProfileImage
-        uri={profilePicUrl}
-        style={chatStyles.profilePic}
-        isCurrentUser={false}
-      />
-    </TouchableOpacity>
-  )}
-  <TouchableOpacity
-    onLongPress={() => handleLongPress(item.id, item)}
-    delayLongPress={400}
-    activeOpacity={1}
-    style={[
-      chatStyles.messageBox,
-      isOwnMessage ? chatStyles.ownMessageBox : chatStyles.otherMessageBox,
-      item.pinned && chatStyles.pinnedMessage,
-      actionTargetId === item.id && {
-        transform: [{ rotate: wiggleAnim.interpolate({ inputRange: [-1, 1], outputRange: ['-2deg', '2deg'] }) }],
-      },
-    ]}
-  >
-    <View style={chatStyles.metaRow}>
-      <TouchableOpacity onPress={() => handleUserPreview(item.userId)} disabled={isOwnMessage}>
-        <Text style={[chatStyles.username, { color: nameColor }]}>
-          {isOwnMessage ? 'Me' : displayName}
-        </Text>
-      </TouchableOpacity>
-      {badges && badges.length > 0 && (
-        <View style={{ flexDirection: 'row', marginLeft: 5 }}>
-          {badges.slice(0, MAX_DISPLAY_BADGES).map((b, i) => (
-            <BadgeImage
-              key={b}
-              badgeKey={b}
-              style={[{ width: 19, height: 19, marginLeft: i ? 4 : 0 }, chatStyles.badgeHighlight]}
-            />
-          ))}
-        </View>
-      )}
-    </View>
-    <Text style={[chatStyles.messageText, isOwnMessage && chatStyles.ownMessageText]}>
-      {item.text}
-    </Text>
-    {actionTargetId !== item.id &&
-      (reactions.length > 0 ||
-        (!isOwnMessage && !reactions.some(r => r.userId === currentUserId))) && (
-        <Animated.View
-          pointerEvents={actionTargetId === item.id ? 'none' : 'auto'}
-          style={[chatStyles.reactionRow, { opacity: reactionOpacityMap[item.id] || 1 }]}
-        >
-          {Array.from(new Set(reactions.map(r => r.emoji))).map(emoji => {
-            const count = reactions.filter(r => r.emoji === emoji).length;
-            const userReacted = reactions.some(
-              r => r.emoji === emoji && r.userId === currentUserId,
-            );
-            return (
-              <TouchableOpacity
-                key={emoji}
-                style={[chatStyles.reactionBubble, userReacted && chatStyles.reactionHighlight]}
-                onPress={() => {
-                  if (!isOwnMessage) handleAddReaction(item.id, emoji);
-                }}
-                disabled={isOwnMessage}
-                activeOpacity={0.6}
-              >
-                <Text style={{ fontSize: 15 }}>{emoji}</Text>
-                <Text style={{ fontSize: 10, color: '#666', marginLeft: 2 }}>{count}</Text>
-              </TouchableOpacity>
-            );
-          })}
-          {!isOwnMessage && !reactions.some(r => r.userId === currentUserId) && (
-            <TouchableOpacity
-              onPress={() => setReactionTargetId(item.id)}
-              style={[chatStyles.reactionBubble, chatStyles.reactionAddBtn]}
-            >
-              <Ionicons name="add-circle-outline" size={18} color="#888" />
-            </TouchableOpacity>
-          )}
-        </Animated.View>
-      )}
-    <View style={{ alignSelf: 'flex-end', alignItems: 'flex-end' }}>
-      <View style={chatStyles.footerRow}>
-        <View
-          style={{
-            backgroundColor: getChatLevelColor(chatLevel),
-            borderRadius: 2,
-            paddingHorizontal: 4,
-            marginRight: 3,
-            marginLeft: 1,
-            paddingVertical: 2,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Text
-            style={{
-              color: colors.white,
-              fontSize: 12,
-              fontWeight: 'bold',
-              letterSpacing: 0.8,
-            }}
-          >
-            Lv{chatLevel}
-          </Text>
-        </View>
-        {user?.accountabilityStreak > 0 && (
-          <View
-            style={{
-              backgroundColor: colors.yellow,
-              borderRadius: 2,
-              paddingHorizontal: 4,
-              marginRight: 3,
-              paddingVertical: 2,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text
-              style={{
-                color: colors.black,
-                fontSize: 12,
-                fontWeight: 'bold',
-                letterSpacing: 0.8,
-              }}
-            >
-              🔥{user.accountabilityStreak}
-            </Text>
-          </View>
-        )}
-        {ROLE_TAGS[user?.role] && (
-          <View
-            style={{
-              backgroundColor: ROLE_COLORS[user.role],
-              borderRadius: 2,
-              paddingHorizontal: 4,
-              marginRight: 3,
-              paddingVertical: 2,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text
-              style={{
-                color: colors.white,
-                fontSize: 12,
-                fontWeight: 'bold',
-                letterSpacing: 0.8,
-              }}
-            >
-              {ROLE_TAGS[user.role]}
-            </Text>
-          </View>
-        )}
-      </View>
-      <Text style={chatStyles.timestamp}>{formattedTime}</Text>
-    </View>
-    {item.pinned && (
-      <Animated.View
-        pointerEvents="none"
-        style={[chatStyles.pinnedIconWrap, { transform: [{ scale: pinnedScale }] }]}
-      >
-        <FontAwesome name="thumb-tack" size={18} color={colors.gold} />
-      </Animated.View>
-    )}
-  </TouchableOpacity>
-  {actionTargetId === item.id && (
-    <>
-      <Pressable style={StyleSheet.absoluteFill} onPress={stopActions} />
-      <View style={chatStyles.actionButtons}>
-        {currentUserRole === 'moderator' && (
-          <Pressable
-            onPress={() => {
-              pinMessage(item.id, item.pinned);
-            }}
-            style={chatStyles.actionBtn}
-          >
-            <FontAwesome name="thumb-tack" size={22} color={colors.gold} />
-          </Pressable>
-        )}
-        <Pressable onPress={() => confirmDelete(item.id)} style={chatStyles.actionBtn}>
-          <Ionicons name="trash-outline" size={22} color={colors.delete} />
-        </Pressable>
-      </View>
-    </>
-  )}
-</View>
-
         </>
       );
-    }, [
+    },
+    [
       userMap,
       currentUserId,
       hasUnreadMarker,
@@ -968,16 +1077,17 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       stopActions,
       handleUserPreview,
       handleLongPress,
-    ]);
+    ],
+  );
 
-    const MemoizedChatMessage = useMemo(() => memo(ChatMessage), [ChatMessage]);
+  const MemoizedChatMessage = useMemo(() => memo(ChatMessage), [ChatMessage]);
 
-    const renderMessage = useCallback(
-      ({ item, index }: { item: any; index: number }) => (
-        <MemoizedChatMessage item={item} index={index} />
-      ),
-      [MemoizedChatMessage],
-    );
+  const renderMessage = useCallback(
+    ({ item, index }: { item: any; index: number }) => (
+      <MemoizedChatMessage item={item} index={index} />
+    ),
+    [MemoizedChatMessage],
+  );
 
   return (
     <ChannelWrapper padTop={false} padBottom style={{ flex: 1 }}>
@@ -991,10 +1101,13 @@ const AllChannels: React.FC<ChatScreenProps> = ({
             <FlatList
               ref={flatListRef}
               data={messages}
-              keyExtractor={item => item.id}
+              keyExtractor={(item) => item.id}
               renderItem={renderMessage}
               extraData={userMap}
-              contentContainerStyle={{ paddingTop: 12, paddingBottom: inputBarHeight }}
+              contentContainerStyle={{
+                paddingTop: 12,
+                paddingBottom: inputBarHeight,
+              }}
               ListFooterComponent={
                 <View
                   style={{ height: readOnly ? insets.bottom : inputBarHeight }}
@@ -1012,12 +1125,21 @@ const AllChannels: React.FC<ChatScreenProps> = ({
               <TouchableOpacity
                 style={[
                   chatStyles.jumpToBottomBtn,
-                  { bottom: Animated.add(keyboardOffset, inputBarHeight + JUMP_BUTTON_OFFSET) },
+                  {
+                    bottom: Animated.add(
+                      keyboardOffset,
+                      inputBarHeight + JUMP_BUTTON_OFFSET,
+                    ),
+                  },
                 ]}
                 onPress={handleJumpToBottom}
                 activeOpacity={0.88}
               >
-                 <Ionicons name="arrow-down" size={28} color={colors.background} />
+                <Ionicons
+                  name="arrow-down"
+                  size={28}
+                  color={colors.background}
+                />
               </TouchableOpacity>
             )}
             {reactionTargetId && (
@@ -1034,7 +1156,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                 >
                   <View style={chatStyles.emojiPicker}>
                     <View style={chatStyles.emojiRow}>
-                      {EMOJI_LIST.map(e => (
+                      {EMOJI_LIST.map((e) => (
                         <TouchableOpacity
                           key={e}
                           style={chatStyles.emojiBtn}
@@ -1068,15 +1190,27 @@ const AllChannels: React.FC<ChatScreenProps> = ({
               ]}
             >
               <TextInput
-                style={[chatStyles.input, isTimedOut && chatStyles.disabledInput]}
+                style={[
+                  chatStyles.input,
+                  isTimedOut && chatStyles.disabledInput,
+                ]}
                 value={text}
                 onChangeText={setText}
                 editable={!isTimedOut}
-                placeholder={isTimedOut ? `Timed out for ${hLeft}h ${mLeft}m` : 'Type a message…'}
-                placeholderTextColor={isTimedOut ? colors.gray : '#888'}
+                placeholder={
+                  isTimedOut
+                    ? `Timed out for ${hLeft}h ${mLeft}m`
+                    : "Type a message…"
+                }
+                placeholderTextColor={isTimedOut ? colors.gray : "#888"}
                 maxLength={512}
               />
-              <TouchableOpacity style={chatStyles.sendBtn} onPress={sendMessage} activeOpacity={0.85} disabled={isTimedOut}>
+              <TouchableOpacity
+                style={chatStyles.sendBtn}
+                onPress={sendMessage}
+                activeOpacity={0.85}
+                disabled={isTimedOut}
+              >
                 <LinearGradient
                   colors={[colors.accent, colors.accent]}
                   style={chatStyles.sendBtnGradient}
@@ -1090,7 +1224,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       </KeyboardAvoidingView>
       <UserPreviewModal
         visible={!!previewUserId}
-        userId={previewUserId || ''}
+        userId={previewUserId || ""}
         onClose={() => setPreviewUserId(null)}
       />
     </ChannelWrapper>
@@ -1099,8 +1233,8 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
 export const chatStyles = StyleSheet.create({
   messageRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: "row",
+    alignItems: "flex-end",
     marginBottom: 11,
     paddingHorizontal: 8,
   },
@@ -1127,44 +1261,44 @@ export const chatStyles = StyleSheet.create({
   messageText: {
     color: colors.textDark,
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     lineHeight: 22,
     marginVertical: 2,
     flexShrink: 1,
-    flexWrap: 'wrap',
+    flexWrap: "wrap",
   },
   ownMessageText: {
     color: colors.white,
   },
   username: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: 16,
     marginRight: 4,
     marginVertical: 2,
   },
   metaRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
   },
   footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-end',
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-end",
     marginTop: 8,
     marginLeft: 26,
   },
   timestamp: {
     color: colors.gray,
     fontSize: 10,
-    fontWeight: '400',
+    fontWeight: "400",
     fontFamily: fonts.regular,
     marginTop: 6,
     marginBottom: -4,
   },
   inputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     backgroundColor: colors.white,
     borderRadius: 24,
@@ -1175,7 +1309,7 @@ export const chatStyles = StyleSheet.create({
     elevation: 2,
   },
   floatingInputRow: {
-    position: 'absolute',
+    position: "absolute",
     left: 12,
     right: 12,
     zIndex: 2,
@@ -1195,14 +1329,14 @@ export const chatStyles = StyleSheet.create({
     backgroundColor: colors.grayLight,
   },
   sendBtn: {
-    backgroundColor: 'transparent',
+    backgroundColor: "transparent",
     marginLeft: 2,
   },
   sendBtnGradient: {
     padding: 10,
     borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     width: 50,
     height: 50,
   },
@@ -1210,14 +1344,14 @@ export const chatStyles = StyleSheet.create({
     color: colors.gray,
   },
   jumpToBottomBtn: {
-    position: 'absolute',
+    position: "absolute",
     right: 26,
     backgroundColor: colors.accent,
     borderRadius: 26,
     width: 52,
     height: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 1,
     shadowColor: colors.shadow,
     shadowOpacity: 0.09,
@@ -1226,7 +1360,7 @@ export const chatStyles = StyleSheet.create({
   },
   jumpBtnText: {
     color: colors.background,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: 12,
     marginTop: 2,
   },
@@ -1239,8 +1373,8 @@ export const chatStyles = StyleSheet.create({
     marginTop: 1,
   },
   unreadMarkerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     marginBottom: 6,
     marginTop: 4,
   },
@@ -1252,19 +1386,19 @@ export const chatStyles = StyleSheet.create({
   },
   unreadMarkerText: {
     color: colors.textDark,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: 12,
-    textAlign: 'center',
+    textAlign: "center",
   },
   reactionRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     paddingHorizontal: 3,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   reactionBubble: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.white,
     borderRadius: 11,
     paddingHorizontal: 7,
@@ -1294,26 +1428,26 @@ export const chatStyles = StyleSheet.create({
     marginTop: -6,
     borderWidth: 1,
     borderColor: colors.grayLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   emojiPicker: {
     backgroundColor: colors.white,
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    alignItems: "center",
     width: 240,
   },
   emojiRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
     marginBottom: 10,
   },
   emojiBtn: {
@@ -1327,18 +1461,18 @@ export const chatStyles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: '#f5f2fa',
+    backgroundColor: "#f5f2fa",
   },
   cancelText: {
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   pinnedBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     backgroundColor: colors.accent,
-    alignSelf: 'stretch',
+    alignSelf: "stretch",
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderBottomLeftRadius: 16,
@@ -1351,21 +1485,21 @@ export const chatStyles = StyleSheet.create({
   pinnedBarText: {
     color: colors.black,
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   pinnedDropdown: {
     backgroundColor: colors.white,
     borderRadius: 16,
     marginTop: 4,
-    alignSelf: 'stretch',
+    alignSelf: "stretch",
     shadowColor: colors.shadow,
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 2,
   },
   pinnedPreviewRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 12,
   },
@@ -1382,31 +1516,31 @@ export const chatStyles = StyleSheet.create({
   pinnedPreviewSender: {
     fontSize: 14,
     color: colors.gray,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
   pinnedPreviewTime: {
     fontSize: 12,
-    color: '#999',
+    color: "#999",
     marginLeft: 8,
   },
   pinnedDivider: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: "#F0F0F0",
   },
   pinnedOverlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 1,
   },
   pinnedIconWrap: {
-    position: 'absolute',
+    position: "absolute",
     top: -14,
-    alignSelf: 'center',
+    alignSelf: "center",
     zIndex: 5,
   },
   limitCaption: {
-    position: 'absolute',
+    position: "absolute",
     top: -22,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   limitCaptionText: {
     color: colors.accent,
@@ -1415,29 +1549,29 @@ export const chatStyles = StyleSheet.create({
     fontFamily: fonts.regular,
   },
   actionButtons: {
-    position: 'absolute',
-    flexDirection: 'row',
+    position: "absolute",
+    flexDirection: "row",
     bottom: -34,
     left: 0,
     right: 0,
-    justifyContent: 'center',
+    justifyContent: "center",
     zIndex: 30,
     elevation: 30,
   },
   actionBtn: {
     width: 44,
     height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   profilePic: {
     width: 30,
     height: 30,
     borderRadius: 15,
     marginRight: 7,
-    backgroundColor: '#f6e3ff',
+    backgroundColor: "#f6e3ff",
     borderWidth: 1,
-    borderColor: '#ececec',
+    borderColor: "#ececec",
   },
 });
 
