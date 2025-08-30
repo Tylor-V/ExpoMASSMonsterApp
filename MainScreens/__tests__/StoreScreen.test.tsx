@@ -1,5 +1,7 @@
-import { render } from '@testing-library/react-native';
+import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import React from 'react';
+import { Linking } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import StoreScreen from '../StoreScreen';
 
 const baseProduct = {
@@ -13,15 +15,17 @@ const baseProduct = {
 };
 
 let mockProducts = [baseProduct];
+let mockCartItems: any[] = [];
 
 jest.mock('../../hooks/useShopify', () => ({
   useShopifyCollections: () => ({ collections: [], loading: false, error: null }),
   useShopifyProducts: () => ({ products: mockProducts, loading: false, error: null }),
 }));
-
 jest.mock('../../hooks/useCart', () => ({
-  useCart: () => ({ items: [] }),
+  useCart: () => ({ items: mockCartItems }),
 }));
+
+jest.mock('expo-web-browser', () => ({ openBrowserAsync: jest.fn() }));
 
 jest.mock('../../firebase/cartHelpers', () => ({ addToCart: jest.fn() }));
 jest.mock('../../utils/descriptionIcons', () => ({ getDescriptionIcons: () => [] }));
@@ -35,10 +39,13 @@ jest.mock('../../components/RollingNumber', () => () => null);
 
 // Image from expo-image is mocked to React Native Image via jest config
 
+beforeEach(() => {
+  mockProducts = [baseProduct];
+  mockCartItems = [];
+  jest.clearAllMocks();
+});
+
 describe('StoreScreen product images', () => {
-  beforeEach(() => {
-    mockProducts = [baseProduct];
-  });
 
   it('renders placeholder while loading remote image', () => {
     const navigation = { navigate: jest.fn() } as any;
@@ -66,5 +73,32 @@ describe('StoreScreen product images', () => {
 
     expect(productImage).toBeTruthy();
     expect(productImage?.props.contentFit).toBe('cover');
+  });
+});
+
+describe('StoreScreen checkout', () => {
+  it('uses web browser if Linking.openURL fails', async () => {
+    mockCartItems = [
+      {
+        id: '1',
+        title: 'Test',
+        price: 10,
+        image: '',
+        quantity: 1,
+        variantId: 'gid://shopify/ProductVariant/1',
+      },
+    ];
+    const navigation = { navigate: jest.fn() } as any;
+    jest.spyOn(Linking, 'canOpenURL').mockResolvedValue(true);
+    jest.spyOn(Linking, 'openURL').mockRejectedValue(new Error('fail'));
+    const openBrowser = WebBrowser.openBrowserAsync as jest.Mock;
+    openBrowser.mockResolvedValue({ type: 'opened' } as any);
+
+    const { getByText } = render(<StoreScreen navigation={navigation} />);
+    fireEvent.press(getByText('Checkout'));
+
+    await waitFor(() => {
+      expect(openBrowser).toHaveBeenCalled();
+    });
   });
 });

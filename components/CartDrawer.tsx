@@ -12,6 +12,7 @@ import {
     Text,
     View
 } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ANIM_MEDIUM } from '../utils/animations';
 import { useCart } from '../hooks/useCart';
@@ -127,7 +128,16 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
         }))
       );
       if (url) {
-        Linking.openURL(url);
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          try {
+            await Linking.openURL(url);
+          } catch {
+            await WebBrowser.openBrowserAsync(url);
+          }
+        } else {
+          await WebBrowser.openBrowserAsync(url);
+        }
         // Optionally: listen for return/close to refresh cart
       } else {
         Toast.show('Could not start checkout. Please try again.');

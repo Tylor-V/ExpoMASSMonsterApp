@@ -14,6 +14,7 @@ import {
     View,
 } from 'react-native';
 import { Image } from 'expo-image';
+import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { ANIM_BUTTON_POP, ANIM_DRAWER, ANIM_MEDIUM } from '../utils/animations';
@@ -332,7 +333,16 @@ function StoreScreen({ navigation }) {
       .join(',');
     const url = `https://${SHOPIFY_DOMAIN}/cart/${cartPath}`;
     try {
-      await Linking.openURL(url);
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        try {
+          await Linking.openURL(url);
+        } catch {
+          await WebBrowser.openBrowserAsync(url);
+        }
+      } else {
+        await WebBrowser.openBrowserAsync(url);
+      }
     } catch (err) {
       Alert.alert('Checkout failed', 'Could not open checkout. Please try again.');
       console.error('Failed to open Shopify cart URL', err);
