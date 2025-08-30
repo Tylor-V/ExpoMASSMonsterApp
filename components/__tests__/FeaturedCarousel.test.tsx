@@ -7,8 +7,8 @@ jest.mock('../AddCartButton', () => () => null);
 
 describe('FeaturedCarousel', () => {
   const products = [
-    { id: '1', title: 'Product 1', priceRange: { minVariantPrice: { amount: '10' } }, images: [{ url: 'url1' }] },
-    { id: '2', title: 'Product 2', priceRange: { minVariantPrice: { amount: '20' } }, images: [{ url: 'url2' }] },
+    { id: '1', title: 'Product 1', priceRange: { minVariantPrice: { amount: '10' } }, images: ['url1'] },
+    { id: '2', title: 'Product 2', priceRange: { minVariantPrice: { amount: '20' } }, images: ['url2'] },
   ];
 
   it('calls onSelect when an item is pressed', () => {

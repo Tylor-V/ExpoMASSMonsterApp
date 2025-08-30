@@ -128,7 +128,7 @@ function StoreScreen({ navigation }) {
         id: item.id,
         title: item.title,
         price: parseFloat(item.priceRange?.minVariantPrice.amount || '0'),
-        image: item.images?.[0]?.url,
+        image: item.images?.[0],
         quantity: 1,
         variantId: item.variantId, // <-- add this
         variantTitle: item.variantTitle, // optional
@@ -247,8 +247,13 @@ function StoreScreen({ navigation }) {
       return <View style={{ width: 0, height: 0 }} />;
     }
 
+    const imageUrl = item.images?.[0];
+    if (!imageUrl) {
+      console.warn('No image URL for product', item.id);
+    }
+
     return (
-      <Animated.View style={[styles.card, { opacity }]}> 
+      <Animated.View style={[styles.card, { opacity }]}>
         <Pressable
           accessibilityRole="button"
           testID={`product-card-${item.id}`}
@@ -270,11 +275,7 @@ function StoreScreen({ navigation }) {
             </View>
           )}
           <Image
-            source={
-              item.images?.[0]?.url
-                ? { uri: item.images[0].url }
-                : PLACEHOLDER_IMAGE
-            }
+            source={imageUrl ? { uri: imageUrl } : PLACEHOLDER_IMAGE}
             placeholder={PLACEHOLDER_IMAGE}
             contentFit="cover"
             placeholderContentFit="contain"
@@ -301,7 +302,7 @@ function StoreScreen({ navigation }) {
                 id: item.id,
                 title: item.title,
                 price: parseFloat(item.priceRange?.minVariantPrice.amount || '0'),
-                image: item.images?.[0]?.url,
+                image: item.images?.[0],
                 quantity: 1,
                 variantId: item.variantId, // <-- add this
                 variantTitle: item.variantTitle, // optional
@@ -464,17 +465,21 @@ function StoreScreen({ navigation }) {
                 <Pressable onPress={prevImg} style={styles.carouselArrow}>
                   <Ionicons name="chevron-back" size={28} color={colors.black} />
                 </Pressable>
-                <Image
-                  source={
-                    modalItem.images?.[imgIndex]?.url
-                      ? { uri: modalItem.images[imgIndex].url }
-                      : PLACEHOLDER_IMAGE
+                {(() => {
+                  const imageUrl = modalItem.images?.[imgIndex];
+                  if (!imageUrl) {
+                    console.warn('No image URL for product', modalItem.id);
                   }
-                  placeholder={PLACEHOLDER_IMAGE}
-                  contentFit="contain"
-                  placeholderContentFit="contain"
-                  style={styles.modalImg}
-                />
+                  return (
+                    <Image
+                      source={imageUrl ? { uri: imageUrl } : PLACEHOLDER_IMAGE}
+                      placeholder={PLACEHOLDER_IMAGE}
+                      contentFit="contain"
+                      placeholderContentFit="contain"
+                      style={styles.modalImg}
+                    />
+                  );
+                })()}
                 <Pressable onPress={nextImg} style={styles.carouselArrow}>
                   <Ionicons name="chevron-forward" size={28} color={colors.black} />
                 </Pressable>

@@ -30,37 +30,44 @@ type CardProps = {
   onSelect: (item: any) => void;
 };
 
-const FeaturedCard = memo(({ item, onSelect }: CardProps) => (
-  <View style={styles.card}>
-    <Pressable style={styles.touch} onPress={() => onSelect(item)}>
-      <Image
-        source={{ uri: item.images?.[0]?.url }}
-        placeholder={require('../assets/mass-logo.png')}
-        style={styles.image}
-        contentFit="cover"
+const FeaturedCard = memo(({ item, onSelect }: CardProps) => {
+  const imageUrl = item.images?.[0];
+  if (!imageUrl) {
+    console.warn('No image URL for product', item.id);
+  }
+
+  return (
+    <View style={styles.card}>
+      <Pressable style={styles.touch} onPress={() => onSelect(item)}>
+        <Image
+          source={imageUrl ? { uri: imageUrl } : require('../assets/mass-logo.png')}
+          placeholder={require('../assets/mass-logo.png')}
+          style={styles.image}
+          contentFit="cover"
+        />
+        <View style={styles.body}>
+          <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
+            {item.title}
+          </Text>
+          <Text style={styles.price}>
+            ${parseFloat(item.priceRange?.minVariantPrice.amount || '0').toFixed(2)}
+          </Text>
+        </View>
+      </Pressable>
+      <AddCartButton
+        item={{
+          id: item.id,
+          title: item.title,
+          price: parseFloat(item.priceRange?.minVariantPrice.amount || '0'),
+          image: item.images?.[0],
+          quantity: 1,
+          variantId: item.variantId,
+          variantTitle: item.variantTitle,
+        }}
       />
-      <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
-          {item.title}
-        </Text>
-        <Text style={styles.price}>
-          ${parseFloat(item.priceRange?.minVariantPrice.amount || '0').toFixed(2)}
-        </Text>
-      </View>
-    </Pressable>
-    <AddCartButton
-      item={{
-        id: item.id,
-        title: item.title,
-        price: parseFloat(item.priceRange?.minVariantPrice.amount || '0'),
-        image: item.images?.[0]?.url,
-        quantity: 1,
-        variantId: item.variantId,
-        variantTitle: item.variantTitle,
-      }}
-    />
-  </View>
-));
+    </View>
+  );
+});
 
 type Props = {
   products: any[];

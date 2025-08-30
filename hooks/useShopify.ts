@@ -130,7 +130,10 @@ export function useShopifyProducts(collectionId?: string) {
               ...node,
               description: htmlToText(node.descriptionHtml),
               descriptionHtml: node.descriptionHtml,
-              images: node.images?.edges?.map((edge: any) => edge.node) ?? [],
+              images:
+                node.images?.edges
+                  ?.map((edge: any) => edge?.node?.url)
+                  .filter((url: string | undefined) => Boolean(url)) ?? [],
               collections: node.collections?.edges?.map((edge: any) => edge.node) ?? [],
               variantId: node.variants?.edges?.[0]?.node?.id,
               variantTitle: node.variants?.edges?.[0]?.node?.title,

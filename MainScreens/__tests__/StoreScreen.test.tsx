@@ -6,7 +6,7 @@ const baseProduct = {
   id: '1',
   title: 'Test Product',
   priceRange: { minVariantPrice: { amount: '10' } },
-  images: [{ url: 'https://example.com/image.jpg' }],
+  images: ['https://example.com/image.jpg'],
   collections: [],
   variantId: 'gid://shopify/ProductVariant/1',
   variantTitle: 'Default',
@@ -45,7 +45,7 @@ describe('StoreScreen product images', () => {
     const { UNSAFE_getAllByType } = render(<StoreScreen navigation={navigation} />);
 
     const images = UNSAFE_getAllByType('Image');
-    const productImage = images.find(img => img.props.source?.uri === baseProduct.images[0].url);
+    const productImage = images.find(img => img.props.source?.uri === baseProduct.images[0]);
     const placeholder = require('../../assets/mass-logo.png');
 
     expect(productImage).toBeTruthy();
