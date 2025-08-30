@@ -326,9 +326,6 @@ const DMChatScreen = ({ navigation, route }) => {
                 <View
                   style={[
                     styles.messageContainer,
-                    isMe
-                      ? { alignItems: 'flex-end', alignSelf: 'flex-end' }
-                      : { alignItems: 'flex-start', alignSelf: 'flex-start' },
                     actionTargetId === item.id && {
                       marginBottom: ACTION_SPACING,
                       marginTop: ACTION_SPACING / 2,
@@ -346,13 +343,26 @@ const DMChatScreen = ({ navigation, route }) => {
                     <View
                       style={[
                         styles.messageBox,
-                        isMe ? styles.ownMessageBox : styles.otherMessageBox,
                         reactions.length > 0 && { marginBottom: 2 },
                       ]}
                     >
-                      <Text style={[styles.messageText, isMe && styles.ownMessageText]}>
-                        {item.text}
-                      </Text>
+                      <View style={styles.metaRow}>
+                        {!isMe && (
+                          <TouchableOpacity
+                            onPress={() => setPreviewUserId(otherUser?.uid)}
+                            activeOpacity={0.8}
+                          >
+                            <ProfileImage uri={profilePicUrl} style={styles.profilePic} />
+                          </TouchableOpacity>
+                        )}
+                        <TouchableOpacity
+                          onPress={() => setPreviewUserId(otherUser?.uid)}
+                          disabled={isMe}
+                        >
+                          <Text style={styles.username}>{isMe ? 'Me' : displayName}</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <Text style={styles.messageText}>{item.text}</Text>
                       {actionTargetId !== item.id &&
                         (reactions.length > 0 ||
                           (!isMe && !reactions.some(r => r.userId === currentUserId))) && (

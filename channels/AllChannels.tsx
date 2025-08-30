@@ -779,87 +779,69 @@ const AllChannels: React.FC<ChatScreenProps> = ({
           <View
             style={[
               chatStyles.messageContainer,
-              isOwnMessage
-                ? { alignItems: "flex-end", alignSelf: "flex-end" }
-                : { alignItems: "flex-start", alignSelf: "flex-start" },
               actionTargetId === item.id && {
                 marginBottom: ACTION_SPACING,
                 marginTop: ACTION_SPACING / 2,
               },
             ]}
           >
-            <View
+            <TouchableOpacity
+              onLongPress={() => handleLongPress(item.id, item)}
+              delayLongPress={400}
+              activeOpacity={1}
               style={[
-                chatStyles.messageRow,
+                chatStyles.messageBox,
                 reactions.length > 0 && { marginBottom: 2 },
+                item.pinned && chatStyles.pinnedMessage,
+                actionTargetId === item.id && {
+                  transform: [
+                    {
+                      rotate: wiggleAnim.interpolate({
+                        inputRange: [-1, 1],
+                        outputRange: ["-2deg", "2deg"],
+                      }),
+                    },
+                  ],
+                },
               ]}
             >
-              {!isOwnMessage && (
-                <TouchableOpacity
-                  onPress={() => handleUserPreview(item.userId)}
-                  activeOpacity={0.8}
-                >
-                  <ProfileImage
-                    uri={profilePicUrl}
-                    style={chatStyles.profilePic}
-                    isCurrentUser={false}
-                  />
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity
-                onLongPress={() => handleLongPress(item.id, item)}
-                delayLongPress={400}
-                activeOpacity={1}
-                style={[
-                  chatStyles.messageBox,
-                  isOwnMessage
-                    ? chatStyles.ownMessageBox
-                    : chatStyles.otherMessageBox,
-                  item.pinned && chatStyles.pinnedMessage,
-                  actionTargetId === item.id && {
-                    transform: [
-                      {
-                        rotate: wiggleAnim.interpolate({
-                          inputRange: [-1, 1],
-                          outputRange: ["-2deg", "2deg"],
-                        }),
-                      },
-                    ],
-                  },
-                ]}
-              >
-                <View style={chatStyles.metaRow}>
+              <View style={chatStyles.metaRow}>
+                {!isOwnMessage && (
                   <TouchableOpacity
                     onPress={() => handleUserPreview(item.userId)}
-                    disabled={isOwnMessage}
+                    activeOpacity={0.8}
                   >
-                    <Text style={[chatStyles.username, { color: nameColor }]}>
-                      {isOwnMessage ? "Me" : displayName}
-                    </Text>
+                    <ProfileImage
+                      uri={profilePicUrl}
+                      style={chatStyles.profilePic}
+                      isCurrentUser={false}
+                    />
                   </TouchableOpacity>
-                  {badges && badges.length > 0 && (
-                    <View style={{ flexDirection: "row", marginLeft: 5 }}>
-                      {badges.slice(0, MAX_DISPLAY_BADGES).map((b, i) => (
-                        <BadgeImage
-                          key={b}
-                          badgeKey={b}
-                          style={[
-                            { width: 19, height: 19, marginLeft: i ? 4 : 0 },
-                            chatStyles.badgeHighlight,
-                          ]}
-                        />
-                      ))}
-                    </View>
-                  )}
-                </View>
-                <Text
-                  style={[
-                    chatStyles.messageText,
-                    isOwnMessage && chatStyles.ownMessageText,
-                  ]}
+                )}
+                <TouchableOpacity
+                  onPress={() => handleUserPreview(item.userId)}
+                  disabled={isOwnMessage}
                 >
-                  {item.text}
-                </Text>
+                  <Text style={[chatStyles.username, { color: nameColor }]}>
+                    {isOwnMessage ? "Me" : displayName}
+                  </Text>
+                </TouchableOpacity>
+                {badges && badges.length > 0 && (
+                  <View style={{ flexDirection: "row", marginLeft: 5 }}>
+                    {badges.slice(0, MAX_DISPLAY_BADGES).map((b, i) => (
+                      <BadgeImage
+                        key={b}
+                        badgeKey={b}
+                        style={[
+                          { width: 19, height: 19, marginLeft: i ? 4 : 0 },
+                          chatStyles.badgeHighlight,
+                        ]}
+                      />
+                    ))}
+                  </View>
+                )}
+              </View>
+              <Text style={chatStyles.messageText}>{item.text}</Text>
                 {actionTargetId !== item.id &&
                   (reactions.length > 0 ||
                     (!isOwnMessage &&
@@ -1232,12 +1214,6 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 };
 
 export const chatStyles = StyleSheet.create({
-  messageRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    marginBottom: 11,
-    paddingHorizontal: 8,
-  },
   messageContainer: {
     marginBottom: 11,
   },
@@ -1246,12 +1222,6 @@ export const chatStyles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     marginHorizontal: 3,
-    backgroundColor: colors.white,
-  },
-  ownMessageBox: {
-    backgroundColor: colors.black,
-  },
-  otherMessageBox: {
     backgroundColor: colors.white,
   },
   pinnedMessage: {
@@ -1266,9 +1236,6 @@ export const chatStyles = StyleSheet.create({
     marginVertical: 2,
     flexShrink: 1,
     flexWrap: "wrap",
-  },
-  ownMessageText: {
-    color: colors.white,
   },
   username: {
     fontWeight: "bold",
