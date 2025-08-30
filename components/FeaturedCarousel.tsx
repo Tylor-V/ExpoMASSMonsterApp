@@ -16,14 +16,13 @@ import CarouselNavigator from './CarouselNavigator';
 import AddCartButton from './AddCartButton';
 
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = width - 32; // match product grid width
+// Width of the product grid on StoreScreen has 16px padding on each side
+const GRID_WIDTH = width - 32;
+// Leave 10px horizontal margin on each side of the cards so we subtract 20
+const CARD_WIDTH = GRID_WIDTH - 20;
 const CARD_HEIGHT = CARD_WIDTH * 1.25; // 4:5 ratio
-const SIDE_PAD = (width - CARD_WIDTH) / 2;
+// Item length matches the grid width so snapping aligns cards to center
 const ITEM_LENGTH = CARD_WIDTH + 20;
-// Use equal horizontal margins on cards so the first and last items center
-// when scrolling. The content container removes half the spacing to account
-// for the card margins.
-const CONTENT_CONTAINER_STYLE = { paddingHorizontal: SIDE_PAD - 10 };
 
 type CardProps = {
   item: any;
@@ -94,7 +93,7 @@ function FeaturedCarousel({ products, onSelect, style, arrowSize = 24, dotSize =
 
   return (
     <View style={[styles.container, style]}>
-      <Animated.View style={[styles.inner, { transform: [{ translateX: slideAnim }] }]}> 
+      <Animated.View style={[styles.inner, { transform: [{ translateX: slideAnim }] }]}>
         <FlatList
           testID="featured-carousel"
           ref={ref}
@@ -106,9 +105,8 @@ function FeaturedCarousel({ products, onSelect, style, arrowSize = 24, dotSize =
           scrollEnabled={false}
           keyExtractor={keyExtractor}
           renderItem={renderItem}
-          contentContainerStyle={CONTENT_CONTAINER_STYLE}
           getItemLayout={getItemLayout}
-          style={{ width }}
+          style={{ width: ITEM_LENGTH }}
         />
       </Animated.View>
       {products.length > 1 && (
