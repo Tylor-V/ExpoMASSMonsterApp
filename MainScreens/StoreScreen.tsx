@@ -40,6 +40,8 @@ const FADE_DISTANCE = CARD_ROW_HEIGHT;
 // Delay the start of fade so rows remain fully visible briefly when scrolling
 const FADE_START_DELAY = CARD_ROW_HEIGHT * 0.2; // begin fading after 20% scroll
 
+const PLACEHOLDER_IMAGE = require('../assets/mass-logo.png');
+
 
 function StoreScreen({ navigation }) {
   const {
@@ -268,8 +270,12 @@ function StoreScreen({ navigation }) {
             </View>
           )}
           <Image
-            source={{ uri: item.images?.[0]?.url }}
-            placeholder={require('../assets/mass-logo.png')}
+            source={
+              item.images?.[0]?.url
+                ? { uri: item.images[0].url }
+                : PLACEHOLDER_IMAGE
+            }
+            placeholder={PLACEHOLDER_IMAGE}
             contentFit="cover"
             placeholderContentFit="contain"
             style={styles.cardImg}
@@ -459,8 +465,12 @@ function StoreScreen({ navigation }) {
                   <Ionicons name="chevron-back" size={28} color={colors.black} />
                 </Pressable>
                 <Image
-                  source={{ uri: modalItem.images?.[imgIndex]?.url }}
-                  placeholder={require('../assets/mass-logo.png')}
+                  source={
+                    modalItem.images?.[imgIndex]?.url
+                      ? { uri: modalItem.images[imgIndex].url }
+                      : PLACEHOLDER_IMAGE
+                  }
+                  placeholder={PLACEHOLDER_IMAGE}
                   contentFit="contain"
                   placeholderContentFit="contain"
                   style={styles.modalImg}
