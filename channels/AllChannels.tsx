@@ -1037,7 +1037,6 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                 </>
               )}
             </View>
-          </View>
         </>
       );
     },
