@@ -779,6 +779,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
           <View
             style={[
               chatStyles.messageContainer,
+              isOwnMessage && chatStyles.ownMessageContainer,
               actionTargetId === item.id && {
                 marginBottom: ACTION_SPACING,
                 marginTop: ACTION_SPACING / 2,
@@ -805,7 +806,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                 },
               ]}
             >
-              <View style={chatStyles.metaRow}>
+              <View style={[chatStyles.metaRow, isOwnMessage && chatStyles.ownMetaRow]}>
                 {!isOwnMessage && (
                   <TouchableOpacity
                     onPress={() => handleUserPreview(item.userId)}
@@ -822,7 +823,13 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                   onPress={() => handleUserPreview(item.userId)}
                   disabled={isOwnMessage}
                 >
-                  <Text style={[chatStyles.username, { color: nameColor }]}>
+                  <Text
+                    style={[
+                      chatStyles.username,
+                      isOwnMessage && chatStyles.ownUsername,
+                      { color: nameColor },
+                    ]}
+                  >
                     {isOwnMessage ? "Me" : displayName}
                   </Text>
                 </TouchableOpacity>
@@ -841,7 +848,11 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                   </View>
                 )}
               </View>
-              <Text style={chatStyles.messageText}>{item.text}</Text>
+              <Text
+                style={[chatStyles.messageText, isOwnMessage && chatStyles.ownMessageText]}
+              >
+                {item.text}
+              </Text>
                 {actionTargetId !== item.id &&
                   (reactions.length > 0 ||
                     (!isOwnMessage &&
@@ -852,6 +863,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                       }
                       style={[
                         chatStyles.reactionRow,
+                        isOwnMessage && chatStyles.ownReactionRow,
                         { opacity: reactionOpacityMap[item.id] || 1 },
                       ]}
                     >
@@ -984,7 +996,11 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                       </View>
                     )}
                   </View>
-                  <Text style={chatStyles.timestamp}>{formattedTime}</Text>
+                  <Text
+                    style={[chatStyles.timestamp, isOwnMessage && chatStyles.ownTimestamp]}
+                  >
+                    {formattedTime}
+                  </Text>
                 </View>
                 {item.pinned && (
                   <Animated.View
@@ -1216,6 +1232,9 @@ export const chatStyles = StyleSheet.create({
   messageContainer: {
     marginBottom: 11,
   },
+  ownMessageContainer: {
+    alignSelf: "flex-end",
+  },
   messageBox: {
     flex: 1,
     paddingHorizontal: 20,
@@ -1236,16 +1255,25 @@ export const chatStyles = StyleSheet.create({
     flexShrink: 1,
     flexWrap: "wrap",
   },
+  ownMessageText: {
+    textAlign: "right",
+  },
   username: {
     fontWeight: "bold",
     fontSize: 16,
     marginRight: 4,
     marginVertical: 2,
   },
+  ownUsername: {
+    textAlign: "right",
+  },
   metaRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
+  },
+  ownMetaRow: {
+    justifyContent: "flex-end",
   },
   footerRow: {
     flexDirection: "row",
@@ -1261,6 +1289,10 @@ export const chatStyles = StyleSheet.create({
     fontFamily: fonts.regular,
     marginTop: 6,
     marginBottom: -4,
+  },
+  ownTimestamp: {
+    textAlign: "right",
+    alignSelf: "flex-end",
   },
   inputRow: {
     flexDirection: "row",
@@ -1361,6 +1393,9 @@ export const chatStyles = StyleSheet.create({
     flexWrap: "wrap",
     paddingHorizontal: 3,
     alignSelf: "center",
+  },
+  ownReactionRow: {
+    alignSelf: "flex-end",
   },
   reactionBubble: {
     flexDirection: "row",
