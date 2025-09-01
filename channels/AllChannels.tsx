@@ -1247,9 +1247,9 @@ export const chatStyles = StyleSheet.create({
   },
   messageBox: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    marginHorizontal: 3,
+    marginHorizontal: 4,
     backgroundColor: colors.white,
   },
   myMessageBox: {
@@ -1264,7 +1264,8 @@ export const chatStyles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     lineHeight: 22,
-    marginVertical: 2,
+    marginVertical: 3,
+    marginLeft: 6,
     flexShrink: 1,
     flexWrap: "wrap",
     textAlign: "left",
@@ -1272,7 +1273,6 @@ export const chatStyles = StyleSheet.create({
   username: {
     fontWeight: "bold",
     fontSize: 18,
-    marginRight: 4,
     marginVertical: 2,
   },
   myMessageText: {

@@ -22,6 +22,9 @@ const NewsModal = ({ visible, onClose, news, loading, user }) => {
     return getUserBadgeProgress(user);
   }, [visible, user]);
 
+  const hasNews = (news?.length ?? 0) > 0;
+  const hasBadges = (badgeProgress?.length ?? 0) > 0;
+
   const data = useMemo(
     () => [...(news ?? []), ...(badgeProgress as any)],
     [news, badgeProgress]
@@ -37,6 +40,15 @@ const NewsModal = ({ visible, onClose, news, loading, user }) => {
   );
 
   if (!visible) return null;
+
+  const renderNoNews = useCallback(
+    () => (
+      <Text style={styles.emptyText}>
+        No News... Stay tuned for important updates!
+      </Text>
+    ),
+    []
+  );
 
   return (
     <Modal
@@ -93,9 +105,8 @@ const NewsModal = ({ visible, onClose, news, loading, user }) => {
                 </View>
               )
             }
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>No new announcements.</Text>
-            }
+            ListHeaderComponent={!hasNews && hasBadges ? renderNoNews() : null}
+            ListEmptyComponent={!hasNews && !hasBadges ? renderNoNews() : null}
             initialNumToRender={5}
           />
         )}
