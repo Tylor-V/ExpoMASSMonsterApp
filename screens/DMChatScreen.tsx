@@ -1,3 +1,4 @@
+import { Ionicons as Icon } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -17,7 +18,6 @@ import {
   View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons as Icon } from '@expo/vector-icons';
 import {
   chatStyles,
   JUMP_BUTTON_OFFSET,
@@ -35,6 +35,8 @@ import { dedupeById } from '../utils/dedupeById';
 import { formatDisplayName } from '../utils/displayName';
 
 const EMOJI_LIST = ['💪', '🔥', '😂', '👏', '😎', '🥇', '😍'];
+
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -424,7 +426,7 @@ const DMChatScreen = ({ navigation, route }) => {
               />
             )}
             {!loading && showJump && (
-              <TouchableOpacity
+              <AnimatedTouchable
                 style={[
                   styles.jumpToBottomBtn,
                   { bottom: Animated.add(keyboardOffset, inputBarHeight + JUMP_BUTTON_OFFSET) },
@@ -435,7 +437,7 @@ const DMChatScreen = ({ navigation, route }) => {
                 <Icon name="arrow-down-circle" size={24} color={colors.white} />
                 <Text style={styles.jumpBtnText}>Jump to latest</Text>
                 {showNewMarker && <View style={styles.newBadge} />}
-              </TouchableOpacity>
+              </AnimatedTouchable>
             )}
             {reactionTargetId && (
               <Modal
