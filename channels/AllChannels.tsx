@@ -1233,6 +1233,7 @@ export const chatStyles = StyleSheet.create({
     fontWeight: "bold",
     lineHeight: 22,
     marginVertical: 2,
+    textAlign: "right",
     flexShrink: 1,
     flexWrap: "wrap",
   },
