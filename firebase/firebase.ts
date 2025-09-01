@@ -24,6 +24,7 @@ import {
   initializeFirestore,
   increment,
   onSnapshot,
+  setLogLevel,
   serverTimestamp,
   setDoc,
   updateDoc,
@@ -69,14 +70,16 @@ if (Platform.OS === 'web') {
 } else {
   try {
     db = initializeFirestore(app, {
-      // Force long polling to avoid WebChannel transport errors in RN
-      experimentalForceLongPolling: true,
+      // Auto-detect long polling to prevent WebChannel transport errors in RN
+      experimentalAutoDetectLongPolling: true,
       useFetchStreams: false,
     });
   } catch (err) {
     db = getFirestore(app);
   }
 }
+// Reduce Firestore internal logging to errors only
+setLogLevel('error');
 if (Platform.OS === 'web') {
   // Enable offline persistence on supported browsers
   import('firebase/firestore').then(({ enableIndexedDbPersistence }) => {
@@ -121,9 +124,11 @@ function wrapDoc(path: string[]) {
     set: (data: any, options?: any) => withRetry(() => setDoc(ref, data, options)),
     update: (data: any) => withRetry(() => updateDoc(ref, data)),
     delete: () => withRetry(() => deleteDoc(ref)),
-    onSnapshot: (cb: any) => {
+    onSnapshot: (cb: any, onError?: any) => {
       try {
-        return onSnapshot(ref, cb);
+        return onSnapshot(ref, cb, onError || ((error: any) => {
+          console.error('Firestore onSnapshot error:', error);
+        }));
       } catch (error) {
         console.error('Firestore onSnapshot error:', error);
         throw error;
@@ -141,9 +146,11 @@ function wrapCollection(path: string[]) {
     doc: (id: string) => wrapDoc([...path, id]),
     add: (data: any) => withRetry(() => addDoc(colRef, data)),
     get: () => withRetry(() => getDocs(q)),
-    onSnapshot: (cb: any) => {
+    onSnapshot: (cb: any, onError?: any) => {
       try {
-        return onSnapshot(q, cb);
+        return onSnapshot(q, cb, onError || ((error: any) => {
+          console.error('Firestore onSnapshot error:', error);
+        }));
       } catch (error) {
         console.error('Firestore onSnapshot error:', error);
         throw error;
