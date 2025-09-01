@@ -854,82 +854,13 @@ const AllChannels: React.FC<ChatScreenProps> = ({
               <Text
                 style={[
                   chatStyles.messageText,
-                  { textAlign: isOwnMessage ? "right" : "left" },
                   isOwnMessage && chatStyles.myMessageText,
                 ]}
               >
                 {item.text}
               </Text>
-                {actionTargetId !== item.id &&
-                  (reactions.length > 0 ||
-                    (!isOwnMessage &&
-                      !reactions.some((r) => r.userId === currentUserId))) && (
-                    <Animated.View
-                      pointerEvents={
-                        actionTargetId === item.id ? "none" : "auto"
-                      }
-                      style={[
-                        chatStyles.reactionRow,
-                        { opacity: reactionOpacityMap[item.id] || 1 },
-                      ]}
-                    >
-                      {Array.from(new Set(reactions.map((r) => r.emoji))).map(
-                        (emoji) => {
-                          const count = reactions.filter(
-                            (r) => r.emoji === emoji,
-                          ).length;
-                          const userReacted = reactions.some(
-                            (r) =>
-                              r.emoji === emoji && r.userId === currentUserId,
-                          );
-                          return (
-                            <TouchableOpacity
-                              key={emoji}
-                              style={[
-                                chatStyles.reactionBubble,
-                                userReacted && chatStyles.reactionHighlight,
-                              ]}
-                              onPress={() => {
-                                if (!isOwnMessage)
-                                  handleAddReaction(item.id, emoji);
-                              }}
-                              disabled={isOwnMessage}
-                              activeOpacity={0.6}
-                            >
-                              <Text style={{ fontSize: 15 }}>{emoji}</Text>
-                              <Text
-                                style={{
-                                  fontSize: 10,
-                                  color: "#666",
-                                  marginLeft: 2,
-                                }}
-                              >
-                                {count}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        },
-                      )}
-                      {!isOwnMessage &&
-                        !reactions.some((r) => r.userId === currentUserId) && (
-                          <TouchableOpacity
-                            onPress={() => setReactionTargetId(item.id)}
-                            style={[
-                              chatStyles.reactionBubble,
-                              chatStyles.reactionAddBtn,
-                            ]}
-                          >
-                            <Ionicons
-                              name="add-circle-outline"
-                              size={18}
-                              color="#888"
-                            />
-                          </TouchableOpacity>
-                        )}
-                    </Animated.View>
-                  )}
-                <View style={{ alignSelf: "flex-end", alignItems: "flex-end" }}>
-                  <View style={chatStyles.footerRow}>
+              <View>
+                <View style={chatStyles.footerRow}>
                     <View
                       style={{
                         backgroundColor: getChatLevelColor(chatLevel),
@@ -1002,6 +933,78 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                       </View>
                     )}
                   </View>
+                <View style={chatStyles.reactionTimestampRow}>
+                  {actionTargetId !== item.id &&
+                    (reactions.length > 0 ||
+                      (!isOwnMessage &&
+                        !reactions.some((r) => r.userId === currentUserId))) && (
+                        <Animated.View
+                          pointerEvents={
+                            actionTargetId === item.id ? "none" : "auto"
+                          }
+                          style={[
+                            chatStyles.reactionRow,
+                            { opacity: reactionOpacityMap[item.id] || 1 },
+                          ]}
+                        >
+                          {Array.from(new Set(reactions.map((r) => r.emoji))).map(
+                            (emoji) => {
+                              const count = reactions.filter(
+                                (r) => r.emoji === emoji,
+                              ).length;
+                              const userReacted = reactions.some(
+                                (r) =>
+                                  r.emoji === emoji &&
+                                  r.userId === currentUserId,
+                              );
+                              return (
+                                <TouchableOpacity
+                                  key={emoji}
+                                  style={[
+                                    chatStyles.reactionBubble,
+                                    userReacted && chatStyles.reactionHighlight,
+                                  ]}
+                                  onPress={() => {
+                                    if (!isOwnMessage)
+                                      handleAddReaction(item.id, emoji);
+                                  }}
+                                  disabled={isOwnMessage}
+                                  activeOpacity={0.6}
+                                >
+                                  <Text style={{ fontSize: 15 }}>{emoji}</Text>
+                                  <Text
+                                    style={{
+                                      fontSize: 10,
+                                      color: "#666",
+                                      marginLeft: 2,
+                                    }}
+                                  >
+                                    {count}
+                                  </Text>
+                                </TouchableOpacity>
+                              );
+                            },
+                          )}
+                          {!isOwnMessage &&
+                            !reactions.some(
+                              (r) => r.userId === currentUserId,
+                            ) && (
+                              <TouchableOpacity
+                                onPress={() => setReactionTargetId(item.id)}
+                                style={[
+                                  chatStyles.reactionBubble,
+                                  chatStyles.reactionAddBtn,
+                                ]}
+                              >
+                                <Ionicons
+                                  name="add-circle-outline"
+                                  size={18}
+                                  color="#888"
+                                />
+                              </TouchableOpacity>
+                            )}
+                        </Animated.View>
+                      )}
                   <Text
                     style={[
                       chatStyles.timestamp,
@@ -1011,9 +1014,10 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                     {formattedTime}
                   </Text>
                 </View>
-                {item.pinned && (
-                  <Animated.View
-                    pointerEvents="none"
+              </View>
+              {item.pinned && (
+                <Animated.View
+                  pointerEvents="none"
                     style={[
                       chatStyles.pinnedIconWrap,
                       { transform: [{ scale: pinnedScale }] },
@@ -1263,6 +1267,7 @@ export const chatStyles = StyleSheet.create({
     marginVertical: 2,
     flexShrink: 1,
     flexWrap: "wrap",
+    textAlign: "left",
   },
   username: {
     fontWeight: "bold",
@@ -1288,13 +1293,21 @@ export const chatStyles = StyleSheet.create({
     marginTop: 8,
     marginLeft: 26,
   },
+  reactionTimestampRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 6,
+    marginLeft: 26,
+    width: "100%",
+  },
   timestamp: {
     color: colors.gray,
     fontSize: 10,
     fontWeight: "400",
     fontFamily: fonts.regular,
-    marginTop: 6,
-    marginBottom: -4,
+    marginTop: 0,
+    marginBottom: 0,
+    marginLeft: "auto",
   },
   myTimestamp: {
     color: colors.textLight,
@@ -1397,7 +1410,7 @@ export const chatStyles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     paddingHorizontal: 3,
-    alignSelf: "center",
+    alignSelf: "flex-start",
   },
   reactionBubble: {
     flexDirection: "row",
@@ -1407,8 +1420,8 @@ export const chatStyles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 2,
     marginRight: 6,
-    marginBottom: 18,
-    marginTop: 2,
+    marginBottom: 0,
+    marginTop: 0,
     borderWidth: 1,
     borderColor: colors.grayLight,
   },
