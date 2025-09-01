@@ -805,7 +805,12 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                 },
               ]}
             >
-              <View style={chatStyles.metaRow}>
+              <View
+                style={[
+                  chatStyles.metaRow,
+                  isOwnMessage && { alignSelf: "flex-end", justifyContent: "flex-end" },
+                ]}
+              >
                 {!isOwnMessage && (
                   <TouchableOpacity
                     onPress={() => handleUserPreview(item.userId)}
@@ -822,12 +827,23 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                   onPress={() => handleUserPreview(item.userId)}
                   disabled={isOwnMessage}
                 >
-                  <Text style={[chatStyles.username, { color: nameColor }]}>
+                  <Text
+                    style={[
+                      chatStyles.username,
+                      { color: nameColor },
+                      isOwnMessage && { textAlign: "right" },
+                    ]}
+                  >
                     {isOwnMessage ? "Me" : displayName}
                   </Text>
                 </TouchableOpacity>
                 {badges && badges.length > 0 && (
-                  <View style={{ flexDirection: "row", marginLeft: 5 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      marginLeft: 5,
+                    }}
+                  >
                     {badges.slice(0, MAX_DISPLAY_BADGES).map((b, i) => (
                       <BadgeImage
                         key={b}
@@ -841,7 +857,14 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                   </View>
                 )}
               </View>
-              <Text style={chatStyles.messageText}>{item.text}</Text>
+              <Text
+                style={[
+                  chatStyles.messageText,
+                  { textAlign: isOwnMessage ? "right" : "left" },
+                ]}
+              >
+                {item.text}
+              </Text>
                 {actionTargetId !== item.id &&
                   (reactions.length > 0 ||
                     (!isOwnMessage &&
@@ -1221,7 +1244,7 @@ export const chatStyles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
     marginHorizontal: 3,
-    backgroundColor: colors.white,
+    backgroundColor: colors.grayLight,
   },
   pinnedMessage: {
     borderWidth: 4,
@@ -1233,13 +1256,12 @@ export const chatStyles = StyleSheet.create({
     fontWeight: "bold",
     lineHeight: 22,
     marginVertical: 2,
-    textAlign: "right",
     flexShrink: 1,
     flexWrap: "wrap",
   },
   username: {
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 18,
     marginRight: 4,
     marginVertical: 2,
   },
