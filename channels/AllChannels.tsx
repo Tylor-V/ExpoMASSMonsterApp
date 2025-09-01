@@ -50,6 +50,8 @@ const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const EMOJI_LIST = ["💪", "🔥", "😂", "👏", "😎", "🥇", "😍"];
 
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+
 function parseSelectedBadges(val: any): string[] {
   if (Array.isArray(val)) return val;
   if (val && typeof val === "object") return Object.values(val);
@@ -1103,7 +1105,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
             />
             {/* JUMP TO LATEST BUTTON */}
             {showJump && (
-              <TouchableOpacity
+              <AnimatedTouchable
                 style={[
                   chatStyles.jumpToBottomBtn,
                   {
@@ -1121,7 +1123,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                   size={28}
                   color={colors.background}
                 />
-              </TouchableOpacity>
+              </AnimatedTouchable>
             )}
             {reactionTargetId && (
               <Modal
