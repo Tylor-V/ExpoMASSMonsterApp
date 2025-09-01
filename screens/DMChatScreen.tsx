@@ -345,6 +345,7 @@ const DMChatScreen = ({ navigation, route }) => {
                     <View
                       style={[
                         styles.messageBox,
+                        isMe && styles.myMessageBox,
                         reactions.length > 0 && { marginBottom: 2 },
                       ]}
                     >
@@ -361,10 +362,18 @@ const DMChatScreen = ({ navigation, route }) => {
                           onPress={() => setPreviewUserId(otherUser?.uid)}
                           disabled={isMe}
                         >
-                          <Text style={styles.username}>{isMe ? 'Me' : displayName}</Text>
+                          <Text
+                            style={[styles.username, isMe && styles.myUsername]}
+                          >
+                            {isMe ? 'Me' : displayName}
+                          </Text>
                         </TouchableOpacity>
                       </View>
-                      <Text style={styles.messageText}>{item.text}</Text>
+                      <Text
+                        style={[styles.messageText, isMe && styles.myMessageText]}
+                      >
+                        {item.text}
+                      </Text>
                       {actionTargetId !== item.id &&
                         (reactions.length > 0 ||
                           (!isMe && !reactions.some(r => r.userId === currentUserId))) && (
@@ -400,7 +409,11 @@ const DMChatScreen = ({ navigation, route }) => {
                             )}
                           </View>
                         )}
-                      <Text style={styles.timestamp}>{formattedTime}</Text>
+                      <Text
+                        style={[styles.timestamp, isMe && styles.myTimestamp]}
+                      >
+                        {formattedTime}
+                      </Text>
                     </View>
                   </Pressable>
                   {actionTargetId === item.id && (

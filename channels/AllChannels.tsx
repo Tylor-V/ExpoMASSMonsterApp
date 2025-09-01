@@ -793,6 +793,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
               activeOpacity={1}
               style={[
                 chatStyles.messageBox,
+                isOwnMessage && chatStyles.myMessageBox,
                 reactions.length > 0 && { marginBottom: 2 },
                 item.pinned && chatStyles.pinnedMessage,
                 actionTargetId === item.id && {
@@ -824,7 +825,14 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                   onPress={() => handleUserPreview(item.userId)}
                   disabled={isOwnMessage}
                 >
-                  <Text style={[chatStyles.username, { color: nameColor }]}>
+                  <Text
+                    style={[
+                      chatStyles.username,
+                      { color: nameColor },
+                      isOwnMessage && { textAlign: "right" },
+                      isOwnMessage && chatStyles.myUsername,
+                    ]}
+                  >
                     {isOwnMessage ? "Me" : displayName}
                   </Text>
                 </TouchableOpacity>
@@ -843,7 +851,15 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                   </View>
                 )}
               </View>
-              <Text style={chatStyles.messageText}>{item.text}</Text>
+              <Text
+                style={[
+                  chatStyles.messageText,
+                  { textAlign: isOwnMessage ? "right" : "left" },
+                  isOwnMessage && chatStyles.myMessageText,
+                ]}
+              >
+                {item.text}
+              </Text>
                 {actionTargetId !== item.id &&
                   (reactions.length > 0 ||
                     (!isOwnMessage &&
@@ -986,7 +1002,14 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                       </View>
                     )}
                   </View>
-                  <Text style={chatStyles.timestamp}>{formattedTime}</Text>
+                  <Text
+                    style={[
+                      chatStyles.timestamp,
+                      isOwnMessage && chatStyles.myTimestamp,
+                    ]}
+                  >
+                    {formattedTime}
+                  </Text>
                 </View>
                 {item.pinned && (
                   <Animated.View
@@ -1225,6 +1248,9 @@ export const chatStyles = StyleSheet.create({
     marginHorizontal: 3,
     backgroundColor: colors.grayLight,
   },
+  myMessageBox: {
+    backgroundColor: '#888',
+  },
   pinnedMessage: {
     borderWidth: 4,
     borderColor: colors.accent,
@@ -1243,6 +1269,12 @@ export const chatStyles = StyleSheet.create({
     fontSize: 18,
     marginRight: 4,
     marginVertical: 2,
+  },
+  myMessageText: {
+    color: colors.black,
+  },
+  myUsername: {
+    color: colors.black,
   },
   metaRow: {
     flexDirection: "row",
@@ -1263,6 +1295,9 @@ export const chatStyles = StyleSheet.create({
     fontFamily: fonts.regular,
     marginTop: 6,
     marginBottom: -4,
+  },
+  myTimestamp: {
+    color: colors.textLight,
   },
   inputRow: {
     flexDirection: "row",
