@@ -1249,7 +1249,7 @@ export const chatStyles = StyleSheet.create({
     backgroundColor: colors.grayLight,
   },
   myMessageBox: {
-    backgroundColor: '#888',
+    backgroundColor: colors.yellow,
   },
   pinnedMessage: {
     borderWidth: 4,

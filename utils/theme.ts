@@ -9,6 +9,7 @@ export const colors = {
   textDark: '#232323',
   textLight: '#CCCCCC',
   textMuted: '#BBBBBB',
+  lightYellow: '#FFFFC5',
   yellow: '#FFCC00',
   gold: '#FFD700',
   /** Yellow glow color at 35% opacity */
