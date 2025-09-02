@@ -1296,8 +1296,8 @@ export const chatStyles = StyleSheet.create({
   reactionTimestampRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "space-between",
     marginTop: 6,
-    marginLeft: 26,
     width: "100%",
   },
   timestamp: {
@@ -1308,6 +1308,8 @@ export const chatStyles = StyleSheet.create({
     marginTop: 0,
     marginBottom: 0,
     marginLeft: "auto",
+    marginRight: 2,
+    textAlign: "right",
   },
   myTimestamp: {
     color: colors.textLight,
@@ -1411,6 +1413,7 @@ export const chatStyles = StyleSheet.create({
     flexWrap: "wrap",
     paddingHorizontal: 3,
     alignSelf: "flex-start",
+    marginLeft: 4,
   },
   reactionBubble: {
     flexDirection: "row",
