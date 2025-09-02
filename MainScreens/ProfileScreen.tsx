@@ -1,48 +1,45 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Pressable,
-  Alert,
-  ScrollView,
-  TextInput,
-  Linking,
-  Animated,
-  Dimensions,
-} from 'react-native';
-import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { CommonActions, useNavigation } from '@react-navigation/native';
-import { auth } from '../firebase/firebase';
-import { firestore } from '../firebase/firebase';
-import { useAppContext } from '../firebase/AppContext';
-import { getTodayKey } from '../firebase/dateHelpers';
-import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
-import { colors, fonts } from '../theme';
-import ProfileImage from '../components/ProfileImage';
-import BadgeImage from '../components/BadgeImage';
-import { ANIM_INSTANT, ANIM_MEDIUM } from '../utils/animations';
-import { levelThresholds } from '../firebase/chatXPHelpers';
+import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
+  Animated,
+  Dimensions,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  enforceSelectedBadges,
+  getBadgeImage,
+  getUnlockedBadges,
+  isValidBadge,
+  MAX_DISPLAY_BADGES
+} from '../badges/UnlockableBadges';
+import BadgeImage from '../components/BadgeImage';
+import ProfileImage from '../components/ProfileImage';
+import { TAB_BAR_HEIGHT } from '../components/SwipeableTabs';
+import { useAppContext } from '../firebase/AppContext';
+import { levelThresholds } from '../firebase/chatXPHelpers';
+import { getTodayKey } from '../firebase/dateHelpers';
+import { auth, firestore } from '../firebase/firebase';
+import { replaceProfilePic } from '../firebase/firebaseUserProfile';
+import {
+  saveSelectedBadges,
   updateProfileField,
   updateSocialLink,
-saveSelectedBadges,
 } from '../firebase/userProfileHelpers';
-import {
-  getUnlockedBadges,
-  getBadgeImage,
-  enforceSelectedBadges,
-  isValidBadge,
-  MAX_DISPLAY_BADGES,
-  type BadgeKey,
-} from '../badges/UnlockableBadges';
-import { replaceProfilePic } from '../firebase/firebaseUserProfile';
-import { clearUserCache } from '../utils/clearUserCache';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TAB_BAR_HEIGHT } from '../components/SwipeableTabs';
+import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
+import { colors } from '../theme';
+import { ANIM_INSTANT, ANIM_MEDIUM } from '../utils/animations';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(Pressable);
 
@@ -997,7 +994,7 @@ const styles = StyleSheet.create({
   },
   socialRow: {
     height: 48,
-    backgroundColor: '#232323',
+    backgroundColor: colors.grayOutline,
     borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
@@ -1018,7 +1015,7 @@ const styles = StyleSheet.create({
   },
   socialHandle: {
     fontSize: 16,
-    color: colors.gold,
+    color: colors.textDark,
   },
   socialInput: {
     flex: 1,

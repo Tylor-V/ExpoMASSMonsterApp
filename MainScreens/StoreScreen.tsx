@@ -639,7 +639,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     fontSize: 22,
     color: colors.white,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   featuredCarousel: { marginBottom: 0 },
   card: {
