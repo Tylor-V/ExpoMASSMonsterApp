@@ -1116,7 +1116,9 @@ const AllChannels: React.FC<ChatScreenProps> = ({
               extraData={userMap}
               contentContainerStyle={{
                 paddingTop: 12,
-                paddingBottom: inputBarHeight,
+                // Keep a small gap below the final message
+                // while avoiding the large padding previously used
+                paddingBottom: 8,
               }}
               ListFooterComponent={
                 <View

@@ -462,8 +462,8 @@ const DMChatScreen = ({ navigation, route }) => {
             </>
           );
         }}
-        contentContainerStyle={{ padding: 10, paddingBottom: inputBarHeight + keyboardHeight }}
-        ListFooterComponent={<View style={{ height: keyboardHeight }} />}
+        contentContainerStyle={{ padding: 10, paddingBottom: 8 }}
+        ListFooterComponent={<View style={{ height: inputBarHeight + keyboardHeight }} />}
               />
             )}
             {!loading && showJump && (
