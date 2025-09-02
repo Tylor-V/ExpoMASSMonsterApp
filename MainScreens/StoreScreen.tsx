@@ -1,23 +1,22 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-    ActivityIndicator,
-    Alert,
-    Animated,
-    Dimensions,
-    FlatList,
-    Linking,
-    Modal,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
-} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Dimensions,
+  FlatList,
+  Linking,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { ANIM_BUTTON_POP, ANIM_DRAWER, ANIM_MEDIUM } from '../utils/animations';
 import AddToCartControl from '../components/AddToCartControl';
 import BackgroundWrapper from '../components/BackgroundWrapper';
 import CartDrawer from '../components/CartDrawer';
@@ -29,6 +28,7 @@ import { addToCart as addCartItem } from '../firebase/cartHelpers';
 import { useCart } from '../hooks/useCart';
 import { useShopifyCollections, useShopifyProducts } from '../hooks/useShopify';
 import { colors, fonts, radius } from '../theme';
+import { ANIM_BUTTON_POP, ANIM_DRAWER, ANIM_MEDIUM } from '../utils/animations';
 import { getDescriptionIcons } from '../utils/descriptionIcons';
 
 const { width, height: screenHeight } = Dimensions.get('window');
@@ -36,10 +36,8 @@ const SHOPIFY_DOMAIN = 'zhcfc2-it.myshopify.com'; // <-- Replace with your shop 
 const CART_BAR_HEIGHT = 55;
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 const CARD_ROW_HEIGHT = 260;
-// Fade rows over their entire height so the top row disappears gradually
+// Fade rows in from 50% opacity as they scroll up from the bottom
 const FADE_DISTANCE = CARD_ROW_HEIGHT;
-// Delay the start of fade so rows remain fully visible briefly when scrolling
-const FADE_START_DELAY = CARD_ROW_HEIGHT * 0.2; // begin fading after 20% scroll
 
 const PLACEHOLDER_IMAGE = require('../assets/mass-logo.png');
 
@@ -224,9 +222,9 @@ function StoreScreen({ navigation }) {
     const row = Math.floor(index / 2);
     const start = row * CARD_ROW_HEIGHT;
     const opacity = scrollY.interpolate({
-      // Fade a row from fully opaque to transparent, starting slightly later
-      inputRange: [start + FADE_START_DELAY, start + FADE_START_DELAY + FADE_DISTANCE],
-      outputRange: [1, 0],
+      // Fade a row from 50% opacity to fully visible as it scrolls into view
+      inputRange: [start - screenHeight, start - screenHeight + FADE_DISTANCE],
+      outputRange: [0.5, 1],
       extrapolate: 'clamp',
     });
     
