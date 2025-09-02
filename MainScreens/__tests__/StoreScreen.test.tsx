@@ -46,33 +46,32 @@ beforeEach(() => {
 });
 
 describe('StoreScreen product images', () => {
-
-  it('renders placeholder while loading remote image', () => {
+  it('shows loader while remote image loads', () => {
     const navigation = { navigate: jest.fn() } as any;
     const { UNSAFE_getAllByType } = render(<StoreScreen navigation={navigation} />);
 
     const images = UNSAFE_getAllByType('Image');
     const productImage = images.find(img => img.props.source?.uri === baseProduct.images[0]);
-    const placeholder = require('../../assets/mass-logo.png');
 
     expect(productImage).toBeTruthy();
-    expect(productImage?.props.placeholder).toBe(placeholder);
-    expect(productImage?.props.contentFit).toBe('cover');
+    expect(productImage?.props.placeholder).toBeUndefined();
+
+    const loaders = UNSAFE_getAllByType('ActivityIndicator');
+    expect(loaders.length).toBeGreaterThan(0);
   });
 
-  it('falls back to placeholder when no product image', () => {
+  it('shows loader when no product image available', () => {
     mockProducts = [{ ...baseProduct, id: '2', images: [] }];
     const navigation = { navigate: jest.fn() } as any;
     const { UNSAFE_getAllByType } = render(<StoreScreen navigation={navigation} />);
 
     const images = UNSAFE_getAllByType('Image');
-    const placeholder = require('../../assets/mass-logo.png');
-    const productImage = images.find(
-      img => img.props.source === placeholder && img.props.placeholder === placeholder,
-    );
+    const productImage = images.find(img => img.props.source?.uri);
 
-    expect(productImage).toBeTruthy();
-    expect(productImage?.props.contentFit).toBe('cover');
+    expect(productImage).toBeUndefined();
+
+    const loaders = UNSAFE_getAllByType('ActivityIndicator');
+    expect(loaders.length).toBeGreaterThan(0);
   });
 });
 

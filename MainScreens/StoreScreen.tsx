@@ -22,6 +22,7 @@ import BackgroundWrapper from '../components/BackgroundWrapper';
 import CartDrawer from '../components/CartDrawer';
 import FeaturedCarousel from '../components/FeaturedCarousel';
 import HtmlText from '../components/HtmlText';
+import ProductImage from '../components/ProductImage';
 import RollingNumber from '../components/RollingNumber';
 import { TAB_BAR_HEIGHT } from '../components/SwipeableTabs';
 import { addToCart as addCartItem } from '../firebase/cartHelpers';
@@ -38,9 +39,6 @@ const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 const CARD_ROW_HEIGHT = 260;
 // Fade rows in from 50% opacity as they scroll up from the bottom
 const FADE_DISTANCE = CARD_ROW_HEIGHT;
-
-const PLACEHOLDER_IMAGE = require('../assets/mass-logo.png');
-
 
 function StoreScreen({ navigation }) {
   const {
@@ -274,13 +272,7 @@ function StoreScreen({ navigation }) {
               </Text>
             </View>
           )}
-          <Image
-            source={imageUrl ? { uri: imageUrl } : PLACEHOLDER_IMAGE}
-            placeholder={PLACEHOLDER_IMAGE}
-            contentFit="cover"
-            placeholderContentFit="contain"
-            style={styles.cardImg}
-          />
+          <ProductImage uri={imageUrl} style={styles.cardImg} />
           <View style={styles.cardBody}>
             {item.collections?.some(
               c => c.id === coralCollectionId || c.title.toLowerCase().includes('coral'),
@@ -480,12 +472,10 @@ function StoreScreen({ navigation }) {
                     console.warn('No image URL for product', modalItem.id);
                   }
                   return (
-                    <Image
-                      source={imageUrl ? { uri: imageUrl } : PLACEHOLDER_IMAGE}
-                      placeholder={PLACEHOLDER_IMAGE}
-                      contentFit="contain"
-                      placeholderContentFit="contain"
+                    <ProductImage
+                      uri={imageUrl}
                       style={styles.modalImg}
+                      contentFit="contain"
                     />
                   );
                 })()}
