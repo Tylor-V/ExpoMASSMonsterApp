@@ -3,6 +3,7 @@ import React from 'react';
 import { Linking } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import StoreScreen from '../StoreScreen';
+import { Image } from 'expo-image';
 
 const baseProduct = {
   id: '1',
@@ -42,6 +43,7 @@ jest.mock('../../components/RollingNumber', () => () => null);
 beforeEach(() => {
   mockProducts = [baseProduct];
   mockCartItems = [];
+  (Image as any).prefetch = jest.fn();
   jest.clearAllMocks();
 });
 
@@ -72,6 +74,14 @@ describe('StoreScreen product images', () => {
 
     const loaders = UNSAFE_getAllByType('ActivityIndicator');
     expect(loaders.length).toBeGreaterThan(0);
+  });
+
+  it('prefetches product images', async () => {
+    const navigation = { navigate: jest.fn() } as any;
+    render(<StoreScreen navigation={navigation} />);
+    await waitFor(() => {
+      expect((Image as any).prefetch).toHaveBeenCalledWith(baseProduct.images[0]);
+    });
   });
 });
 

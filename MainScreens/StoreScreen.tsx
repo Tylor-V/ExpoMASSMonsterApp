@@ -49,6 +49,15 @@ function StoreScreen({ navigation }) {
   const [selected, setSelected] = useState<string>('all');
   const { products, loading, error: productError } = useShopifyProducts(selected);
 
+  useEffect(() => {
+    products?.forEach(p => {
+      const url = p.images?.[0];
+      if (url && typeof Image.prefetch === 'function') {
+        Image.prefetch(url);
+      }
+    });
+  }, [products]);
+
   const coralCollectionId = useMemo(() => {
     const match = collections.find(c =>
       c.title.toLowerCase().includes('coral')
@@ -67,6 +76,15 @@ function StoreScreen({ navigation }) {
     products: featuredProducts,
     loading: loadingFeatured,
   } = useShopifyProducts(featuredCollectionId);
+
+  useEffect(() => {
+    featuredProducts?.forEach(p => {
+      const url = p.images?.[0];
+      if (url && typeof Image.prefetch === 'function') {
+        Image.prefetch(url);
+      }
+    });
+  }, [featuredProducts]);
 
   const { items: cartItems } = useCart();
   const cartQuantity = cartItems.reduce((t, i) => t + i.quantity, 0);

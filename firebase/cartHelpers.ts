@@ -25,12 +25,13 @@ function cartCollection() {
 
 export async function addToCart(item: CartItem) {
   const sid = sanitizeId(item.id);
-  const ref = cartCollection().doc(sid);
+  const docWrapper = cartCollection().doc(sid);
+  const docRef = docWrapper.ref;
   const uid = auth().currentUser?.uid;
   await firestore().runTransaction(async tx => {
-    const doc = await tx.get(ref);
+    const doc = await tx.get(docRef);
     const qty = doc.exists ? (doc.data()?.quantity || 0) + item.quantity : item.quantity;
-    tx.set(ref, { ...item, id: sid, userId: uid, quantity: qty }, { merge: true });
+    tx.set(docRef, { ...item, id: sid, userId: uid, quantity: qty }, { merge: true });
   });
 }
 

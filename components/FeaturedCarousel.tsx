@@ -1,5 +1,4 @@
 import React, { memo, useCallback } from 'react';
-import { Image } from 'expo-image';
 import {
   View,
   FlatList,
@@ -14,6 +13,7 @@ import { colors, fonts } from '../theme';
 import useCarousel from '../hooks/useCarousel';
 import CarouselNavigator from './CarouselNavigator';
 import AddCartButton from './AddCartButton';
+import ProductImage from './ProductImage';
 
 const { width } = Dimensions.get('window');
 // Width of the product grid on StoreScreen has 16px padding on each side
@@ -38,12 +38,7 @@ const FeaturedCard = memo(({ item, onSelect }: CardProps) => {
   return (
     <View style={styles.card}>
       <Pressable style={styles.touch} onPress={() => onSelect(item)}>
-        <Image
-          source={imageUrl ? { uri: imageUrl } : require('../assets/mass-logo.png')}
-          placeholder={require('../assets/mass-logo.png')}
-          style={styles.image}
-          contentFit="cover"
-        />
+        <ProductImage uri={imageUrl} style={styles.image} contentFit="cover" />
         <View style={styles.body}>
           <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
             {item.title}

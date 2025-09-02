@@ -10,7 +10,8 @@ export type RewardInfo = {
 export async function redeemReward(reward: RewardInfo) {
   const uid = auth().currentUser?.uid;
   if (!uid) throw new Error('No user logged in');
-  const userRef = firestore().collection('users').doc(uid);
+  const userDoc = firestore().collection('users').doc(uid);
+  const userRef = userDoc.ref;
   await firestore().runTransaction(async tx => {
     const doc = await tx.get(userRef);
     const current = (doc.data()?.accountabilityPoints || 0) as number;
@@ -18,7 +19,8 @@ export async function redeemReward(reward: RewardInfo) {
       throw new Error('Not enough points');
     }
     tx.update(userRef, { accountabilityPoints: current - reward.points });
-    tx.set(userRef.collection('redemptions').doc(), {
+    const redemptionRef = userDoc.collection('redemptions').doc().ref;
+    tx.set(redemptionRef, {
       rewardId: reward.id,
       name: reward.name,
       points: reward.points,

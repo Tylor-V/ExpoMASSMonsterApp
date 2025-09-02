@@ -18,6 +18,18 @@ describe('FeaturedCarousel', () => {
     expect(onSelect).toHaveBeenCalledWith(products[0]);
   });
 
+  it('renders product images without placeholder and shows loader', () => {
+    const onSelect = jest.fn();
+    const { UNSAFE_getAllByType } = render(
+      <FeaturedCarousel products={products} onSelect={onSelect} />,
+    );
+    const images = UNSAFE_getAllByType('Image');
+    expect(images[0].props.source).toEqual({ uri: products[0].images[0] });
+    expect(images[0].props.placeholder).toBeUndefined();
+    const loaders = UNSAFE_getAllByType('ActivityIndicator');
+    expect(loaders.length).toBeGreaterThan(0);
+  });
+
   it('navigates using arrow buttons', () => {
     const onSelect = jest.fn();
     const spy = jest.spyOn(FlatList.prototype as any, 'scrollToIndex').mockImplementation(() => {});
