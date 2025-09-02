@@ -230,7 +230,8 @@ function StoreScreen({ navigation }) {
     
     if (item.type === 'featured') {
       return (
-        <Animated.View style={[styles.featuredWrapper, { opacity }]}> 
+        <Animated.View style={[styles.featuredWrapper, { opacity }]}>          
+          <Text style={styles.featuredLabel}>Bestsellers</Text>
           <FeaturedCarousel
             style={styles.featuredCarousel}
             products={featuredProducts}
@@ -625,6 +626,12 @@ const styles = StyleSheet.create({
     flexBasis: '100%',
     marginBottom: 24,
     alignItems: 'center',
+  },
+  featuredLabel: {
+    fontFamily: fonts.bold,
+    fontSize: 22,
+    color: colors.white,
+    marginBottom: 12,
   },
   featuredCarousel: { marginBottom: 0 },
   card: {

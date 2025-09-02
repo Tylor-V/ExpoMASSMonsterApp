@@ -76,6 +76,14 @@ describe('StoreScreen product images', () => {
   });
 });
 
+describe('StoreScreen featured section', () => {
+  it('renders Bestsellers label when featured products are available', () => {
+    const navigation = { navigate: jest.fn() } as any;
+    const { getByText } = render(<StoreScreen navigation={navigation} />);
+    expect(getByText('Bestsellers')).toBeTruthy();
+  });
+});
+
 describe('StoreScreen checkout', () => {
   it('uses web browser if Linking.openURL fails', async () => {
     mockCartItems = [
