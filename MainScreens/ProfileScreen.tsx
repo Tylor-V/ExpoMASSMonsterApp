@@ -1122,7 +1122,7 @@ badgesLabelRow: {
   },
   infoLink: {
     fontSize: 14,
-    color: '#407BFF',
+    color: colors.blue,
     marginTop: 2,
     textDecorationLine: 'underline',
   },

@@ -1428,7 +1428,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                   <AnimatedIcon
                     name="chevron-down-outline"
                     size={20}
-                    color={colors.yellow}
+                    color={colors.blue}
                     style={{ transform: [{ scale: chevronScale }, { rotate: rotation }] }}
                   />
                 </AnimatedTouchable>
@@ -1448,7 +1448,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                   <Ionicons
                     name="information-circle-outline"
                     size={26}
-                    color="#407BFF"
+                    color={colors.blue}
                   />
                 </TouchableOpacity>
               </View>
@@ -1463,7 +1463,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                     onPress={() => Linking.openURL(ev.link)}
                     style={styles.zoomBtn}
                   >
-                    <MaterialIcons name="north-east" size={26} color="#407BFF" />
+                    <MaterialIcons name="north-east" size={26} color={colors.blue} />
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -1478,12 +1478,11 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           animationType="fade"
           onRequestClose={() => setDayMenuOpen(false)}
         >
-          <TouchableOpacity
+          <Pressable
             style={StyleSheet.absoluteFill}
-            activeOpacity={1}
             onPress={() => setDayMenuOpen(false)}
           >
-            <View
+            <Pressable
               style={[
                 styles.dayDropdown,
                 {
@@ -1492,6 +1491,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                 },
               ]}
               onLayout={e => setDayDropdownWidth(e.nativeEvent.layout.width)}
+              onPress={e => e.stopPropagation()}
             >
               {plan.days.map((d, idx) => (
                 <TouchableOpacity
@@ -1510,8 +1510,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                   </Text>
                 </TouchableOpacity>
               ))}
-            </View>
-          </TouchableOpacity>
+            </Pressable>
+          </Pressable>
         </Modal>
       )}
     </View>
@@ -2112,7 +2112,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                           }
                           style={styles.helpBtn}
                         >
-                          <Ionicons name="help-circle-outline" size={22} color="#407BFF" />
+                          <Ionicons name="help-circle-outline" size={22} color={colors.blue} />
                         </Pressable>
                         <Text style={styles.workoutName}>{l}</Text>
                       </View>

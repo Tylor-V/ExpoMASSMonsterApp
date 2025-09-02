@@ -14,6 +14,7 @@ export const colors = {
   gold: '#FFD700',
   /** Yellow glow color at 35% opacity */
   goldGlow: 'rgba(255,215,0,0.70)',
+  blue: '#407BFF',
   purple: '#A259FF',
   success: '#47d18c',
   error: '#E83D5E',
