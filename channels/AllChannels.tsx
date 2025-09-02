@@ -1253,7 +1253,7 @@ export const chatStyles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   myMessageBox: {
-    backgroundColor: colors.lightYellow,
+    backgroundColor: colors.grayLight,
   },
   pinnedMessage: {
     borderWidth: 4,
@@ -1261,11 +1261,10 @@ export const chatStyles = StyleSheet.create({
   },
   messageText: {
     color: colors.textDark,
-    fontSize: 18,
-    fontWeight: "bold",
+    fontSize: 16,
     lineHeight: 22,
     marginVertical: 3,
-    marginLeft: 6,
+    marginLeft: 2,
     flexShrink: 1,
     flexWrap: "wrap",
     textAlign: "left",
@@ -1274,6 +1273,7 @@ export const chatStyles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 18,
     marginVertical: 2,
+    marginLeft: 2,
   },
   myMessageText: {
     color: colors.black,
