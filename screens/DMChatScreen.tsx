@@ -73,12 +73,21 @@ const DMChatScreen = ({ navigation, route }) => {
   const isTimedOut = timeoutMs > 0;
   const hLeft = Math.floor(timeoutMs / 3600000);
   const mLeft = Math.floor((timeoutMs % 3600000) / 60000);
-  const flatListRef = useRef();
+  const flatListRef = useRef<FlatList<any>>(null);
   const isAtBottomRef = useRef(true);
   const [reactionTargetId, setReactionTargetId] = useState<string | null>(null);
   const [actionTargetId, setActionTargetId] = useState<string | null>(null);
   const scrollToLatest = (animated: boolean = true) => {
-    flatListRef.current?.scrollToEnd({ animated });
+    if (flatListRef.current && messages.length > 0) {
+      try {
+        flatListRef.current.scrollToIndex({
+          index: messages.length - 1,
+          animated,
+        });
+      } catch (err) {
+        flatListRef.current.scrollToEnd({ animated });
+      }
+    }
     isAtBottomRef.current = true;
   };
   const latestMessageId = messages.length ? messages[messages.length - 1]?.id : null;

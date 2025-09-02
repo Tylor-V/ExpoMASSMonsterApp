@@ -172,13 +172,25 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   const [keyboardOffset] = useKeyboardAnimation(-10);
 
   const currentUserId = auth().currentUser?.uid;
-  const flatListRef = useRef<FlatList>(null);
+  const flatListRef = useRef<FlatList<any>>(null);
   const isAtBottomRef = useRef(true);
 
-  const scrollToLatest = useCallback((animated = true) => {
-    flatListRef.current?.scrollToEnd({ animated });
-    isAtBottomRef.current = true;
-  }, []);
+  const scrollToLatest = useCallback(
+    (animated = true) => {
+      if (flatListRef.current && messages.length > 0) {
+        try {
+          flatListRef.current.scrollToIndex({
+            index: messages.length - 1,
+            animated,
+          });
+        } catch (err) {
+          flatListRef.current.scrollToEnd({ animated });
+        }
+      }
+      isAtBottomRef.current = true;
+    },
+    [messages.length],
+  );
 
   const scrollToMessage = useCallback(
     (msgId: string | number) => {
