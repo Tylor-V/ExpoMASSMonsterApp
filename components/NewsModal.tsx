@@ -39,8 +39,6 @@ const NewsModal = ({ visible, onClose, news, loading, user }) => {
     []
   );
 
-  if (!visible) return null;
-
   const renderNoNews = useCallback(
     () => (
       <Text style={styles.emptyText}>
@@ -49,6 +47,8 @@ const NewsModal = ({ visible, onClose, news, loading, user }) => {
     ),
     []
   );
+
+  if (!visible) return null;
 
   return (
     <Modal
