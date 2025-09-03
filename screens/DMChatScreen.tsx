@@ -359,12 +359,21 @@ const DMChatScreen = ({ navigation, route }) => {
                       ]}
                     >
                       <View style={styles.metaRow}>
-                        {!isMe && (
+                        {isMe ? (
+                          <ProfileImage
+                            uri={currentUser?.profilePicUrl || ''}
+                            style={styles.profilePic}
+                            isCurrentUser
+                          />
+                        ) : (
                           <TouchableOpacity
                             onPress={() => setPreviewUserId(otherUser?.uid)}
                             activeOpacity={0.8}
                           >
-                            <ProfileImage uri={profilePicUrl} style={styles.profilePic} />
+                            <ProfileImage
+                              uri={profilePicUrl}
+                              style={styles.profilePic}
+                            />
                           </TouchableOpacity>
                         )}
                         <TouchableOpacity

@@ -821,7 +821,13 @@ const AllChannels: React.FC<ChatScreenProps> = ({
               ]}
             >
               <View style={chatStyles.metaRow}>
-                {!isOwnMessage && (
+                {isOwnMessage ? (
+                  <ProfileImage
+                    uri={profilePicUrl}
+                    style={chatStyles.profilePic}
+                    isCurrentUser
+                  />
+                ) : (
                   <TouchableOpacity
                     onPress={() => handleUserPreview(item.userId)}
                     activeOpacity={0.8}
