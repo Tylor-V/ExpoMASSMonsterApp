@@ -97,9 +97,7 @@ export async function uploadProfilePic(localUri: string): Promise<string> {
       const assetInfo = await MediaLibrary.getAssetInfoAsync(localUri);
       localUri = assetInfo.localUri || localUri;
     }
-    const response = await fetch(localUri);
-    const blob = await response.blob();
-    await ref.put(blob);
+    await ref.putFile(localUri);
     return await ref.getDownloadURL();
   } catch (err) {
     console.error('Failed to upload profile picture', err);
@@ -114,7 +112,7 @@ export async function replaceProfilePic(localUri: string): Promise<string> {
 
   try {
     const list = await storage().ref(`profilePics/${uid}`).listAll();
-    await Promise.all(list.items.map(i => i.delete()));
+    await Promise.all(list.items.map((i: any) => i.delete()));
   } catch (err) {
     console.error('Failed to remove old profile pictures', err);
   }

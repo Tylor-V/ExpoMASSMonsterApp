@@ -174,20 +174,30 @@ function wrapCollection(path: string[]) {
 
 function storageRef(path: string) {
   const ref = stRef(storageInstance, path);
-  return {
+  const api: any = {
     put: (blob: Blob) => withRetry(() => uploadBytes(ref, blob)),
-    putFile: async (uri: string) =>
+    putFile: async (uri: string, metadata?: any) =>
       withRetry(async () => {
         const res = await fetch(uri);
         const blob = await res.blob();
-        return uploadBytes(ref, blob);
+        return uploadBytes(ref, blob, metadata);
       }),
     getDownloadURL: () => withRetry(() => getDownloadURL(ref)),
-    listAll: () => withRetry(() => listAll(ref)),
+    listAll: () =>
+      withRetry(async () => {
+        const res = await listAll(ref);
+        return {
+          ...res,
+          items: res.items.map((item) => storageRef(item.fullPath)),
+          prefixes: res.prefixes.map((item) => storageRef(item.fullPath)),
+        };
+      }),
     delete: () => withRetry(() => deleteObject(ref)),
     child: (name: string) => storageRef(`${path}/${name}`),
     ref,
+    fullPath: ref.fullPath,
   };
+  return api;
 }
 
 export function firestore() {
