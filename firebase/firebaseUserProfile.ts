@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+import * as MediaLibrary from 'expo-media-library';
 import { auth, firestore, storage } from './firebase';
 
 // Generates the full user profile doc for new users
@@ -91,7 +93,13 @@ export async function uploadProfilePic(localUri: string): Promise<string> {
   const filename = `profilePics/${uid}/${Date.now()}.jpg`;
   const ref = storage().ref(filename);
   try {
-    await ref.putFile(localUri);
+    if (Platform.OS === 'ios' && localUri.startsWith('ph://')) {
+      const assetInfo = await MediaLibrary.getAssetInfoAsync(localUri);
+      localUri = assetInfo.localUri || localUri;
+    }
+    const response = await fetch(localUri);
+    const blob = await response.blob();
+    await ref.put(blob);
     return await ref.getDownloadURL();
   } catch (err) {
     console.error('Failed to upload profile picture', err);
