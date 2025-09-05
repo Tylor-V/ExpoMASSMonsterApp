@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Pressable,
   Alert,
   FlatList,
@@ -17,7 +16,6 @@ import { colors, fonts, radius } from '../theme';
 import { useAppContext } from '../firebase/AppContext';
 import { redeemReward, RewardInfo } from '../firebase/rewardsHelpers';
 import { useRewardHistory } from '../hooks/useRewardHistory';
-import ComingSoonOverlay from '../components/ComingSoonOverlay';
 
 const REWARDS: RewardInfo[] = [
   { id: 'coupon5', name: '$5 Shop Coupon', points: 50 },
@@ -163,7 +161,6 @@ export default function RewardsScreen() {
           </View>
         </Pressable>
       </Modal>
-      <ComingSoonOverlay />
     </View>
   );
 }
