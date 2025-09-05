@@ -4,8 +4,17 @@ import { View } from 'react-native';
 import { colors } from '../../theme';
 import ChatBar from '../ChatBar';
 
-jest.mock('../../hooks/useChannelUnread', () => () => ({}));
-jest.mock('../../hooks/useAnyDMUnread', () => () => false);
+jest.mock('../../hooks/useChannelUnread', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({})),
+}));
+jest.mock('../../hooks/useAnyDMUnread', () => ({
+  __esModule: true,
+  default: jest.fn(() => false),
+}));
+
+const mockUseChannelUnread = require('../../hooks/useChannelUnread').default as jest.Mock;
+const mockUseAnyDMUnread = require('../../hooks/useAnyDMUnread').default as jest.Mock;
 
 let mockPinnedMessages: any[] = [];
 jest.mock('../../MainScreens/ChatScreen', () => {
@@ -87,5 +96,29 @@ describe('ChatBar pinned button', () => {
     const style = overlay.props.style;
     const top = Array.isArray(style) ? style[1].top : style.top;
     expect(top).toBe(60);
+  });
+});
+
+describe('ChatBar unread indicators', () => {
+  beforeEach(() => {
+    mockUseChannelUnread.mockReturnValue({});
+    mockUseAnyDMUnread.mockReturnValue(false);
+  });
+
+  it('shows channel unread dot when any channel has unread messages', () => {
+    mockUseChannelUnread.mockReturnValue({ general: true });
+    const { getByTestId, queryByTestId } = render(
+      <ChatBar onOpenDMInbox={() => {}} onOpenGymFeed={() => {}} />,
+    );
+    expect(getByTestId('channel-unread-dot')).toBeTruthy();
+    expect(queryByTestId('dm-unread-dot')).toBeNull();
+  });
+
+  it('shows DM unread dot when any DM thread has unread messages', () => {
+    mockUseAnyDMUnread.mockReturnValue(true);
+    const { getByTestId } = render(
+      <ChatBar onOpenDMInbox={() => {}} onOpenGymFeed={() => {}} />,
+    );
+    expect(getByTestId('dm-unread-dot')).toBeTruthy();
   });
 });

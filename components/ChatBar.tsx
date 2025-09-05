@@ -606,7 +606,7 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
               color={menuOpen ? colors.accent : colors.background}
             />
           </View>
-          {anyUnread && <View style={headerStyles.unreadDot} />}
+          {anyUnread && <View testID="channel-unread-dot" style={headerStyles.unreadDot} />}
         </Pressable>
         {selectedChannel.type !== 'voice' && selectedChannel.type !== 'video' && (
           <TouchableOpacity onPress={togglePinnedDropdown} style={{ marginHorizontal: 8 }}>
@@ -641,7 +641,7 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
         <TouchableOpacity onPress={onOpenDMInbox} style={{ marginHorizontal: 8 }}>
           <View style={{ position: 'relative' }}>
             <Image source={InboxIcon} style={{ width: 32, height: 32 }} contentFit="contain" />
-            {dmUnread && <View style={headerStyles.dmUnreadDot} />}
+            {dmUnread && <View testID="dm-unread-dot" style={headerStyles.dmUnreadDot} />}
           </View>
         </TouchableOpacity>
         </View>

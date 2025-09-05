@@ -353,21 +353,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     maxWidth: 150,
   },
-  unreadBadge: {
-    backgroundColor: colors.error,
-    borderRadius: 9,
-    paddingHorizontal: 6,
-    minWidth: 17,
-    marginLeft: 'auto',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 5,
-  },
-  unreadTxt: {
-    color: colors.white,
-    fontWeight: 'bold',
-    fontSize: 13,
-  },
   newDot: {
     width: 8,
     height: 8,
