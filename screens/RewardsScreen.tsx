@@ -1,21 +1,21 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
   Alert,
   FlatList,
   Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
 import ConfettiCannon from 'react-native-confetti-cannon';
-import { colors, fonts, radius } from '../theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppContext } from '../firebase/AppContext';
 import { redeemReward, RewardInfo } from '../firebase/rewardsHelpers';
 import { useRewardHistory } from '../hooks/useRewardHistory';
+import { colors, fonts, radius } from '../theme';
 
 const REWARDS: RewardInfo[] = [
   { id: 'coupon5', name: '$5 Shop Coupon', points: 50 },
@@ -138,7 +138,6 @@ export default function RewardsScreen() {
           </View>
         )}
         contentContainerStyle={{
-          paddingHorizontal: 16,
           paddingBottom: insets.bottom + 20,
         }}
       />
@@ -253,7 +252,6 @@ const styles = StyleSheet.create({
   },
   rewardCard: {
     backgroundColor: colors.translucentWhite,
-    borderRadius: 12,
     padding: 12,
     marginBottom: 12,
   },
