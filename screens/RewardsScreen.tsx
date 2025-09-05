@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppContext } from '../firebase/AppContext';
 import { redeemReward, RewardInfo } from '../firebase/rewardsHelpers';
 import { useRewardHistory } from '../hooks/useRewardHistory';
-import { colors, fonts, radius } from '../theme';
+import { colors, fonts } from '../theme';
 
 const REWARDS: RewardInfo[] = [
   { id: 'coupon5', name: '$5 Shop Coupon', points: 30 },
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
   },
   howBtn: {
     backgroundColor: colors.gold,
-    borderRadius: radius.button,
+    borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   progressFill: { backgroundColor: colors.gold },
   couponBtn: {
     backgroundColor: colors.gold,
-    borderRadius: 12,
+    borderRadius: 8,
     paddingVertical: 8,
     paddingHorizontal: 12,
     alignItems: 'center',
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
   },
   redeemBtn: {
     backgroundColor: colors.gold,
-    borderRadius: radius.button,
+    borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
