@@ -163,7 +163,7 @@ export default function RewardsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.gray },
+  container: { flex: 1, backgroundColor: colors.grayLight },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -215,13 +215,13 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontFamily: fonts.semiBold,
     fontSize: 14,
-    color: colors.white,
+    color: colors.black,
     marginBottom: 4,
   },
   progressWrap: { marginHorizontal: 16, marginBottom: 20 },
   progressBar: {
     height: 8,
-    backgroundColor: colors.grayLight,
+    backgroundColor: colors.white,
     borderRadius: 4,
     flexDirection: 'row',
     overflow: 'hidden',
@@ -240,12 +240,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontFamily: fonts.regular,
     fontSize: 13,
-    color: colors.textLight,
+    color: colors.black,
   },
   sectionTitle: {
     fontWeight: 'bold',
     fontSize: 20,
-    color: colors.white,
+    color: colors.black,
     marginTop: 10,
     marginBottom: 6,
     marginLeft: 8,
