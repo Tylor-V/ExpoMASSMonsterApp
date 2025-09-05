@@ -32,8 +32,6 @@ export default function RewardsScreen() {
   const history = useRewardHistory();
   const [showFAQ, setShowFAQ] = useState(false);
   const [confetti, setConfetti] = useState(false);
-
-  const canRedeemCoupon = points >= 50;
   const progress = Math.min(1, (points % 50) / 50);
 
   const handleRedeem = async (reward: RewardInfo) => {
@@ -109,19 +107,6 @@ export default function RewardsScreen() {
                 <View style={[styles.progressFill, { flex: progress }]} />
                 <View style={{ flex: 1 - progress }} />
               </View>
-              <Pressable
-                style={[
-                  styles.couponBtn,
-                  { opacity: canRedeemCoupon ? 1 : 0.5 },
-                ]}
-                disabled={!canRedeemCoupon}
-                onPress={() =>
-                  handleRedeem({ id: 'coupon5', name: '$5 Shop Coupon', points: 50 })
-                }
-              >
-                <Text style={styles.couponTxt}>Redeem 50 Accountability Points for $5 Coupon</Text>
-              </Pressable>
-              <Text style={styles.remainingTxt}>You'll have {points - 50} accountability points left.</Text>
             </View>
             <Text style={styles.sectionTitle}>Available Rewards</Text>
           </View>
@@ -169,9 +154,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 12,
-    marginBottom: 10,
+    paddingBottom: 8,
     zIndex: 1000,
     elevation: 2,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.grayOutline,
   },
   headerTitleWrap: { flexDirection: 'row', alignItems: 'center' },
   headerTitle: {
@@ -192,7 +179,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
-    marginBottom: 16,
+    marginVertical: 16,
   },
   points: {
     fontWeight: 'bold',
@@ -225,7 +212,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     flexDirection: 'row',
     overflow: 'hidden',
-    marginBottom: 8,
+    marginBottom: 2,
   },
   progressFill: { backgroundColor: colors.gold },
   couponBtn: {
@@ -236,25 +223,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   couponTxt: { fontWeight: 'bold', color: colors.black },
-  remainingTxt: {
-    textAlign: 'center',
-    fontFamily: fonts.regular,
-    fontSize: 13,
-    color: colors.black,
-  },
   sectionTitle: {
     fontWeight: 'bold',
     fontSize: 20,
     color: colors.black,
-    marginTop: 10,
-    marginBottom: 6,
+    marginVertical: 6,
     marginLeft: 8,
   },
   rewardCard: {
     backgroundColor: colors.translucentWhite,
     padding: 12,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.grayLight,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.grayOutline,
   },
   rewardName: { fontFamily: fonts.semiBold, fontSize: 16, color: colors.black },
   rewardFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
@@ -275,9 +255,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     backgroundColor: colors.translucentWhite,
-    borderRadius: 12,
     padding: 12,
-    marginHorizontal: 16,
     marginBottom: 8,
   },
   historyName: { fontFamily: fonts.semiBold, fontSize: 14, color: colors.black },
