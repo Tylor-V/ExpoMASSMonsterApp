@@ -13,6 +13,7 @@ const baseProduct = {
   collections: [],
   variantId: 'gid://shopify/ProductVariant/1',
   variantTitle: 'Default',
+  description: '',
 };
 
 let mockProducts = [baseProduct];
@@ -117,5 +118,31 @@ describe('StoreScreen checkout', () => {
     await waitFor(() => {
       expect(openBrowser).toHaveBeenCalled();
     });
+  });
+});
+
+describe('StoreScreen category ratings', () => {
+  it('renders rating rows when description includes ratings', () => {
+    mockProducts = [
+      {
+        ...baseProduct,
+        id: '3',
+        description:
+          'Energy/Focus: 4 stars General Health: 3 Muscle Building: 5',
+      },
+    ];
+    const navigation = { navigate: jest.fn() } as any;
+    const { getByText, UNSAFE_getAllByType } = render(
+      <StoreScreen navigation={navigation} />,
+    );
+    expect(getByText('Energy/Focus')).toBeTruthy();
+    expect(getByText('General Health')).toBeTruthy();
+    expect(getByText('Muscle Building')).toBeTruthy();
+    const icons = UNSAFE_getAllByType('Icon').filter(
+      (i: any) => i.props.name === 'star' || i.props.name === 'star-outline',
+    );
+    expect(icons.length).toBe(15);
+    const filled = icons.filter((i: any) => i.props.name === 'star');
+    expect(filled.length).toBe(12);
   });
 });

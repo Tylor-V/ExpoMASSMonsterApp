@@ -22,6 +22,7 @@ import BackgroundWrapper from '../components/BackgroundWrapper';
 import CartDrawer from '../components/CartDrawer';
 import FeaturedCarousel from '../components/FeaturedCarousel';
 import HtmlText from '../components/HtmlText';
+import RatingRow from '../components/RatingRow';
 import ProductImage from '../components/ProductImage';
 import RollingNumber from '../components/RollingNumber';
 import { TAB_BAR_HEIGHT } from '../components/SwipeableTabs';
@@ -31,6 +32,7 @@ import { useShopifyCollections, useShopifyProducts } from '../hooks/useShopify';
 import { colors, fonts, radius } from '../theme';
 import { ANIM_BUTTON_POP, ANIM_DRAWER, ANIM_MEDIUM } from '../utils/animations';
 import { getDescriptionIcons } from '../utils/descriptionIcons';
+import { CATEGORY_LABELS, parseCategoryRatings } from '../utils/categoryRatings';
 
 const { width, height: screenHeight } = Dimensions.get('window');
 const SHOPIFY_DOMAIN = 'zhcfc2-it.myshopify.com'; // <-- Replace with your shop domain
@@ -264,6 +266,7 @@ function StoreScreen({ navigation }) {
     }
 
     const imageUrl = item.images?.[0];
+    const ratings = parseCategoryRatings(item.description);
     if (!imageUrl) {
       console.warn('No image URL for product', item.id);
     }
@@ -307,6 +310,14 @@ function StoreScreen({ navigation }) {
             <Text style={styles.cardPrice}>
               ${parseFloat(item.priceRange?.minVariantPrice.amount || '0').toFixed(2)}
             </Text>
+            <View style={styles.cardRatings}>
+              {CATEGORY_LABELS.map(label => {
+                const rating = ratings[label];
+                return rating ? (
+                  <RatingRow key={label} label={label} rating={rating} />
+                ) : null;
+              })}
+            </View>
             <AddToCartControl
               item={{
                 id: item.id,
@@ -677,6 +688,7 @@ const styles = StyleSheet.create({
     color: colors.gold,
     marginBottom: 8,
   },
+  cardRatings: { marginBottom: 4 },
   addControl: { alignSelf: 'center', marginTop: -12 },
   coralLogo: {
     width: 80,
