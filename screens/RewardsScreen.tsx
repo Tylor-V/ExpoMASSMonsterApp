@@ -94,8 +94,6 @@ export default function RewardsScreen() {
         data={REWARDS}
         keyExtractor={i => i.id}
         renderItem={renderReward}
-        numColumns={2}
-        columnWrapperStyle={{ justifyContent: 'space-between' }}
         ListHeaderComponent={() => (
           <View>
             <View style={styles.pointsCard}>
@@ -254,7 +252,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   rewardCard: {
-    width: '48%',
     backgroundColor: colors.translucentWhite,
     borderRadius: 12,
     padding: 12,
