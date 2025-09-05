@@ -16,6 +16,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       process.env.EXPO_PUBLIC_SHOPIFY_API_VERSION ?? process.env.SHOPIFY_API_VERSION,
     SHOPIFY_TOKEN:
       process.env.EXPO_PUBLIC_SHOPIFY_TOKEN ?? process.env.SHOPIFY_TOKEN,
+    SHOPIFY_ADMIN_TOKEN:
+      process.env.EXPO_PUBLIC_SHOPIFY_ADMIN_TOKEN ?? process.env.SHOPIFY_ADMIN_TOKEN,
     GOOGLE_PLACES_API_KEY:
       process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ?? process.env.GOOGLE_PLACES_API_KEY,
     FIREBASE_API_KEY:

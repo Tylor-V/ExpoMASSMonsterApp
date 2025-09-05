@@ -18,6 +18,7 @@ import {createOrUpdateUserProfile} from '../firebase/firebaseUserProfile';
 import {useInitializeUser} from '../hooks/useInitializeUser';
 import {useNetworkStatus} from '../hooks/useNetworkStatus';
 import {clearUserCache} from '../utils/clearUserCache';
+import {ensureShopifyCustomer} from '../utils/shopifyCustomer';
 
 const SignUpScreen: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -56,12 +57,18 @@ const SignUpScreen: React.FC = () => {
       await userCredential.user.updateProfile({
         displayName: `${sanitizedFirst} ${sanitizedLast}`,
       });
+      const shopifyCustomerId = await ensureShopifyCustomer(
+        sanitizedEmail,
+        sanitizedFirst,
+        sanitizedLast,
+      );
       await createOrUpdateUserProfile({
         uid: userCredential.user.uid,
         email: sanitizedEmail,
         firstName: sanitizedFirst,
         lastName: sanitizedLast,
         role: 'member',
+        shopifyCustomerId: shopifyCustomerId || undefined,
       });
       await initializeUser(userCredential.user.uid);
       Alert.alert('Success', 'Account created! Logging you in...');

@@ -9,18 +9,21 @@ export const getDefaultUserProfile = ({
   firstName,
   lastName,
   role = 'member',
+  shopifyCustomerId = '',
 }: {
   uid: string;
   email: string;
   firstName: string;
   lastName: string;
   role?: string;
+  shopifyCustomerId?: string;
 }) => ({
   uid,
   email,
   firstName,
   lastName,
   role,
+  shopifyCustomerId,
   profilePicUrl: '',
   bio: '',
   socials: {},
@@ -47,12 +50,14 @@ export async function createOrUpdateUserProfile({
   firstName,
   lastName,
   role,
+  shopifyCustomerId,
 }: {
   uid: string;
   email: string;
   firstName: string;
   lastName: string;
   role?: string;
+  shopifyCustomerId?: string;
 }) {
   const userDocRef = firestore().collection('users').doc(uid);
 
@@ -63,7 +68,14 @@ export async function createOrUpdateUserProfile({
     if (!doc.exists) {
       // New user: set full default profile
       await userDocRef.set(
-        getDefaultUserProfile({ uid, email, firstName, lastName, role })
+        getDefaultUserProfile({
+          uid,
+          email,
+          firstName,
+          lastName,
+          role,
+          shopifyCustomerId,
+        }),
       );
     } else {
       // Existing user: update timestamps and add missing fields
@@ -77,6 +89,8 @@ export async function createOrUpdateUserProfile({
       if (!data.lastName && lastName) update.lastName = lastName;
       if (!data.email && email) update.email = email;
       if (role && !data.role) update.role = role;
+      if (shopifyCustomerId && !data.shopifyCustomerId)
+        update.shopifyCustomerId = shopifyCustomerId;
       await userDocRef.set(update, { merge: true });
     }
   } catch (err) {
