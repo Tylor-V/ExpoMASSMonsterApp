@@ -167,10 +167,10 @@ const styles = StyleSheet.create({
   iconBtn: { padding: 6 },
   iconPlaceholder: { width: 34 },
   pointsCard: {
-    backgroundColor: 'rgba(255,255,255,0.93)',
-    marginHorizontal: 8,
+    backgroundColor: colors. translucentWhite,
+    marginHorizontal: 32,
     borderRadius: 18,
-    padding: 20,
+    paddingVertical: 20,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOpacity: 0.1,
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   points: {
     fontWeight: 'bold',
     fontSize: 60,
-    color: colors.gold,
+    color: colors.textDark,
   },
   pointsLabel: {
     fontFamily: fonts.semiBold,
