@@ -163,7 +163,7 @@ export default function RewardsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.black },
+  container: { flex: 1, backgroundColor: colors.gray },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -177,14 +177,14 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontWeight: 'bold',
     fontSize: 24,
-    color: colors.white,
+    color: colors.black,
     marginLeft: 8,
   },
   iconBtn: { padding: 6 },
   iconPlaceholder: { width: 34 },
   pointsCard: {
     backgroundColor: 'rgba(255,255,255,0.93)',
-    marginHorizontal: 16,
+    marginHorizontal: 8,
     borderRadius: 18,
     padding: 20,
     alignItems: 'center',
@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
   },
   points: {
     fontWeight: 'bold',
-    fontSize: 36,
+    fontSize: 60,
     color: colors.gold,
   },
   pointsLabel: {
@@ -244,16 +244,17 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontWeight: 'bold',
-    fontSize: 18,
+    fontSize: 20,
     color: colors.white,
     marginTop: 10,
     marginBottom: 6,
-    marginHorizontal: 16,
+    marginLeft: 8,
   },
   rewardCard: {
     backgroundColor: colors.translucentWhite,
     padding: 12,
-    marginBottom: 12,
+    borderBottomWidth: 2,
+    borderBottomColor: colors.grayLight,
   },
   rewardName: { fontFamily: fonts.semiBold, fontSize: 16, color: colors.black },
   rewardFooter: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
