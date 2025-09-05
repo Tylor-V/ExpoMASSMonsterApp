@@ -97,11 +97,10 @@ export default function GymVideoFeed({ navigation }) {
   }, [currentUserId]);
 
   const handleUpload = async () => {
-  const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permission.status !== 'granted') {
-      Alert.alert('Permission needed', 'We need access to your library to upload videos.');
-      return;
-    }
+    // Android's system picker does not require explicit media library
+    // permissions in Expo Go. By removing the manual permission
+    // request we avoid warnings about restricted access while still
+    // letting the user choose a video to upload.
     const res = await ImagePicker.launchImageLibraryAsync({
       // Use the new MediaType API instead of deprecated MediaTypeOptions
       mediaTypes: 'videos',

@@ -324,16 +324,12 @@ const ProfileScreen = () => {
   };
 
   const selectProfileImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permission.status !== 'granted') {
-      Alert.alert(
-        'Permission needed',
-        'Please allow photo library access to update your profile picture.',
-      );
-      return;
-    }
     const result = await ImagePicker.launchImageLibraryAsync({
-      // Updated to use new MediaType API
+      // Android 13+ uses the system photo picker which does not
+      // require explicit media library permissions in Expo Go.
+      // Removing the manual permission request avoids warnings
+      // about limited access while still allowing the user to
+      // select an image from their library.
       mediaTypes: 'images',
       quality: 1,
     });
