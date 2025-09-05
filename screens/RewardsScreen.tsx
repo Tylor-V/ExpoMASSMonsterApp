@@ -18,11 +18,8 @@ import { useRewardHistory } from '../hooks/useRewardHistory';
 import { colors, fonts, radius } from '../theme';
 
 const REWARDS: RewardInfo[] = [
-  { id: 'coupon5', name: '$5 Shop Coupon', points: 50 },
-  { id: 'shaker', name: 'MASS Monster Shaker Bottle', points: 150 },
-  { id: 'discord', name: 'Exclusive Discord Role', points: 80 },
-  { id: 'sample', name: 'Supplement Sample Pack', points: 300 },
-  { id: 'tee', name: 'MASS Monster Tee', points: 200 },
+  { id: 'coupon5', name: '$5 Shop Coupon', points: 30 },
+  { id: 'mindset', name: 'Coral Club Mindset Pack', points: 200 },
 ];
 
 export default function RewardsScreen() {
