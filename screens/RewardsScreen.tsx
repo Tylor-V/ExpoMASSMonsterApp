@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   iconPlaceholder: { width: 34 },
   pointsCard: {
     backgroundColor: colors. translucentWhite,
-    marginHorizontal: 32,
+    marginHorizontal: 44,
     borderRadius: 18,
     paddingVertical: 20,
     alignItems: 'center',
@@ -214,8 +214,9 @@ const styles = StyleSheet.create({
   progressFill: { backgroundColor: colors.gold },
   couponBtn: {
     backgroundColor: colors.gold,
-    borderRadius: radius.button,
-    paddingVertical: 10,
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     alignItems: 'center',
     marginBottom: 4,
   },
