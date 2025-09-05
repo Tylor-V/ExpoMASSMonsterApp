@@ -39,7 +39,7 @@ export const gradients = {
 export const radius = {
   card: 18,
   modal: 18,
-  button: 12,
+  button: 8,
   };
 
 export const fonts = {
