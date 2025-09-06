@@ -1,5 +1,4 @@
 import { Platform } from 'react-native';
-import * as MediaLibrary from 'expo-media-library';
 import { auth, firestore, storage } from './firebase';
 
 // Generates the full user profile doc for new users
@@ -108,6 +107,11 @@ export async function uploadProfilePic(localUri: string): Promise<string> {
   const ref = storage().ref(filename);
   try {
     if (Platform.OS === 'ios' && localUri.startsWith('ph://')) {
+      // Lazily import MediaLibrary so Android builds don't attempt to load
+      // the module and trigger warnings about missing permissions. The
+      // native asset info lookup is only required for iOS when dealing with
+      // "ph://" URIs returned by the system picker.
+      const MediaLibrary = await import('expo-media-library');
       const assetInfo = await MediaLibrary.getAssetInfoAsync(localUri);
       localUri = assetInfo.localUri || localUri;
     }
