@@ -12,9 +12,17 @@ function buildAdminUrl(path: string) {
   return `https://${SHOPIFY_DOMAIN}/admin/api/${apiVersion}/${path}`;
 }
 
+let warnedMissingConfig = false;
+function hasAdminConfig() {
+  return Boolean(SHOPIFY_DOMAIN && SHOPIFY_ADMIN_TOKEN);
+}
+
 async function adminFetch(path: string, options: RequestInit = {}) {
-  if (!SHOPIFY_DOMAIN || !SHOPIFY_ADMIN_TOKEN) {
-    console.warn('Shopify admin configuration missing');
+  if (!hasAdminConfig()) {
+    if (!warnedMissingConfig) {
+      console.warn('Shopify admin configuration missing');
+      warnedMissingConfig = true;
+    }
     return null;
   }
   const res = await fetch(buildAdminUrl(path), {
@@ -33,6 +41,7 @@ async function adminFetch(path: string, options: RequestInit = {}) {
 }
 
 export async function findShopifyCustomerByEmail(email: string): Promise<string | null> {
+  if (!hasAdminConfig()) return null;
   const data = await adminFetch(
     `customers/search.json?query=email:${encodeURIComponent(email)}`,
   );
@@ -44,6 +53,7 @@ export async function createShopifyCustomerAccount(
   firstName?: string,
   lastName?: string,
 ): Promise<string | null> {
+  if (!hasAdminConfig()) return null;
   const body = {
     customer: {
       email,
@@ -63,6 +73,7 @@ export async function ensureShopifyCustomer(
   firstName?: string,
   lastName?: string,
 ): Promise<string | null> {
+  if (!hasAdminConfig()) return null;
   const existing = await findShopifyCustomerByEmail(email);
   if (existing) return existing;
   return await createShopifyCustomerAccount(email, firstName, lastName);
