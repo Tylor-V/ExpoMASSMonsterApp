@@ -34,3 +34,18 @@ export function parseCategoryRatings(description?: string): CategoryRatings {
   });
   return ratings;
 }
+
+// Remove rating text like "Energy/Focus: 4 stars" from descriptions
+export function stripCategoryRatings(description?: string): string {
+  if (!description) return '';
+  let result = description;
+  Object.keys(CATEGORY_MAP).forEach(fullLabel => {
+    const escLabel = fullLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(
+      `${escLabel}\\s*:\\s*\\d\\s*stars?\\s*`,
+      'gi',
+    );
+    result = result.replace(regex, '');
+  });
+  return result.trim();
+}
