@@ -1,9 +1,9 @@
 export const CATEGORY_LABELS = [
   'Muscle Building',
-  'Muscle Recovery',
-  'Strength/Performance',
-  'Energy/Focus',
-  'General Health',
+  'Recovery',
+  'Performance',
+  'Energy',
+  'Health',
 ] as const;
 
 export type CategoryLabel = typeof CATEGORY_LABELS[number];
