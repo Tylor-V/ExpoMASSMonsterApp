@@ -136,7 +136,9 @@ describe('StoreScreen category ratings', () => {
       <StoreScreen navigation={navigation} />,
     );
     const icons = UNSAFE_getAllByType('Icon').filter((i: any) =>
-      ['flash-outline', 'heart-outline', 'medkit-outline'].includes(i.props.name),
+      ['flash-outline', 'heart-outline', 'refresh-circle-outline'].includes(
+        i.props.name,
+      ),
     );
     expect(icons.length).toBe(3);
     expect(queryByText('Energy')).toBeNull();

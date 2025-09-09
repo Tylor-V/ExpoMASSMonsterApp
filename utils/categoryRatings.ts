@@ -13,7 +13,7 @@ export type CategoryRatings = Partial<Record<CategoryLabel, number>>;
 export const CATEGORY_ICONS: Record<CategoryLabel, string> = {
   Energy: 'flash-outline',
   Health: 'heart-outline',
-  Recovery: 'medkit-outline',
+  Recovery: 'refresh-circle-outline',
   Performance: 'barbell-outline',
 };
 
