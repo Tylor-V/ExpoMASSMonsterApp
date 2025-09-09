@@ -22,8 +22,8 @@ import BackgroundWrapper from '../components/BackgroundWrapper';
 import CartDrawer from '../components/CartDrawer';
 import FeaturedCarousel from '../components/FeaturedCarousel';
 import HtmlText from '../components/HtmlText';
-import RatingRow from '../components/RatingRow';
 import ProductImage from '../components/ProductImage';
+import RatingRow from '../components/RatingRow';
 import RollingNumber from '../components/RollingNumber';
 import { TAB_BAR_HEIGHT } from '../components/SwipeableTabs';
 import { addToCart as addCartItem } from '../firebase/cartHelpers';
@@ -31,8 +31,8 @@ import { useCart } from '../hooks/useCart';
 import { useShopifyCollections, useShopifyProducts } from '../hooks/useShopify';
 import { colors, fonts, radius } from '../theme';
 import { ANIM_BUTTON_POP, ANIM_DRAWER, ANIM_MEDIUM } from '../utils/animations';
-import { getDescriptionIcons } from '../utils/descriptionIcons';
 import { CATEGORY_LABELS, parseCategoryRatings } from '../utils/categoryRatings';
+import { getDescriptionIcons } from '../utils/descriptionIcons';
 
 const { width, height: screenHeight } = Dimensions.get('window');
 const SHOPIFY_DOMAIN = 'zhcfc2-it.myshopify.com'; // <-- Replace with your shop domain
@@ -399,7 +399,7 @@ function StoreScreen({ navigation }) {
           style={{ marginTop: 40 }}
         />
         ) : collectionsError ? (
-        <Text style={styles.errorText}>Unable to load categories.</Text>
+        <Text style={styles.errorText}>Unable to load ratings.</Text>
       ) : (
         <ScrollView
           horizontal
