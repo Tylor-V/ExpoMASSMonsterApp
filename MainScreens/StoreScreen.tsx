@@ -21,7 +21,7 @@ import AddToCartControl from '../components/AddToCartControl';
 import BackgroundWrapper from '../components/BackgroundWrapper';
 import CartDrawer from '../components/CartDrawer';
 import FeaturedCarousel from '../components/FeaturedCarousel';
-import HtmlText from '../components/HtmlText';
+import ProductDescriptionTabs from '../components/ProductDescriptionTabs';
 import ProductImage from '../components/ProductImage';
 import RatingRow from '../components/RatingRow';
 import RollingNumber from '../components/RollingNumber';
@@ -35,9 +35,7 @@ import {
   CATEGORY_ICONS,
   CATEGORY_LABELS,
   parseCategoryRatings,
-  stripCategoryRatings,
 } from '../utils/categoryRatings';
-import { getDescriptionIcons } from '../utils/descriptionIcons';
 
 const { width, height: screenHeight } = Dimensions.get('window');
 const SHOPIFY_DOMAIN = 'zhcfc2-it.myshopify.com'; // <-- Replace with your shop domain
@@ -542,22 +540,7 @@ function StoreScreen({ navigation }) {
                     })}
                   </View>
                 )}
-                <HtmlText
-                  html={stripCategoryRatings(modalItem.descriptionHtml)}
-                  style={styles.modalDesc}
-                />
-                {getDescriptionIcons(modalItem.description).length > 0 && (
-                  <View style={styles.descIconsRow} testID="desc-icons-row">
-                    {getDescriptionIcons(modalItem.description).map((d, idx) => (
-                      <Image
-                        key={idx}
-                        testID={`desc-icon-${idx}`}
-                        source={d.asset}
-                        style={styles.descIcon}
-                      />
-                    ))}
-                  </View>
-                )}
+                <ProductDescriptionTabs description={modalItem.description} />
               </ScrollView>
               <Pressable
                 style={styles.modalAdd}
@@ -793,19 +776,6 @@ const styles = StyleSheet.create({
   // Allow more room for longer product descriptions
   modalDescScroll: { maxHeight: 260, marginHorizontal: 12, marginBottom: 0 },
   modalRatings: { marginBottom: 8 },
-  modalDesc: {
-    fontFamily: fonts.regular,
-    fontSize: 15,
-    color: colors.textDark,
-    lineHeight: 26,
-  },
-  descIconsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginTop: 8,
-  },
-  descIcon: { width: 32, height: 32, marginHorizontal: 4, marginBottom: 4 },
   modalAdd: {
     backgroundColor: colors.gold,
     borderRadius: radius.button,

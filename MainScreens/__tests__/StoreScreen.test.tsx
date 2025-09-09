@@ -30,13 +30,12 @@ jest.mock('../../hooks/useCart', () => ({
 jest.mock('expo-web-browser', () => ({ openBrowserAsync: jest.fn() }));
 
 jest.mock('../../firebase/cartHelpers', () => ({ addToCart: jest.fn() }));
-jest.mock('../../utils/descriptionIcons', () => ({ getDescriptionIcons: () => [] }));
 
 jest.mock('../../components/AddToCartControl', () => () => null);
 jest.mock('../../components/BackgroundWrapper', () => ({ children }: any) => children);
 jest.mock('../../components/CartDrawer', () => () => null);
 jest.mock('../../components/FeaturedCarousel', () => () => null);
-jest.mock('../../components/HtmlText', () => () => null);
+jest.mock('../../components/ProductDescriptionTabs', () => () => null);
 jest.mock('../../components/RollingNumber', () => () => null);
 
 // Image from expo-image is mocked to React Native Image via jest config

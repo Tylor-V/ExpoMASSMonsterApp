@@ -3,6 +3,7 @@ export type DescriptionIcon = { text: string; asset: any };
 export const DESCRIPTION_ICONS: DescriptionIcon[] = [
   { text: 'Bovine gelatin capsule', asset: require('../assets/bovine-gelatine-capsules.svg') },
   { text: 'Contains soy', asset: require('../assets/icon-allergy-Soy.svg') },
+  { text: 'Soy-free', asset: require('../assets/icon-allergy-Soy.svg') },
   { text: 'Vegetable capsule', asset: require('../assets/vegetarian-capsules.svg') },
   { text: 'non-GMO', asset: require('../assets/gmo_icon.svg') },
   { text: 'Vegetarian-friendly', asset: require('../assets/icon-allergy-Vegan.svg') },

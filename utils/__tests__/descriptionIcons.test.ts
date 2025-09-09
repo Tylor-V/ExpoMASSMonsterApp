@@ -10,4 +10,9 @@ describe('getDescriptionIcons', () => {
     const icons = getDescriptionIcons('Certified Kosher product.');
     expect(icons.some(i => i.text === 'Kosher')).toBe(true);
   });
+
+  it('returns soy-free icon when description mentions Soy-free', () => {
+    const icons = getDescriptionIcons('This supplement is Soy-free.');
+    expect(icons.some(i => i.text === 'Soy-free')).toBe(true);
+  });
 });
