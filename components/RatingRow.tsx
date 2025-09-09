@@ -8,25 +8,28 @@ interface Props {
   rating: number;
 }
 
-const RatingRow = ({label, rating}: Props) => (
+const RatingRow = ({ label, rating }: Props) => (
   <View style={styles.row}>
     <Text style={styles.label}>{label}</Text>
-    {[0, 1, 2, 3, 4].map(i => (
-      <Icon
-        key={i}
-        name={i < rating ? 'star' : 'star-outline'}
-        size={14}
-        color={i < rating ? colors.gold : '#ECECEC'}
-        style={styles.star}
-      />
-    ))}
+    <View style={styles.stars}>
+      {[0, 1, 2, 3, 4].map(i => (
+        <Icon
+          key={i}
+          name="star"
+          size={14}
+          color={i < rating ? colors.gold : colors.gray}
+          style={styles.star}
+        />
+      ))}
+    </View>
   </View>
 );
 
 export default React.memo(RatingRow);
 
 const styles = StyleSheet.create({
-  row: {flexDirection: 'row', alignItems: 'center', marginTop: 2},
-  label: {fontSize: 12, color: '#888', marginRight: 4},
-  star: {marginHorizontal: 1},
+  row: { width: '100%', marginTop: 2 },
+  label: { fontSize: 12, color: '#888' },
+  stars: { flexDirection: 'row', alignSelf: 'flex-end', marginTop: 2 },
+  star: { marginHorizontal: 1 },
 });

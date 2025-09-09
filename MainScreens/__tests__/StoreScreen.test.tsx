@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
 import React from 'react';
 import { Linking } from 'react-native';
+import { colors } from '../../theme';
 import StoreScreen from '../StoreScreen';
 
 const baseProduct = {
@@ -139,10 +140,10 @@ describe('StoreScreen category ratings', () => {
     expect(getByText('Health')).toBeTruthy();
     expect(getByText('Recovery')).toBeTruthy();
     const icons = UNSAFE_getAllByType('Icon').filter(
-      (i: any) => i.props.name === 'star' || i.props.name === 'star-outline',
+      (i: any) => i.props.name === 'star',
     );
     expect(icons.length).toBe(15);
-    const filled = icons.filter((i: any) => i.props.name === 'star');
+    const filled = icons.filter((i: any) => i.props.color === colors.gold);
     expect(filled.length).toBe(12);
   });
 });
