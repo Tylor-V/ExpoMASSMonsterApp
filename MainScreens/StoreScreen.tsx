@@ -35,6 +35,7 @@ import {
   CATEGORY_ICONS,
   CATEGORY_LABELS,
   parseCategoryRatings,
+  stripCategoryRatings,
 } from '../utils/categoryRatings';
 import { getDescriptionIcons } from '../utils/descriptionIcons';
 
@@ -541,7 +542,10 @@ function StoreScreen({ navigation }) {
                     })}
                   </View>
                 )}
-                <HtmlText html={modalItem.descriptionHtml} style={styles.modalDesc} />
+                <HtmlText
+                  html={stripCategoryRatings(modalItem.descriptionHtml)}
+                  style={styles.modalDesc}
+                />
                 {getDescriptionIcons(modalItem.description).length > 0 && (
                   <View style={styles.descIconsRow} testID="desc-icons-row">
                     {getDescriptionIcons(modalItem.description).map((d, idx) => (
