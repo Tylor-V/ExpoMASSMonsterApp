@@ -1,9 +1,9 @@
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { Image } from 'expo-image';
+import * as WebBrowser from 'expo-web-browser';
 import React from 'react';
 import { Linking } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
 import StoreScreen from '../StoreScreen';
-import { Image } from 'expo-image';
 
 const baseProduct = {
   id: '1',
@@ -127,7 +127,8 @@ describe('StoreScreen category ratings', () => {
       {
         ...baseProduct,
         id: '3',
-        description: 'Energy: 4 stars Health: 3 Muscle Building: 5',
+        description:
+          'Energy/Focus: 4 stars General Health: 3 stars Muscle Recovery: 5 stars',
       },
     ];
     const navigation = { navigate: jest.fn() } as any;
@@ -136,7 +137,7 @@ describe('StoreScreen category ratings', () => {
     );
     expect(getByText('Energy')).toBeTruthy();
     expect(getByText('Health')).toBeTruthy();
-    expect(getByText('Muscle Building')).toBeTruthy();
+    expect(getByText('Recovery')).toBeTruthy();
     const icons = UNSAFE_getAllByType('Icon').filter(
       (i: any) => i.props.name === 'star' || i.props.name === 'star-outline',
     );

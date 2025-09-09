@@ -1,26 +1,27 @@
-export const CATEGORY_LABELS = [
-  'Muscle Building',
-  'Recovery',
-  'Performance',
-  'Energy',
-  'Health',
-] as const;
+export const CATEGORY_MAP = {
+  'Energy/Focus': 'Energy',
+  'General Health': 'Health',
+  'Muscle Recovery': 'Recovery',
+  'Strength/Performance': 'Performance',
+} as const;
 
-export type CategoryLabel = typeof CATEGORY_LABELS[number];
+export const CATEGORY_LABELS = Object.values(CATEGORY_MAP);
+
+export type CategoryLabel = (typeof CATEGORY_LABELS)[number];
 export type CategoryRatings = Partial<Record<CategoryLabel, number>>;
 
 // Parse product description for category ratings like "Energy/Focus: 4 stars"
 export function parseCategoryRatings(description?: string): CategoryRatings {
   const ratings: CategoryRatings = {};
   if (!description) return ratings;
-  CATEGORY_LABELS.forEach(label => {
-    const escLabel = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  Object.entries(CATEGORY_MAP).forEach(([fullLabel, shortLabel]) => {
+    const escLabel = fullLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const regex = new RegExp(`${escLabel}\\s*:\\s*(\\d)`, 'i');
     const match = description.match(regex);
     if (match) {
       const value = parseInt(match[1], 10);
       if (value >= 0 && value <= 5) {
-        ratings[label] = value;
+        ratings[shortLabel as CategoryLabel] = value;
       }
     }
   });
