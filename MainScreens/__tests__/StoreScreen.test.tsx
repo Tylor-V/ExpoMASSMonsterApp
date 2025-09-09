@@ -127,16 +127,15 @@ describe('StoreScreen category ratings', () => {
       {
         ...baseProduct,
         id: '3',
-        description:
-          'Energy/Focus: 4 stars General Health: 3 Muscle Building: 5',
+        description: 'Energy: 4 stars Health: 3 Muscle Building: 5',
       },
     ];
     const navigation = { navigate: jest.fn() } as any;
     const { getByText, UNSAFE_getAllByType } = render(
       <StoreScreen navigation={navigation} />,
     );
-    expect(getByText('Energy/Focus')).toBeTruthy();
-    expect(getByText('General Health')).toBeTruthy();
+    expect(getByText('Energy')).toBeTruthy();
+    expect(getByText('Health')).toBeTruthy();
     expect(getByText('Muscle Building')).toBeTruthy();
     const icons = UNSAFE_getAllByType('Icon').filter(
       (i: any) => i.props.name === 'star' || i.props.name === 'star-outline',

@@ -688,8 +688,9 @@ const styles = StyleSheet.create({
     color: colors.gold,
     marginBottom: 8,
   },
-  cardRatings: { marginBottom: 4 },
-  addControl: { alignSelf: 'center', marginTop: -12 },
+  // Provide extra space below ratings so the quantity control doesn't overlap
+  cardRatings: { marginBottom: 16 },
+  addControl: { alignSelf: 'center', marginTop: 8 },
   coralLogo: {
     width: 80,
     height: 20,
