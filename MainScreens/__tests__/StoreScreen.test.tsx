@@ -3,7 +3,6 @@ import { Image } from 'expo-image';
 import * as WebBrowser from 'expo-web-browser';
 import React from 'react';
 import { Linking } from 'react-native';
-import { colors } from '../../theme';
 import StoreScreen from '../StoreScreen';
 
 const baseProduct = {
@@ -123,7 +122,7 @@ describe('StoreScreen checkout', () => {
 });
 
 describe('StoreScreen category ratings', () => {
-  it('renders rating rows when description includes ratings', () => {
+  it('renders category icons on product cards', () => {
     mockProducts = [
       {
         ...baseProduct,
@@ -133,17 +132,34 @@ describe('StoreScreen category ratings', () => {
       },
     ];
     const navigation = { navigate: jest.fn() } as any;
-    const { getByText, UNSAFE_getAllByType } = render(
+    const { UNSAFE_getAllByType, queryByText } = render(
       <StoreScreen navigation={navigation} />,
     );
-    expect(getByText('Energy')).toBeTruthy();
-    expect(getByText('Health')).toBeTruthy();
-    expect(getByText('Recovery')).toBeTruthy();
-    const icons = UNSAFE_getAllByType('Icon').filter(
+    const icons = UNSAFE_getAllByType('Icon').filter((i: any) =>
+      ['flash-outline', 'heart-outline', 'medkit-outline'].includes(i.props.name),
+    );
+    expect(icons.length).toBe(3);
+    expect(queryByText('Energy')).toBeNull();
+  });
+
+  it('shows rating rows inside the product drawer', async () => {
+    mockProducts = [
+      {
+        ...baseProduct,
+        id: '4',
+        description:
+          'Energy/Focus: 4 stars General Health: 3 stars Muscle Recovery: 5 stars',
+      },
+    ];
+    const navigation = { navigate: jest.fn() } as any;
+    const { getByTestId, getByText, UNSAFE_getAllByType } = render(
+      <StoreScreen navigation={navigation} />,
+    );
+    fireEvent.press(getByTestId('product-card-4'));
+    await waitFor(() => getByText('Energy'));
+    const starIcons = UNSAFE_getAllByType('Icon').filter(
       (i: any) => i.props.name === 'star',
     );
-    expect(icons.length).toBe(15);
-    const filled = icons.filter((i: any) => i.props.color === colors.gold);
-    expect(filled.length).toBe(12);
+    expect(starIcons.length).toBe(15);
   });
 });

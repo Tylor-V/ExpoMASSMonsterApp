@@ -10,6 +10,13 @@ export const CATEGORY_LABELS = Object.values(CATEGORY_MAP);
 export type CategoryLabel = (typeof CATEGORY_LABELS)[number];
 export type CategoryRatings = Partial<Record<CategoryLabel, number>>;
 
+export const CATEGORY_ICONS: Record<CategoryLabel, string> = {
+  Energy: 'flash-outline',
+  Health: 'heart-outline',
+  Recovery: 'medkit-outline',
+  Performance: 'barbell-outline',
+};
+
 // Parse product description for category ratings like "Energy/Focus: 4 stars"
 export function parseCategoryRatings(description?: string): CategoryRatings {
   const ratings: CategoryRatings = {};

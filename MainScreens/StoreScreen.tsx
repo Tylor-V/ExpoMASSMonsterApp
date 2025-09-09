@@ -31,7 +31,11 @@ import { useCart } from '../hooks/useCart';
 import { useShopifyCollections, useShopifyProducts } from '../hooks/useShopify';
 import { colors, fonts, radius } from '../theme';
 import { ANIM_BUTTON_POP, ANIM_DRAWER, ANIM_MEDIUM } from '../utils/animations';
-import { CATEGORY_LABELS, parseCategoryRatings } from '../utils/categoryRatings';
+import {
+  CATEGORY_LABELS,
+  CATEGORY_ICONS,
+  parseCategoryRatings,
+} from '../utils/categoryRatings';
 import { getDescriptionIcons } from '../utils/descriptionIcons';
 
 const { width, height: screenHeight } = Dimensions.get('window');
@@ -97,6 +101,10 @@ function StoreScreen({ navigation }) {
   const slideAnim = useRef(new Animated.Value(drawerHeight)).current;
   const [imgIndex, setImgIndex] = useState(0);
   const [cartOpen, setCartOpen] = useState(false);
+  const modalRatings = useMemo(
+    () => parseCategoryRatings(modalItem?.description),
+    [modalItem?.description],
+  );
   const insets = useSafeAreaInsets();
   const cartAnim = useRef(new Animated.Value(1)).current;
   const dotAnim = useRef(new Animated.Value(1)).current;
@@ -314,7 +322,13 @@ function StoreScreen({ navigation }) {
               {CATEGORY_LABELS.map(label => {
                 const rating = ratings[label];
                 return rating ? (
-                  <RatingRow key={label} label={label} rating={rating} />
+                  <Ionicons
+                    key={label}
+                    name={CATEGORY_ICONS[label]}
+                    size={16}
+                    color={colors.gold}
+                    style={styles.cardRatingIcon}
+                  />
                 ) : null;
               })}
             </View>
@@ -517,6 +531,16 @@ function StoreScreen({ navigation }) {
                 style={styles.modalDescScroll}
                 showsVerticalScrollIndicator={false}
               >
+                {CATEGORY_LABELS.some(label => modalRatings[label]) && (
+                  <View style={styles.modalRatings}>
+                    {CATEGORY_LABELS.map(label => {
+                      const rating = modalRatings[label];
+                      return rating ? (
+                        <RatingRow key={label} label={label} rating={rating} />
+                      ) : null;
+                    })}
+                  </View>
+                )}
                 <HtmlText html={modalItem.descriptionHtml} style={styles.modalDesc} />
                 {getDescriptionIcons(modalItem.description).length > 0 && (
                   <View style={styles.descIconsRow} testID="desc-icons-row">
@@ -689,7 +713,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   // Provide extra space below ratings so the quantity control doesn't overlap
-  cardRatings: { marginBottom: 16 },
+  cardRatings: { flexDirection: 'row', marginBottom: 16 },
+  cardRatingIcon: { marginRight: 4 },
   addControl: { alignSelf: 'center', marginTop: 8 },
   coralLogo: {
     width: 80,
@@ -763,6 +788,7 @@ const styles = StyleSheet.create({
   },
   // Allow more room for longer product descriptions
   modalDescScroll: { maxHeight: 260, marginHorizontal: 12, marginBottom: 0 },
+  modalRatings: { marginBottom: 8 },
   modalDesc: {
     fontFamily: fonts.regular,
     fontSize: 15,
