@@ -32,8 +32,8 @@ import { useShopifyCollections, useShopifyProducts } from '../hooks/useShopify';
 import { colors, fonts, radius } from '../theme';
 import { ANIM_BUTTON_POP, ANIM_DRAWER, ANIM_MEDIUM } from '../utils/animations';
 import {
-  CATEGORY_LABELS,
   CATEGORY_ICONS,
+  CATEGORY_LABELS,
   parseCategoryRatings,
 } from '../utils/categoryRatings';
 import { getDescriptionIcons } from '../utils/descriptionIcons';
@@ -325,8 +325,8 @@ function StoreScreen({ navigation }) {
                   <Ionicons
                     key={label}
                     name={CATEGORY_ICONS[label]}
-                    size={16}
-                    color={colors.gold}
+                    size={24}
+                    color={colors.black}
                     style={styles.cardRatingIcon}
                   />
                 ) : null;
@@ -713,7 +713,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   // Provide extra space below ratings so the quantity control doesn't overlap
-  cardRatings: { flexDirection: 'row', marginBottom: 16 },
+  cardRatings: { flexDirection: 'row', marginBottom: 8 },
   cardRatingIcon: { marginRight: 4 },
   addControl: { alignSelf: 'center', marginTop: 8 },
   coralLogo: {
