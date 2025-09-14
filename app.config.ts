@@ -6,6 +6,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ...(config.plugins || []),
     'expo-video',
     'expo-audio',
+    'expo-font',
+    'expo-web-browser',
   ],
   extra: {
     ...(config.extra ?? {}),
