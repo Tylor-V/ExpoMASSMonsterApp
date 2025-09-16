@@ -598,6 +598,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   const currentUserId = auth().currentUser?.uid;
   const flatListRef = useRef<FlatList<any>>(null);
   const isAtBottomRef = useRef(true);
+  const prevMessagesRef = useRef<any[]>([]);
 
   const scrollToLatest = useCallback(
     (animated = true) => {
@@ -807,6 +808,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
     isAtBottomRef.current = true;
     setShowJump(false);
     setShowNewMarker(false);
+    prevMessagesRef.current = [];
   }, [channelId]);
 
   useEffect(() => {
@@ -871,7 +873,21 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
   // When new messages arrive from others, show "new messages" marker if user is not at bottom
   useEffect(() => {
+    const prevMessages = prevMessagesRef.current;
+    const prevLastMessage =
+      prevMessages.length > 0 ? prevMessages[prevMessages.length - 1] : null;
+    const currentLastMessage =
+      messages.length > 0 ? messages[messages.length - 1] : null;
+
+    const hasNewMessage =
+      messages.length > prevMessages.length ||
+      (!!currentLastMessage && !prevLastMessage) ||
+      (!!currentLastMessage &&
+        !!prevLastMessage &&
+        currentLastMessage.id !== prevLastMessage.id);
+
     if (
+      hasNewMessage &&
       messages.length > 0 &&
       lastReadMessageId &&
       latestMessageId !== lastReadMessageId &&
@@ -879,21 +895,23 @@ const AllChannels: React.FC<ChatScreenProps> = ({
     ) {
       setShowNewMarker(true);
     }
-    if (messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage.userId === currentUserId) {
+
+    if (hasNewMessage && currentLastMessage) {
+      if (currentLastMessage.userId === currentUserId) {
         scrollToLatest(true);
       } else if (isAtBottomRef.current) {
         scrollToLatest(false);
       }
     }
-    // eslint-disable-next-line
+
+    prevMessagesRef.current = messages;
   }, [
     messages,
     currentUserId,
     latestMessageUserId,
     lastReadMessageId,
     latestMessageId,
+    scrollToLatest,
   ]);
 
   // FlatList scroll event: detect if user is not at the bottom
