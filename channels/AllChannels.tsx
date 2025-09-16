@@ -414,6 +414,14 @@ const ChatMessageRow = memo(function ChatMessageRow({
                   </View>
                 )}
               </View>
+              <Text
+                style={[
+                  chatStyles.timestamp,
+                  isOwnMessage && chatStyles.myTimestamp,
+                ]}
+              >
+                {formattedTime}
+              </Text>
               {showReactionsRow && (
                 <Animated.View
                   pointerEvents={actionTargetId === item.id ? "none" : "auto"}
@@ -477,14 +485,6 @@ const ChatMessageRow = memo(function ChatMessageRow({
                   )}
                 </Animated.View>
               )}
-              <Text
-                style={[
-                  chatStyles.timestamp,
-                  isOwnMessage && chatStyles.myTimestamp,
-                ]}
-              >
-                {formattedTime}
-              </Text>
             </View>
           </View>
           {item.pinned && (
@@ -1449,10 +1449,11 @@ export const chatStyles = StyleSheet.create({
     marginBottom: 6,
   },
   reactionRowWrapper: {
+    marginTop: 6,
     marginBottom: 4,
   },
   timestamp: {
-    color: colors.gray,
+    color: colors.black,
     fontSize: 10,
     fontWeight: "400",
     fontFamily: fonts.regular,
@@ -1464,7 +1465,7 @@ export const chatStyles = StyleSheet.create({
     alignSelf: "flex-end",
   },
   myTimestamp: {
-    color: colors.textLight,
+    color: colors.black,
   },
   inputRow: {
     flexDirection: "row",

@@ -398,6 +398,11 @@ const DMChatScreen = ({ navigation, route }) => {
                         {item.text}
                       </Text>
                       <View style={styles.footerContainer}>
+                        <Text
+                          style={[styles.timestamp, isMe && styles.myTimestamp]}
+                        >
+                          {formattedTime}
+                        </Text>
                         {showReactionsRow && (
                           <View style={[styles.reactionRow, styles.reactionRowWrapper]}>
                             {Array.from(new Set(reactions.map(r => r.emoji))).map(
@@ -451,11 +456,6 @@ const DMChatScreen = ({ navigation, route }) => {
                             )}
                           </View>
                         )}
-                        <Text
-                          style={[styles.timestamp, isMe && styles.myTimestamp]}
-                        >
-                          {formattedTime}
-                        </Text>
                       </View>
                     </View>
                   </Pressable>
