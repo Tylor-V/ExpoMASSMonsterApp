@@ -1018,9 +1018,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 12,
+    paddingHorizontal: 26,
+    paddingVertical: 10,
+    marginRight: 2,
     alignSelf: 'center',
   },
   shareIconButton: {
