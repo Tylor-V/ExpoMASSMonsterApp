@@ -693,10 +693,20 @@ const ProfileScreen = () => {
         >
           {editMode ? (
             <View style={styles.editActions}>
-              <TouchableOpacity style={styles.secondaryBtn} onPress={handleSave}>
+              <TouchableOpacity
+                style={[styles.secondaryBtn, styles.editActionButton]}
+                onPress={handleSave}
+              >
                 <Text style={styles.secondaryTxt}>Save</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.secondaryBtn} onPress={handleCancel}>
+              <TouchableOpacity
+                style={[
+                  styles.secondaryBtn,
+                  styles.editActionButton,
+                  styles.editActionButtonSpacing,
+                ]}
+                onPress={handleCancel}
+              >
                 <Text style={styles.secondaryTxt}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -1293,7 +1303,15 @@ const styles = StyleSheet.create({
   editActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 'auto',
+    flex: 1,
+    alignSelf: 'stretch',
+  },
+  editActionButton: {
+    flex: 1,
+    marginLeft: 0,
+  },
+  editActionButtonSpacing: {
+    marginLeft: 12,
   },
   secondaryActions: {
     flexDirection: 'row',
