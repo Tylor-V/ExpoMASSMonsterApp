@@ -691,26 +691,6 @@ const ProfileScreen = () => {
             editMode ? styles.secondaryRowEditing : styles.secondaryRowViewing,
           ]}
         >
-          <TouchableOpacity
-            style={[
-              styles.socialsBtn,
-              (editMode || socialDrawerOpen) && styles.socialsBtnDisabled,
-            ]}
-            onPress={openSocialDrawer}
-            disabled={editMode || socialDrawerOpen}
-            accessibilityRole="button"
-            accessibilityLabel="Open socials drawer"
-            activeOpacity={editMode || socialDrawerOpen ? 1 : 0.8}
-          >
-            <Text
-              style={[
-                styles.secondaryTxt,
-                (editMode || socialDrawerOpen) && styles.secondaryTxtDisabled,
-              ]}
-            >
-              Socials
-            </Text>
-          </TouchableOpacity>
           {editMode ? (
             <View style={styles.editActions}>
               <TouchableOpacity style={styles.secondaryBtn} onPress={handleSave}>
@@ -725,6 +705,7 @@ const ProfileScreen = () => {
               <TouchableOpacity
                 style={[
                   styles.editProfileBtn,
+                  styles.secondaryActionsFirst,
                   socialDrawerOpen && styles.disabledButton,
                 ]}
                 onPress={startEdit}
@@ -740,7 +721,28 @@ const ProfileScreen = () => {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.shareIconButton}
+                style={[
+                  styles.socialsBtn,
+                  styles.secondaryActionsSpacing,
+                  socialDrawerOpen && styles.socialsBtnDisabled,
+                ]}
+                onPress={openSocialDrawer}
+                disabled={socialDrawerOpen}
+                accessibilityRole="button"
+                accessibilityLabel="Open socials drawer"
+                activeOpacity={socialDrawerOpen ? 1 : 0.8}
+              >
+                <Text
+                  style={[
+                    styles.secondaryTxt,
+                    socialDrawerOpen && styles.secondaryTxtDisabled,
+                  ]}
+                >
+                  Socials
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.shareIconButton, styles.secondaryActionsSpacing]}
                 onPress={handleReferShare}
                 accessibilityLabel="Share MASS Monster app"
                 accessibilityRole="button"
@@ -1261,7 +1263,6 @@ const styles = StyleSheet.create({
   shareIconButton: {
     width: 48,
     height: 48,
-    marginLeft: 12,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1273,7 +1274,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
-    marginRight: 12,
   },
   socialsBtnDisabled: {
     backgroundColor: colors.grayLight,
@@ -1298,6 +1298,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginLeft: 'auto',
+  },
+  secondaryActionsFirst: {
+    marginLeft: 0,
+  },
+  secondaryActionsSpacing: {
+    marginLeft: 6,
   },
   socialsScroll: {
     flex: 1,
