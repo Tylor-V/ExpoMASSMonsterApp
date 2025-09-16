@@ -1014,13 +1014,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   editProfileBtn: {
-    flex: 1,
-    height: 48,
     backgroundColor: '#F3F4F6',
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    marginRight: 12,
+    alignSelf: 'center',
   },
   shareIconButton: {
     width: 48,
