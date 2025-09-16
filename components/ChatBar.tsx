@@ -739,20 +739,35 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
                 <ScrollView>
                   {pinnedMessages.length ? (
                     pinnedMessages.map((pm, idx) => {
-                      const user = pinUsers[pm.userId] || {};
-                      const displayName = user.firstName
-                        ? `${user.firstName} ${user.lastName ? user.lastName.charAt(0) + '.' : ''}`
-                        : 'User';
-                      const d = pm.timestamp?.toDate ? pm.timestamp.toDate() : new Date(pm.timestamp);
-                      const time = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate())} ${d.toLocaleTimeString([], {
+                      const isSystem = pm.type === 'system';
+                      const user = isSystem ? {} : pinUsers[pm.userId] || {};
+                      const displayName = isSystem
+                        ? 'System'
+                        : user.firstName
+                          ? `${user.firstName} ${
+                              user.lastName ? user.lastName.charAt(0) + '.' : ''
+                            }`
+                          : 'User';
+                      const rawTimestamp = pm.timestamp?.toDate
+                        ? pm.timestamp.toDate()
+                        : pm.timestamp
+                          ? new Date(pm.timestamp)
+                          : new Date();
+                      const date =
+                        rawTimestamp instanceof Date && !Number.isNaN(rawTimestamp.getTime())
+                          ? rawTimestamp
+                          : new Date();
+                      const time = `${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate())} ${date.toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
                       })}`;
-                      const previewText = String(
-                        selectedChannel.id === 'split-sharing' && pm.split?.name
-                          ? pm.split.name
-                          : pm.text || ''
-                      );
+                      const previewText = isSystem
+                        ? pm.title || pm.body || 'System message'
+                        : String(
+                            selectedChannel.id === 'split-sharing' && pm.split?.name
+                              ? pm.split.name
+                              : pm.text || ''
+                          );
                       return (
                         <TouchableOpacity
                           key={pm.id}

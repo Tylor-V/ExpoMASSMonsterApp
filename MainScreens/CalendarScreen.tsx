@@ -48,8 +48,10 @@ import {
   saveMySharedSplit,
   saveSharedSplits,
   saveShowWorkout,
-  saveWorkoutPlan
+  saveWorkoutPlan,
 } from '../firebase/userProfileHelpers';
+import { postSystemMessage } from '../firebase/systemMessages';
+import { formatUserDisplayName } from '../utils/userDisplayName';
 import { colors, fonts } from '../theme';
 import {
   ANIM_BUTTON_POP,
@@ -1086,7 +1088,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                 timestamp: firestore.FieldValue.serverTimestamp(),
                 reactions: [],
               });
-              
+
               await batch.commit();
 
               await saveMySharedSplit({
@@ -1094,7 +1096,14 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                 msgId: newRef.id,
                 sharedAt: Date.now(),
               });
-              
+
+              const displayName = formatUserDisplayName(user);
+              await postSystemMessage({
+                channelId: 'split-sharing',
+                title: 'New Shared Split',
+                body: `${displayName} just shared their split!`,
+              });
+
               Alert.alert('Shared!', 'Your split has been posted.');
             } catch (e) {
               Alert.alert('Share Failed', e.message || 'Could not share split.');

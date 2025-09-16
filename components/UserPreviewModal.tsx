@@ -20,10 +20,12 @@ import {
 } from '../badges/UnlockableBadges';
 import { ROLE_COLORS, ROLE_TAGS } from '../constants/roles';
 import { auth, firestore } from '../firebase/firebase';
+import { postSystemMessage } from '../firebase/systemMessages';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import { colors } from '../theme';
 import { ANIM_MODAL } from '../utils/animations';
 import { getChatLevelColor } from '../utils/chatLevel';
+import { formatUserDisplayName } from '../utils/userDisplayName';
 import ProfileImage from './ProfileImage';
 
 const SOCIAL_ICONS: { [key: string]: string } = {
@@ -182,10 +184,24 @@ export default function UserPreviewModal({ visible, userId, onClose }) {
             text: 'Timeout',
             style: 'destructive',
             onPress: async () => {
-              await firestore()
-                .collection('users')
-                .doc(user.id)
-                .update({ timeoutUntil: Date.now() + 24 * 60 * 60 * 1000 });
+              try {
+                await firestore()
+                  .collection('users')
+                  .doc(user.id)
+                  .update({ timeoutUntil: Date.now() + 24 * 60 * 60 * 1000 });
+                const displayName = formatUserDisplayName(user);
+                await postSystemMessage({
+                  channelId: 'mod-only',
+                  title: 'Timeout',
+                  body: `${displayName} has been timed out!`,
+                });
+              } catch (error: any) {
+                console.error('Failed to timeout user', error);
+                Alert.alert(
+                  'Timeout Failed',
+                  error?.message || 'Could not timeout this user.',
+                );
+              }
             },
           },
         ],

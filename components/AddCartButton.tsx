@@ -1,9 +1,9 @@
-import React, { useMemo, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, View, Text, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, fonts } from '../theme';
+import React, { useMemo, useRef } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { addToCart, CartItem, sanitizeId } from '../firebase/cartHelpers';
 import { useCart } from '../hooks/useCart';
-import { addToCart, sanitizeId, CartItem } from '../firebase/cartHelpers';
+import { colors, fonts } from '../theme';
 import { ANIM_BUTTON_POP } from '../utils/animations';
 
 type Props = {

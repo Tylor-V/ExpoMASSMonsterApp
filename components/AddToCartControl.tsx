@@ -1,10 +1,10 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { View, Pressable, Text, StyleSheet, Animated, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { addToCart, CartItem, removeCartItem, sanitizeId, updateCartItem } from '../firebase/cartHelpers';
+import { useCart } from '../hooks/useCart';
 import { colors, fonts } from '../theme';
 import { ANIM_BUTTON_POP, ANIM_MEDIUM } from '../utils/animations';
-import { useCart } from '../hooks/useCart';
-import { addToCart, updateCartItem, removeCartItem, CartItem, sanitizeId } from '../firebase/cartHelpers';
 
 type AddToCartControlProps = {
   item: CartItem;

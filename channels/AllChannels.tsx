@@ -122,8 +122,10 @@ export function useChatInputBarHeight() {
 const BG_GRADIENT = gradients.chat;
 
 const formatTimestamp = (ts: any) => {
-  const d = ts?.toDate ? ts.toDate() : new Date(ts);
-  return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate())} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  const raw = ts?.toDate ? ts.toDate() : ts ? new Date(ts) : new Date();
+  const date =
+    raw instanceof Date && !Number.isNaN(raw.getTime()) ? raw : new Date();
+  return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")} ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 };
 
 const AllChannels: React.FC<ChatScreenProps> = ({
@@ -298,7 +300,9 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   // Fetch user info for every message sender and listen for updates
   useEffect(() => {
     if (!messages.length) return;
-    const uniqueUids = [...new Set(messages.map((m) => m.userId))];
+    const uniqueUids = [...new Set(messages.map((m) => m.userId))].filter(
+      (uid): uid is string => typeof uid === "string" && uid.length > 0,
+    );
 
     uniqueUids.forEach((uid) => {
       if (!userListenersRef.current[uid]) {
@@ -704,6 +708,34 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   // --- UI COLOR SCHEME ---
   const ChatMessage = useCallback(
     ({ item, index }: { item: any; index: number }) => {
+      const showUnreadHere = hasUnreadMarker && index === firstUnreadIndex + 1;
+
+      if (item?.type === "system") {
+        const formattedTime = formatTimestamp(item.timestamp);
+        return (
+          <>
+            {showUnreadHere && (
+              <View style={chatStyles.unreadMarkerRow}>
+                <View style={chatStyles.unreadMarker}>
+                  <Text style={chatStyles.unreadMarkerText}>New Messages</Text>
+                </View>
+              </View>
+            )}
+            <View style={chatStyles.systemWrapper}>
+              <View style={chatStyles.systemBubble}>
+                <Text style={chatStyles.systemTitle}>
+                  {item.title || "System Message"}
+                </Text>
+                {!!item.body && (
+                  <Text style={chatStyles.systemBody}>{item.body}</Text>
+                )}
+                <Text style={chatStyles.systemTimestamp}>{formattedTime}</Text>
+              </View>
+            </View>
+          </>
+        );
+      }
+
       const user = userMap[item.userId];
       let displayName = "Unknown";
       let isModerator = false;
@@ -726,12 +758,8 @@ const AllChannels: React.FC<ChatScreenProps> = ({
         : isModerator
           ? colors.accent
           : colors.black;
-      const messageDate = item.timestamp?.toDate
-        ? item.timestamp.toDate()
-        : new Date(item.timestamp);
-      const formattedTime = `${String(messageDate.getMonth() + 1).padStart(2, "0")}/${String(messageDate.getDate()).padStart(2, "0")} ${messageDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+      const formattedTime = formatTimestamp(item.timestamp);
 
-      const showUnreadHere = hasUnreadMarker && index === firstUnreadIndex + 1;
       if (renderCustomMessage) {
         const custom = renderCustomMessage({
           item,
@@ -1262,6 +1290,46 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 };
 
 export const chatStyles = StyleSheet.create({
+  systemWrapper: {
+    alignItems: "center",
+    marginVertical: 12,
+    paddingHorizontal: 18,
+  },
+  systemBubble: {
+    backgroundColor: colors.accent,
+    borderRadius: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    maxWidth: "85%",
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.14,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+    alignSelf: "center",
+  },
+  systemTitle: {
+    color: colors.black,
+    fontSize: 14,
+    fontWeight: "700",
+    textAlign: "center",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
+  systemBody: {
+    color: colors.black,
+    fontSize: 15,
+    marginTop: 6,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  systemTimestamp: {
+    color: "rgba(0,0,0,0.6)",
+    fontSize: 12,
+    marginTop: 8,
+    textAlign: "center",
+    fontFamily: fonts.regular,
+  },
   messageContainer: {
     marginBottom: 11,
   },

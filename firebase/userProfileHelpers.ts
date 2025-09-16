@@ -249,6 +249,8 @@ import {
   MAX_DISPLAY_BADGES,
   type BadgeKey,
 } from '../badges/UnlockableBadges';
+import { postSystemMessage } from './systemMessages';
+import { formatBadgeName, formatUserDisplayName } from '../utils/userDisplayName';
 
 export async function unlockBadge(badge: string) {
   const uid = auth().currentUser?.uid;
@@ -259,7 +261,8 @@ export async function unlockBadge(badge: string) {
   const data = doc.data() || {};
 
   let badges: string[] = Array.isArray(data.badges) ? data.badges : [];
-  if (!badges.includes(badge)) badges.push(badge);
+  const alreadyUnlocked = badges.includes(badge);
+  if (!alreadyUnlocked) badges.push(badge);
 
   let selected: string[] = Array.isArray(data.selectedBadges)
     ? data.selectedBadges
@@ -269,6 +272,16 @@ export async function unlockBadge(badge: string) {
   }
   selected = enforceSelectedBadges(selected, { ...data, badges });
   await ref.update({ badges, selectedBadges: selected });
+
+  if (!alreadyUnlocked) {
+    const displayName = formatUserDisplayName(data);
+    const badgeName = formatBadgeName(badge);
+    await postSystemMessage({
+      channelId: 'general',
+      title: 'Badge Unlocked!',
+      body: `${displayName} just unlocked ${badgeName} Badge!`,
+    });
+  }
 }
 
 export async function saveSelectedBadges(selected: string[]) {
