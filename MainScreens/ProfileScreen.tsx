@@ -121,7 +121,13 @@ const ProfileScreen = () => {
   const [editMode, setEditMode] = useState(false);
   const [draftPic, setDraftPic] = useState<string>('');
   const [bioInput, setBioInput] = useState('');
-  const [socialInputs, setSocialInputs] = useState<any>({});
+  const [socialState, setSocialState] = useState<
+    Record<string, { handle: string; hidden: boolean }>
+  >({});
+  const [socialForm, setSocialForm] = useState<
+    Record<string, { handle: string; hidden: boolean }>
+  >({});
+  const [socialEditMode, setSocialEditMode] = useState(false);
   const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
   const [showBadgeCaption, setShowBadgeCaption] = useState(false);
   const shakeAnim = useRef(new Animated.Value(0)).current;
@@ -134,6 +140,11 @@ const ProfileScreen = () => {
   const [renderInfoDrawer, setRenderInfoDrawer] = useState(false);
   const infoDrawerAnim = useRef(new Animated.Value(DEFAULT_DRAWER_HEIGHT)).current;
   const infoOverlayAnim = useRef(new Animated.Value(0)).current;
+  const [socialDrawerHeight, setSocialDrawerHeight] = useState(0);
+  const [socialDrawerOpen, setSocialDrawerOpen] = useState(false);
+  const [renderSocialDrawer, setRenderSocialDrawer] = useState(false);
+  const socialDrawerAnim = useRef(new Animated.Value(DEFAULT_DRAWER_HEIGHT)).current;
+  const socialOverlayAnim = useRef(new Animated.Value(0)).current;
 
   const triggerShake = () => {
     shakeAnim.setValue(0);
@@ -158,12 +169,6 @@ const ProfileScreen = () => {
     if (editMode && user) {
       setDraftPic(user.profilePicUrl || '');
       setBioInput(user.bio || '');
-      const socialsObj: any = {};
-      SOCIALS.forEach((s) => {
-        const curr = user.socials?.[s.key] || { handle: '', hidden: true };
-        socialsObj[s.key] = { handle: curr.handle || '', hidden: curr.hidden ?? true };
-      });
-      setSocialInputs(socialsObj);
       const allBadges = getUnlockedBadges(user);
       const sel = enforceSelectedBadges(
         Array.isArray(user.selectedBadges) ? user.selectedBadges : allBadges,
@@ -172,6 +177,23 @@ const ProfileScreen = () => {
       setSelectedBadges(sel);
     }
   }, [editMode, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const socialsObj: Record<string, { handle: string; hidden: boolean }> = {};
+    SOCIALS.forEach((s) => {
+      const curr = user.socials?.[s.key] || { handle: '', hidden: true };
+      socialsObj[s.key] = {
+        handle: curr.handle || '',
+        hidden: curr.hidden ?? true,
+      };
+    });
+    setSocialState(prev => {
+      const prevStr = JSON.stringify(prev);
+      const nextStr = JSON.stringify(socialsObj);
+      return prevStr === nextStr ? prev : socialsObj;
+    });
+  }, [user]);
 
   useEffect(() => {
     if (!editMode && user) {
@@ -186,6 +208,12 @@ const ProfileScreen = () => {
       );
     }
   }, [user, editMode]);
+
+  useEffect(() => {
+    if (!socialEditMode) {
+      setSocialForm(socialState);
+    }
+  }, [socialState, socialEditMode]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -228,6 +256,40 @@ const ProfileScreen = () => {
       ]).start(() => setRenderInfoDrawer(false));
     }
   }, [infoDrawerOpen, infoDrawerHeight, renderInfoDrawer]);
+
+  useEffect(() => {
+    const height = socialDrawerHeight || DEFAULT_DRAWER_HEIGHT;
+    if (socialDrawerOpen) {
+      socialDrawerAnim.setValue(height);
+      socialOverlayAnim.setValue(0);
+      setRenderSocialDrawer(true);
+      Animated.parallel([
+        Animated.timing(socialDrawerAnim, {
+          toValue: 0,
+          duration: ANIM_MEDIUM,
+          useNativeDriver: true,
+        }),
+        Animated.timing(socialOverlayAnim, {
+          toValue: 1,
+          duration: ANIM_MEDIUM,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (renderSocialDrawer) {
+      Animated.parallel([
+        Animated.timing(socialDrawerAnim, {
+          toValue: height,
+          duration: ANIM_MEDIUM,
+          useNativeDriver: true,
+        }),
+        Animated.timing(socialOverlayAnim, {
+          toValue: 0,
+          duration: ANIM_MEDIUM,
+          useNativeDriver: true,
+        }),
+      ]).start(() => setRenderSocialDrawer(false));
+    }
+  }, [socialDrawerOpen, socialDrawerHeight, renderSocialDrawer]);
 
   // If user is not loaded, show a loading state
   if (!user) {
@@ -330,6 +392,19 @@ const ProfileScreen = () => {
     }
   };
 
+  const openSocialDrawer = () => {
+    if (editMode) return;
+    setSocialForm(socialState);
+    setSocialEditMode(false);
+    setSocialDrawerOpen(true);
+  };
+
+  const closeSocialDrawer = () => {
+    setSocialDrawerOpen(false);
+    setSocialEditMode(false);
+    setSocialForm(socialState);
+  };
+
   const startEdit = () => {
     setEditMode(true);
   };
@@ -359,14 +434,16 @@ const ProfileScreen = () => {
     Linking.openURL(url);
   };
 
-  const toggleSocialHidden = async (
-    platform: string,
-    handle: string,
-    hidden: boolean,
-  ) => {
-    if (!handle) return;
+  const toggleSocialHidden = async (platform: string) => {
+    const current = socialState[platform];
+    if (!current?.handle) return;
+    const newHidden = !current.hidden;
     try {
-      await updateSocialLink(platform, handle, hidden);
+      await updateSocialLink(platform, current.handle, newHidden);
+      setSocialState(prev => ({
+        ...prev,
+        [platform]: { ...prev[platform], hidden: newHidden },
+      }));
     } catch (e) {}
   };
 
@@ -379,12 +456,6 @@ const ProfileScreen = () => {
       if (bioInput !== (user.bio || '')) {
         await updateProfileField('bio', bioInput);
       }
-      const socialsWithLinks: any = {};
-      Object.keys(socialInputs).forEach(k => {
-        const { handle, hidden } = socialInputs[k] || {};
-        socialsWithLinks[k] = { handle: buildSocialUrl(k, handle), hidden };
-      });
-      await updateProfileField('socials', socialsWithLinks);
       await saveSelectedBadges(
         enforceSelectedBadges(
           selectedBadges.filter(b => !/^Level /.test(b)),
@@ -394,6 +465,26 @@ const ProfileScreen = () => {
       setEditMode(false);
     } catch (e) {
       Alert.alert('Update Failed', e.message || 'Could not update profile.');
+    }
+  };
+
+  const handleSocialSave = async () => {
+    try {
+      const socialsWithLinks: Record<string, { handle: string; hidden: boolean }> = {};
+      SOCIALS.forEach((s) => {
+        const entry = socialForm[s.key] || { handle: '', hidden: true };
+        const rawHandle = entry.handle?.trim() || '';
+        socialsWithLinks[s.key] = {
+          handle: rawHandle ? buildSocialUrl(s.key, rawHandle) : '',
+          hidden: entry.hidden ?? true,
+        };
+      });
+      await updateProfileField('socials', socialsWithLinks);
+      setSocialState(socialsWithLinks);
+      setSocialForm(socialsWithLinks);
+      setSocialEditMode(false);
+    } catch (e: any) {
+      Alert.alert('Update Failed', e.message || 'Could not update socials.');
     }
   };
 
@@ -600,19 +691,53 @@ const ProfileScreen = () => {
             editMode ? styles.secondaryRowEditing : styles.secondaryRowViewing,
           ]}
         >
+          <TouchableOpacity
+            style={[
+              styles.socialsBtn,
+              (editMode || socialDrawerOpen) && styles.socialsBtnDisabled,
+            ]}
+            onPress={openSocialDrawer}
+            disabled={editMode || socialDrawerOpen}
+            accessibilityRole="button"
+            accessibilityLabel="Open socials drawer"
+            activeOpacity={editMode || socialDrawerOpen ? 1 : 0.8}
+          >
+            <Text
+              style={[
+                styles.secondaryTxt,
+                (editMode || socialDrawerOpen) && styles.secondaryTxtDisabled,
+              ]}
+            >
+              Socials
+            </Text>
+          </TouchableOpacity>
           {editMode ? (
-            <>
+            <View style={styles.editActions}>
               <TouchableOpacity style={styles.secondaryBtn} onPress={handleSave}>
                 <Text style={styles.secondaryTxt}>Save</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.secondaryBtn} onPress={handleCancel}>
                 <Text style={styles.secondaryTxt}>Cancel</Text>
               </TouchableOpacity>
-            </>
+            </View>
           ) : (
-            <>
-              <TouchableOpacity style={styles.editProfileBtn} onPress={startEdit}>
-                <Text style={styles.secondaryTxt}>Edit Profile</Text>
+            <View style={styles.secondaryActions}>
+              <TouchableOpacity
+                style={[
+                  styles.editProfileBtn,
+                  socialDrawerOpen && styles.disabledButton,
+                ]}
+                onPress={startEdit}
+                disabled={socialDrawerOpen}
+              >
+                <Text
+                  style={[
+                    styles.secondaryTxt,
+                    socialDrawerOpen && styles.secondaryTxtDisabled,
+                  ]}
+                >
+                  Edit Profile
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.shareIconButton}
@@ -624,72 +749,179 @@ const ProfileScreen = () => {
               >
                 <Ionicons name="share-outline" size={24} color={colors.gold} />
               </TouchableOpacity>
-            </>
+            </View>
           )}
         </View>
 
-        <ScrollView
-          style={[styles.socialsScroll, { marginBottom: 0 }]}
-          contentContainerStyle={{ paddingTop: 4, paddingBottom: 16 }}
-          showsVerticalScrollIndicator={false}
-        >
-          {SOCIALS.map((s) => {
-            const val = (editMode
-              ? socialInputs[s.key]
-              : user.socials?.[s.key]) || { handle: '', hidden: true };
-            if (!editMode && !val.handle) return null;
-            const showHandle = val.handle && !val.hidden;
-            return (
-              <View key={s.key} style={styles.socialRow}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                  <Ionicons name={s.icon} size={24} color={colors.gold} style={{ marginRight: 12 }} />
-                  {editMode ? (
-                    <TextInput
-                      style={styles.socialInput}
-                      placeholder={`Enter your ${s.label} @`}
-                      placeholderTextColor="#888"
-                      value={val.handle}
-                      onChangeText={(t) =>
-                        setSocialInputs((prev: any) => ({ ...prev, [s.key]: { ...prev[s.key], handle: t } }))
-                      }
-                    />
-                  ) : showHandle ? (
-                    <TouchableOpacity onPress={() => openSocialLink(s.key, val.handle)}>
-                      <Text style={styles.socialHandle}>{getSocialHandleDisplay(s.key, val.handle)}</Text>
-                    </TouchableOpacity>
-                  ) : (
-                    <Text style={styles.socialPlaceholder}>{s.label}</Text>
-                  )}
-                </View>
-                {val.handle || editMode ? (
+        <View style={{ flex: 1 }} />
+      </View>
+      {renderSocialDrawer && (
+        <>
+          <AnimatedTouchable
+            style={[
+              styles.drawerOverlay,
+              styles.socialDrawerOverlay,
+              { opacity: socialOverlayAnim },
+            ]}
+            onPress={closeSocialDrawer}
+            accessibilityRole="button"
+            accessibilityLabel="Close socials drawer"
+          />
+          <Animated.View
+            onLayout={(e) =>
+              setSocialDrawerHeight(
+                Math.min(e.nativeEvent.layout.height, MAX_DRAWER_HEIGHT),
+              )
+            }
+            style={[
+              styles.socialsDrawer,
+              {
+                transform: [{ translateY: socialDrawerAnim }],
+                maxHeight: MAX_DRAWER_HEIGHT,
+                paddingBottom: TAB_BAR_HEIGHT + insets.bottom + 24,
+              },
+            ]}
+          >
+            <View style={styles.socialsDrawerHeader}>
+              <View style={styles.drawerHandle} />
+              <View style={styles.socialsHeaderRow}>
+                <Text style={styles.socialsHeaderTitle}>Social Links</Text>
+                <TouchableOpacity
+                  onPress={closeSocialDrawer}
+                  style={styles.socialsCloseBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel="Close socials drawer"
+                >
+                  <Ionicons name="close" size={22} color={colors.textDark} />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <ScrollView
+              style={styles.socialsScroll}
+              contentContainerStyle={{ paddingBottom: 16 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {SOCIALS.map((s) => {
+                const viewEntry = socialState[s.key] || { handle: '', hidden: true };
+                const editEntry = socialForm[s.key] || viewEntry;
+                const entry = socialEditMode ? editEntry : viewEntry;
+                const hasHandle = !!entry.handle;
+                const hiddenValue = entry.hidden ?? true;
+                const iconHidden = socialEditMode
+                  ? socialForm[s.key]?.hidden ?? viewEntry.hidden ?? true
+                  : hiddenValue;
+                const displayHandle = getSocialHandleDisplay(s.key, entry.handle);
+                return (
+                  <View key={s.key} style={styles.socialRow}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                      <Ionicons
+                        name={s.icon}
+                        size={24}
+                        color={colors.gold}
+                        style={{ marginRight: 12 }}
+                      />
+                      {socialEditMode ? (
+                        <TextInput
+                          style={styles.socialInput}
+                          placeholder={`Enter your ${s.label} @`}
+                          placeholderTextColor="#888"
+                          value={editEntry.handle}
+                          onChangeText={(t) =>
+                            setSocialForm(prev => ({
+                              ...prev,
+                              [s.key]: {
+                                ...(prev[s.key] || { hidden: editEntry.hidden ?? true }),
+                                handle: t,
+                              },
+                            }))
+                          }
+                        />
+                      ) : hasHandle && !hiddenValue ? (
+                        <TouchableOpacity onPress={() => openSocialLink(s.key, entry.handle)}>
+                          <Text style={styles.socialHandle}>{displayHandle}</Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <Text style={styles.socialPlaceholder}>{s.label}</Text>
+                      )}
+                    </View>
+                    {hasHandle || socialEditMode ? (
+                      <TouchableOpacity
+                        onPress={() => {
+                          if (socialEditMode) {
+                            setSocialForm(prev => {
+                              const prevEntry = prev[s.key] || {
+                                handle: editEntry.handle || '',
+                                hidden: editEntry.hidden ?? true,
+                              };
+                              return {
+                                ...prev,
+                                [s.key]: {
+                                  ...prevEntry,
+                                  hidden: !prevEntry.hidden,
+                                },
+                              };
+                            });
+                          } else {
+                            toggleSocialHidden(s.key);
+                          }
+                        }}
+                      >
+                        <Ionicons
+                          name={iconHidden ? 'eye-off' : 'eye'}
+                          size={24}
+                          color={iconHidden ? '#B0B0B0' : colors.gold}
+                        />
+                      </TouchableOpacity>
+                    ) : (
+                      <Ionicons name="eye-off" size={24} color="#B0B0B0" />
+                    )}
+                  </View>
+                );
+              })}
+            </ScrollView>
+            <View
+              style={[
+                styles.socialsFooter,
+                socialEditMode
+                  ? styles.socialsFooterEditing
+                  : styles.socialsFooterViewing,
+              ]}
+            >
+              {socialEditMode ? (
+                <>
                   <TouchableOpacity
+                    style={[styles.secondaryBtn, styles.socialsFooterButton, { marginLeft: 0 }]}
+                    onPress={handleSocialSave}
+                  >
+                    <Text style={styles.secondaryTxt}>Save</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.secondaryBtn, styles.socialsFooterButton]}
                     onPress={() => {
-                      if (editMode) {
-                        setSocialInputs((prev: any) => ({
-                          ...prev,
-                          [s.key]: { ...prev[s.key], hidden: !prev[s.key].hidden },
-                        }));
-                      } else {
-                        toggleSocialHidden(s.key, val.handle, !val.hidden);
-                      }
+                      setSocialEditMode(false);
+                      setSocialForm(socialState);
                     }}
                   >
-                    <Ionicons
-                      name={val.hidden ? 'eye-off' : 'eye'}
-                      size={24}
-                      color={val.hidden ? '#B0B0B0' : colors.gold}
-                    />
+                    <Text style={styles.secondaryTxt}>Cancel</Text>
                   </TouchableOpacity>
-                ) : (
-                  <Ionicons name="eye-off" size={24} color="#B0B0B0" />
-                )}
-              </View>
-            );
-          })}
-        </ScrollView>
-      </View>
+                </>
+              ) : (
+                <TouchableOpacity
+                  style={[styles.editProfileBtn, styles.socialsFooterButton, { marginLeft: 0 }]}
+                  onPress={() => {
+                    setSocialEditMode(true);
+                    setSocialForm(socialState);
+                  }}
+                >
+                  <Text style={styles.secondaryTxt}>Edit Socials</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </Animated.View>
+        </>
+      )}
       {renderInfoDrawer && (
-      <>
+        <>
         <AnimatedTouchable
           style={[styles.drawerOverlay, { opacity: infoOverlayAnim }]}
           onPress={() => setInfoDrawerOpen(false)}
@@ -784,8 +1016,8 @@ const ProfileScreen = () => {
             <Text style={styles.infoRule}>You can select up to 3 badges to display on your profile and in chats.</Text>
           </ScrollView>
         </Animated.View>
-      </>
-    )}
+        </>
+      )}
     </View>
   );
 };
@@ -998,20 +1230,23 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 20,
+    flexWrap: 'wrap',
   },
   secondaryRowViewing: {
     justifyContent: 'flex-start',
   },
   secondaryRowEditing: {
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
   },
   secondaryBtn: {
-    width: '48%',
+    minWidth: 116,
     height: 40,
     backgroundColor: '#F3F4F6',
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 24,
+    marginLeft: 12,
   },
   editProfileBtn: {
     backgroundColor: '#F3F4F6',
@@ -1020,21 +1255,49 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 26,
     paddingVertical: 10,
-    marginRight: 2,
+    marginLeft: 12,
     alignSelf: 'center',
   },
   shareIconButton: {
     width: 48,
     height: 48,
-    marginLeft: 0,
+    marginLeft: 12,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  socialsBtn: {
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.gold,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    marginRight: 12,
+  },
+  socialsBtnDisabled: {
+    backgroundColor: colors.grayLight,
+  },
+  disabledButton: {
+    backgroundColor: colors.grayLight,
   },
   secondaryTxt: {
     fontSize: 16,
     fontWeight: '700',
     color: '#000',
+  },
+  secondaryTxtDisabled: {
+    color: colors.gray,
+  },
+  editActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 'auto',
+  },
+  secondaryActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 'auto',
   },
   socialsScroll: {
     flex: 1,
@@ -1090,7 +1353,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
-badgesLabelRow: {
+  badgesLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -1098,6 +1361,65 @@ badgesLabelRow: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.4)',
     zIndex: 40,
+  },
+  socialDrawerOverlay: {
+    zIndex: 60,
+  },
+  drawerHandle: {
+    width: 48,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.grayLight,
+    alignSelf: 'center',
+    marginBottom: 12,
+  },
+  socialsDrawer: {
+    position: 'absolute',
+    bottom: 0,
+    alignSelf: 'center',
+    width: '92%',
+    backgroundColor: colors.white,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingTop: 16,
+    paddingHorizontal: 20,
+    zIndex: 70,
+  },
+  socialsDrawerHeader: {
+    marginBottom: 8,
+  },
+  socialsHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  socialsHeaderTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.textDark,
+  },
+  socialsCloseBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  socialsFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  socialsFooterEditing: {
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  socialsFooterViewing: {
+    justifyContent: 'flex-end',
+    width: '100%',
+  },
+  socialsFooterButton: {
+    flex: 1,
   },
   infoDrawer: {
     position: 'absolute',
