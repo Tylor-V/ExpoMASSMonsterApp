@@ -57,6 +57,12 @@ const CATEGORY_TOOLTIP_TIMEOUT = 1800;
 
 const CategoryIconRow = React.memo(({ ratings }: { ratings: CategoryRatings }) => {
   const [activeCategory, setActiveCategory] = useState<CategoryLabel | null>(null);
+  const [rowWidth, setRowWidth] = useState(0);
+  const [tooltipWidth, setTooltipWidth] = useState(0);
+  const iconLayouts = useRef<
+    Partial<Record<CategoryLabel, { x: number; width: number }>>
+  >({});
+  const [layoutVersion, setLayoutVersion] = useState(0);
   const tooltipAnim = useRef(new Animated.Value(0)).current;
   const hideTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -110,12 +116,74 @@ const CategoryIconRow = React.memo(({ ratings }: { ratings: CategoryRatings }) =
     [ratings],
   );
 
+  const tooltipTranslateX = useMemo(() => {
+    if (!activeCategory || !rowWidth) {
+      return 0;
+    }
+
+    const layout = iconLayouts.current[activeCategory];
+    if (!layout) {
+      return 0;
+    }
+
+    const center = layout.x + layout.width / 2;
+    const halfTooltip = tooltipWidth / 2;
+    const minCenter = halfTooltip;
+    const maxCenter = Math.max(rowWidth - halfTooltip, halfTooltip);
+    const clampedCenter = Math.min(Math.max(center, minCenter), maxCenter);
+    return clampedCenter - rowWidth / 2;
+  }, [activeCategory, rowWidth, tooltipWidth, layoutVersion]);
+
   if (!hasRatings) {
     return <View style={styles.cardRatings} />;
   }
 
   return (
-    <View style={styles.cardRatings}>
+    <View
+      style={[styles.cardRatings, activeCategory && styles.cardRatingsActive]}
+      onLayout={({ nativeEvent }) => {
+        const newWidth = nativeEvent.layout.width;
+        if (Math.abs(newWidth - rowWidth) > 0.5) {
+          setRowWidth(newWidth);
+        }
+      }}
+    >
+      {activeCategory && (
+        <View pointerEvents="none" style={styles.categoryTooltipContainer}>
+          <Animated.View
+            onLayout={({ nativeEvent }) => {
+              const { width: measuredWidth } = nativeEvent.layout;
+              if (Math.abs(measuredWidth - tooltipWidth) > 0.5) {
+                setTooltipWidth(measuredWidth);
+              }
+            }}
+            style={[
+              styles.categoryTooltip,
+              {
+                opacity: tooltipAnim,
+                maxWidth: rowWidth > 0 ? rowWidth - 8 : undefined,
+                transform: [
+                  {
+                    translateY: tooltipAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [8, 0],
+                    }),
+                  },
+                  { translateX: tooltipTranslateX },
+                ],
+              },
+            ]}
+          >
+            <Text
+              style={styles.categoryTooltipText}
+              numberOfLines={2}
+              ellipsizeMode="tail"
+            >
+              {activeCategory}
+            </Text>
+          </Animated.View>
+        </View>
+      )}
       {CATEGORY_LABELS.map(label => {
         const rating = ratings[label];
         if (!rating) {
@@ -124,35 +192,31 @@ const CategoryIconRow = React.memo(({ ratings }: { ratings: CategoryRatings }) =
 
         const isActive = activeCategory === label;
         return (
-          <View key={label} style={styles.categoryIconWrap}>
-            {isActive && (
-              <View pointerEvents="none" style={styles.categoryTooltipContainer}>
-                <Animated.View
-                  style={[
-                    styles.categoryTooltip,
-                    {
-                      opacity: tooltipAnim,
-                      transform: [
-                        {
-                          translateY: tooltipAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [8, 0],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                >
-                  <Text style={styles.categoryTooltipText}>{label}</Text>
-                </Animated.View>
-              </View>
-            )}
+          <View
+            key={label}
+            style={styles.categoryIconWrap}
+            onLayout={({ nativeEvent }) => {
+              const { x, width: measuredWidth } = nativeEvent.layout;
+              const prev = iconLayouts.current[label];
+              if (
+                !prev ||
+                Math.abs(prev.x - x) > 0.5 ||
+                Math.abs(prev.width - measuredWidth) > 0.5
+              ) {
+                iconLayouts.current[label] = { x, width: measuredWidth };
+                setLayoutVersion(v => v + 1);
+              }
+            }}
+          >
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${label} category`}
               accessibilityHint="Shows the category name"
               hitSlop={8}
-              style={styles.categoryIconPressable}
+              style={[
+                styles.categoryIconPressable,
+                isActive && styles.categoryIconPressableActive,
+              ]}
               onPress={() => handleCategoryPress(label)}
             >
               <Ionicons
@@ -779,7 +843,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.translucentWhite,
     borderRadius: 16,
     marginBottom: 18,
-    overflow: 'hidden',
     position: 'relative',
     shadowColor: '#000',
     shadowOpacity: 0.18,
@@ -795,7 +858,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.grayLight,
   },
   cardBody: {
-    padding: 16
+    padding: 16,
   },
   cardTitle: {
     fontWeight: 'bold',
@@ -811,10 +874,14 @@ const styles = StyleSheet.create({
   },
   // Provide extra space below ratings so the quantity control doesn't overlap
   cardRatings: {
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'flex-end',
     marginBottom: 2,
     minHeight: 42,
+  },
+  cardRatingsActive: {
+    paddingTop: 26,
   },
   categoryIconWrap: {
     position: 'relative',
@@ -837,18 +904,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  categoryIconPressableActive: {
+    borderColor: colors.gold,
+    backgroundColor: 'rgba(255,215,0,0.18)',
+  },
   categoryTooltipContainer: {
     position: 'absolute',
-    bottom: 36,
+    top: 0,
     left: 0,
     right: 0,
     alignItems: 'center',
+    zIndex: 2,
   },
   categoryTooltip: {
     backgroundColor: colors.translucentWhite,
     borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
     borderWidth: 1,
     borderColor: colors.accent,
     shadowColor: colors.shadow,
@@ -859,10 +931,10 @@ const styles = StyleSheet.create({
   },
   categoryTooltipText: {
     fontFamily: fonts.semiBold,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.black,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    textTransform: 'none',
+    textAlign: 'center',
   },
   addControl: { alignSelf: 'center', marginTop: 8 },
   coralLogo: {
