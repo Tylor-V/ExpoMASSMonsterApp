@@ -1331,7 +1331,7 @@ export const chatStyles = StyleSheet.create({
     fontFamily: fonts.regular,
   },
   messageContainer: {
-    marginBottom: 11,
+    marginBottom: 5.5,
   },
   messageBox: {
     flex: 1,

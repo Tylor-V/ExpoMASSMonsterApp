@@ -762,7 +762,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   messageContainer: {
-    marginBottom: 11,
+    marginBottom: 5.5,
   },
   reactionRow: {
     flexDirection: 'row',
