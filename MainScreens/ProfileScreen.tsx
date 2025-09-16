@@ -749,7 +749,7 @@ const ProfileScreen = () => {
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 activeOpacity={0.8}
               >
-                <Ionicons name="share-outline" size={24} color={colors.gold} />
+                <Ionicons name="share-outline" size={28} color={colors.gold} />
               </TouchableOpacity>
             </View>
           )}
@@ -1260,12 +1260,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   shareIconButton: {
-    flex: 1,
+    width: 48,
     height: 48,
-    borderRadius: 12,
-    backgroundColor: '#F3F4F6',
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   socialsBtn: {
     flex: 1,
