@@ -116,37 +116,36 @@ const CategoryIconRow = React.memo(({ ratings }: { ratings: CategoryRatings }) =
 
   return (
     <View style={styles.cardRatings}>
+      {activeCategory && (
+        <View pointerEvents="none" style={styles.categoryTooltipContainer}>
+          <Animated.View
+            style={[
+              styles.categoryTooltip,
+              {
+                opacity: tooltipAnim,
+                transform: [
+                  {
+                    translateY: tooltipAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [8, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}
+          >
+            <Text style={styles.categoryTooltipText}>{activeCategory}</Text>
+          </Animated.View>
+        </View>
+      )}
       {CATEGORY_LABELS.map(label => {
         const rating = ratings[label];
         if (!rating) {
           return null;
         }
 
-        const isActive = activeCategory === label;
         return (
           <View key={label} style={styles.categoryIconWrap}>
-            {isActive && (
-              <View pointerEvents="none" style={styles.categoryTooltipContainer}>
-                <Animated.View
-                  style={[
-                    styles.categoryTooltip,
-                    {
-                      opacity: tooltipAnim,
-                      transform: [
-                        {
-                          translateY: tooltipAnim.interpolate({
-                            inputRange: [0, 1],
-                            outputRange: [8, 0],
-                          }),
-                        },
-                      ],
-                    },
-                  ]}
-                >
-                  <Text style={styles.categoryTooltipText}>{label}</Text>
-                </Animated.View>
-              </View>
-            )}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${label} category`}
@@ -815,6 +814,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     marginBottom: 2,
     minHeight: 42,
+    position: 'relative',
+    width: '100%',
+    overflow: 'visible',
   },
   categoryIconWrap: {
     position: 'relative',
@@ -843,6 +845,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
+    paddingHorizontal: 16,
   },
   categoryTooltip: {
     backgroundColor: colors.translucentWhite,
@@ -856,6 +859,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
+    alignSelf: 'stretch',
   },
   categoryTooltipText: {
     fontFamily: fonts.semiBold,
@@ -863,6 +867,7 @@ const styles = StyleSheet.create({
     color: colors.black,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+    textAlign: 'center',
   },
   addControl: { alignSelf: 'center', marginTop: 8 },
   coralLogo: {
