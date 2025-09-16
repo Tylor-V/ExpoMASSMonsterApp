@@ -183,6 +183,11 @@ const ChatMessageRow = memo(function ChatMessageRow({
       : colors.black;
   const formattedTime = formatTimestamp(item.timestamp);
   const reactions = item.reactions || [];
+  const canAddReaction =
+    !isOwnMessage &&
+    !reactions.some((r: any) => r.userId === currentUserId);
+  const showReactionsRow =
+    actionTargetId !== item.id && (reactions.length > 0 || canAddReaction);
 
   if (!reactionOpacityMap[item.id]) {
     reactionOpacityMap[item.id] = new Animated.Value(1);
@@ -258,7 +263,7 @@ const ChatMessageRow = memo(function ChatMessageRow({
           style={[
             chatStyles.messageBox,
             isOwnMessage && chatStyles.myMessageBox,
-            reactions.length > 0 && { marginBottom: 2 },
+            showReactionsRow && { marginBottom: 2 },
             item.pinned && chatStyles.pinnedMessage,
             actionTargetId === item.id && {
               transform: [
@@ -330,13 +335,12 @@ const ChatMessageRow = memo(function ChatMessageRow({
             {item.text}
           </Text>
           <View>
-            <View style={chatStyles.footerRow}>
+            <View style={chatStyles.footerContainer}>
               <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginTop: 6,
-                }}
+                style={[
+                  chatStyles.indicatorRow,
+                  showReactionsRow ? chatStyles.indicatorRowWithReactions : undefined,
+                ]}
               >
                 <View
                   style={{
@@ -410,87 +414,77 @@ const ChatMessageRow = memo(function ChatMessageRow({
                   </View>
                 )}
               </View>
-              <View style={chatStyles.reactionTimestampRow}>
-                {actionTargetId !== item.id &&
-                  (reactions.length > 0 ||
-                    (!isOwnMessage &&
-                      !reactions.some((r: any) => r.userId === currentUserId))) && (
-                    <Animated.View
-                      pointerEvents={
-                        actionTargetId === item.id ? "none" : "auto"
-                      }
-                      style={[
-                        chatStyles.reactionRow,
-                        { opacity: reactionOpacityMap[item.id] || 1 },
-                      ]}
-                    >
-                      {Array.from(new Set(reactions.map((r: any) => r.emoji))).map(
-                        (emoji: string) => {
-                          const count = reactions.filter(
-                            (r: any) => r.emoji === emoji,
-                          ).length;
-                          const userReacted = reactions.some(
-                            (r: any) =>
-                              r.emoji === emoji &&
-                              r.userId === currentUserId,
-                          );
-                          return (
-                            <TouchableOpacity
-                              key={emoji}
-                              style={[
-                                chatStyles.reactionBubble,
-                                userReacted && chatStyles.reactionHighlight,
-                              ]}
-                              onPress={() => {
-                                if (!isOwnMessage)
-                                  onAddReaction(item.id, emoji);
-                              }}
-                              disabled={isOwnMessage}
-                              activeOpacity={0.6}
-                            >
-                              <Text style={{ fontSize: 15 }}>{emoji}</Text>
-                              <Text
-                                style={{
-                                  fontSize: 10,
-                                  color: "#666",
-                                  marginLeft: 2,
-                                }}
-                              >
-                                {count}
-                              </Text>
-                            </TouchableOpacity>
-                          );
-                        },
-                      )}
-                      {!isOwnMessage &&
-                        !reactions.some(
-                          (r: any) => r.userId === currentUserId,
-                        ) && (
-                          <TouchableOpacity
-                            onPress={() => onOpenReactionPicker(item.id)}
-                            style={[
-                              chatStyles.reactionBubble,
-                              chatStyles.reactionAddBtn,
-                            ]}
-                          >
-                            <Ionicons
-                              name="add-circle-outline"
-                              size={18}
-                              color="#888"
-                            />
-                          </TouchableOpacity>
-                        )}
-                    </Animated.View>
-                  )}
-                <Text
+              {showReactionsRow && (
+                <Animated.View
+                  pointerEvents={actionTargetId === item.id ? "none" : "auto"}
                   style={[
-                    chatStyles.timestamp,
-                    isOwnMessage && chatStyles.myTimestamp,
+                    chatStyles.reactionRow,
+                    chatStyles.reactionRowWrapper,
+                    { opacity: reactionOpacityMap[item.id] || 1 },
                   ]}
                 >
-                  {formattedTime}
-                </Text>
-              </View>
+                  {Array.from(new Set(reactions.map((r: any) => r.emoji))).map(
+                    (emoji: string) => {
+                      const count = reactions.filter(
+                        (r: any) => r.emoji === emoji,
+                      ).length;
+                      const userReacted = reactions.some(
+                        (r: any) =>
+                          r.emoji === emoji &&
+                          r.userId === currentUserId,
+                      );
+                      return (
+                        <TouchableOpacity
+                          key={emoji}
+                          style={[
+                            chatStyles.reactionBubble,
+                            userReacted && chatStyles.reactionHighlight,
+                          ]}
+                          onPress={() => {
+                            if (!isOwnMessage) onAddReaction(item.id, emoji);
+                          }}
+                          disabled={isOwnMessage}
+                          activeOpacity={0.6}
+                        >
+                          <Text style={{ fontSize: 15 }}>{emoji}</Text>
+                          <Text
+                            style={{
+                              fontSize: 10,
+                              color: "#666",
+                              marginLeft: 2,
+                            }}
+                          >
+                            {count}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    },
+                  )}
+                  {canAddReaction && (
+                    <TouchableOpacity
+                      onPress={() => onOpenReactionPicker(item.id)}
+                      style={[
+                        chatStyles.reactionBubble,
+                        chatStyles.reactionAddBtn,
+                      ]}
+                    >
+                      <Ionicons
+                        name="add-circle-outline"
+                        size={18}
+                        color="#888"
+                      />
+                    </TouchableOpacity>
+                  )}
+                </Animated.View>
+              )}
+              <Text
+                style={[
+                  chatStyles.timestamp,
+                  isOwnMessage && chatStyles.myTimestamp,
+                ]}
+              >
+                {formattedTime}
+              </Text>
             </View>
           </View>
           {item.pinned && (
@@ -503,8 +497,8 @@ const ChatMessageRow = memo(function ChatMessageRow({
             >
               <FontAwesome
                 name="thumb-tack"
-                size={18}
-                color={colors.gold}
+                size={22}
+                color={colors.accent}
               />
             </Animated.View>
           )}
@@ -1395,7 +1389,7 @@ export const chatStyles = StyleSheet.create({
     fontFamily: fonts.regular,
   },
   messageContainer: {
-    marginBottom: 5.5,
+    marginBottom: 4,
   },
   messageBox: {
     flex: 1,
@@ -1408,8 +1402,8 @@ export const chatStyles = StyleSheet.create({
     backgroundColor: colors.grayLight,
   },
   pinnedMessage: {
-    borderWidth: 4,
-    borderColor: colors.accent,
+    borderWidth: 2,
+    borderColor: colors.yellow,
   },
   messageText: {
     color: colors.textDark,
@@ -1438,19 +1432,24 @@ export const chatStyles = StyleSheet.create({
     flexWrap: "wrap",
     alignItems: "center",
   },
-  footerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-end",
-    marginTop: 8,
-    marginLeft: 26,
-  },
-  reactionTimestampRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 6,
+  footerContainer: {
     width: "100%",
+    alignSelf: "stretch",
+    marginTop: 8,
+  },
+  indicatorRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    width: "100%",
+    marginBottom: 4,
+  },
+  indicatorRowWithReactions: {
+    marginBottom: 6,
+  },
+  reactionRowWrapper: {
+    marginBottom: 4,
   },
   timestamp: {
     color: colors.gray,
@@ -1462,6 +1461,7 @@ export const chatStyles = StyleSheet.create({
     marginLeft: "auto",
     marginRight: 2,
     textAlign: "right",
+    alignSelf: "flex-end",
   },
   myTimestamp: {
     color: colors.textLight,
