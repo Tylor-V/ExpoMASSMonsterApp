@@ -117,8 +117,9 @@ async function withRetry<T>(operation: () => Promise<T>, retries = 1): Promise<T
   }
 }
 
-function wrapDoc(path: string[]) {
-  const ref = fsDoc(db, ...path);
+function wrapDoc(path: string[], existingRef?: any) {
+  const ref = existingRef || fsDoc(db, ...path);
+  const fullPath = [...path];
   return {
     get: () => withRetry(() => getDoc(ref)),
     set: (data: any, options?: any) => withRetry(() => setDoc(ref, data, options)),
@@ -134,8 +135,10 @@ function wrapDoc(path: string[]) {
         throw error;
       }
     },
-    collection: (name: string) => wrapCollection([...path, name]),
+    collection: (name: string) => wrapCollection([...fullPath, name]),
     ref,
+    id: ref.id,
+    path: ref.path,
   };
 }
 
@@ -143,7 +146,10 @@ function wrapCollection(path: string[]) {
   const colRef = fsCollection(db, ...path);
   let q: any = colRef;
   const api: any = {
-    doc: (id: string) => wrapDoc([...path, id]),
+    doc: (id?: string) => {
+      const docRef = id ? fsDoc(db, ...path, id) : fsDoc(colRef);
+      return wrapDoc([...path, docRef.id], docRef);
+    },
     add: (data: any) => withRetry(() => addDoc(colRef, data)),
     get: () => withRetry(() => getDocs(q)),
     onSnapshot: (cb: any, onError?: any) => {

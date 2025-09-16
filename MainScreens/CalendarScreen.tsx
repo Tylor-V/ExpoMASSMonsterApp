@@ -1072,28 +1072,34 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
               const uid = auth().currentUser?.uid;
               if (!uid) return;
               const splitCopy = JSON.parse(JSON.stringify(customSplit));
-              const ref = firestore()
+              const channelDoc = firestore()
                 .collection('channels')
-                .doc('split-sharing')
-                .collection('messages');
-              
-                const old = await ref.where('userId', '==', uid).get();
-              const batch = firestore().batch();
-              old.docs.forEach(d => batch.delete(d.ref));
+                .doc('split-sharing');
+              const messagesCollection = channelDoc.collection('messages');
 
-              const newRef = ref.doc();
-              batch.set(newRef.ref, {
+              const existing = await channelDoc
+                .collection('messages')
+                .where('userId', '==', uid)
+                .get();
+
+              if (existing.docs.length) {
+                const deleteBatch = firestore().batch();
+                existing.docs.forEach(d => deleteBatch.delete(d.ref));
+                await deleteBatch.commit();
+              }
+
+              const newMessage = messagesCollection.doc();
+              await newMessage.set({
                 userId: uid,
                 split: splitCopy,
                 timestamp: firestore.FieldValue.serverTimestamp(),
                 reactions: [],
+                saveCount: 0,
               });
-
-              await batch.commit();
 
               await saveMySharedSplit({
                 split: splitCopy,
-                msgId: newRef.id,
+                msgId: newMessage.id,
                 sharedAt: Date.now(),
               });
 
