@@ -335,93 +335,14 @@ const ChatMessageRow = memo(function ChatMessageRow({
             {item.text}
           </Text>
           <View>
-            <View style={chatStyles.footerContainer}>
-              <View
-                style={[
-                  chatStyles.indicatorRow,
-                  showReactionsRow ? chatStyles.indicatorRowWithReactions : undefined,
-                ]}
-              >
-                <View
-                  style={{
-                    backgroundColor: getChatLevelColor(chatLevel),
-                    borderRadius: 2,
-                    paddingHorizontal: 4,
-                    marginRight: 3,
-                    marginLeft: 1,
-                    paddingVertical: 2,
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: colors.white,
-                      fontSize: 12,
-                      fontWeight: "bold",
-                      letterSpacing: 0.8,
-                    }}
-                  >
-                    Lv{chatLevel}
-                  </Text>
-                </View>
-                {user?.accountabilityStreak > 0 && (
-                  <View
-                    style={{
-                      backgroundColor: colors.yellow,
-                      borderRadius: 2,
-                      paddingHorizontal: 4,
-                      marginRight: 3,
-                      paddingVertical: 2,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: colors.black,
-                        fontSize: 12,
-                        fontWeight: "bold",
-                        letterSpacing: 0.8,
-                      }}
-                    >
-                      🔥{user.accountabilityStreak}
-                    </Text>
-                  </View>
-                )}
-                {ROLE_TAGS[user?.role] && (
-                  <View
-                    style={{
-                      backgroundColor: ROLE_COLORS[user.role],
-                      borderRadius: 2,
-                      paddingHorizontal: 4,
-                      marginRight: 3,
-                      paddingVertical: 2,
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        color: colors.white,
-                        fontSize: 12,
-                        fontWeight: "bold",
-                        letterSpacing: 0.8,
-                      }}
-                    >
-                      {ROLE_TAGS[user.role]}
-                    </Text>
-                  </View>
-                )}
-              </View>
-              <Text
-                style={[
-                  chatStyles.timestamp,
-                  isOwnMessage && chatStyles.myTimestamp,
-                ]}
-              >
-                {formattedTime}
-              </Text>
+            <View
+              style={[
+                chatStyles.footerContainer,
+                showReactionsRow
+                  ? chatStyles.footerContainerWithReactions
+                  : undefined,
+              ]}
+            >
               {showReactionsRow && (
                 <Animated.View
                   pointerEvents={actionTargetId === item.id ? "none" : "auto"}
@@ -485,6 +406,94 @@ const ChatMessageRow = memo(function ChatMessageRow({
                   )}
                 </Animated.View>
               )}
+              <View style={chatStyles.footerMeta}>
+                <View
+                  style={[
+                    chatStyles.indicatorRow,
+                    showReactionsRow ? chatStyles.indicatorRowWithReactions : undefined,
+                  ]}
+                >
+                  <View
+                    style={{
+                      backgroundColor: getChatLevelColor(chatLevel),
+                      borderRadius: 2,
+                      paddingHorizontal: 4,
+                      marginRight: 3,
+                      marginLeft: 1,
+                      paddingVertical: 2,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: colors.white,
+                        fontSize: 12,
+                        fontWeight: "bold",
+                        letterSpacing: 0.8,
+                      }}
+                    >
+                      Lv{chatLevel}
+                    </Text>
+                  </View>
+                  {user?.accountabilityStreak > 0 && (
+                    <View
+                      style={{
+                        backgroundColor: colors.yellow,
+                        borderRadius: 2,
+                        paddingHorizontal: 4,
+                        marginRight: 3,
+                        paddingVertical: 2,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: colors.black,
+                          fontSize: 12,
+                          fontWeight: "bold",
+                          letterSpacing: 0.8,
+                        }}
+                      >
+                        🔥{user.accountabilityStreak}
+                      </Text>
+                    </View>
+                  )}
+                  {ROLE_TAGS[user?.role] && (
+                    <View
+                      style={{
+                        backgroundColor: ROLE_COLORS[user.role],
+                        borderRadius: 2,
+                        paddingHorizontal: 4,
+                        marginRight: 3,
+                        paddingVertical: 2,
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: colors.white,
+                          fontSize: 12,
+                          fontWeight: "bold",
+                          letterSpacing: 0.8,
+                        }}
+                      >
+                        {ROLE_TAGS[user.role]}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                <Text
+                  style={[
+                    chatStyles.timestamp,
+                    isOwnMessage && chatStyles.myTimestamp,
+                  ]}
+                >
+                  {formattedTime}
+                </Text>
+              </View>
             </View>
           </View>
           {item.pinned && (
@@ -1436,6 +1445,17 @@ export const chatStyles = StyleSheet.create({
     width: "100%",
     alignSelf: "stretch",
     marginTop: 8,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "flex-end",
+    flexWrap: "wrap",
+  },
+  footerContainerWithReactions: {
+    justifyContent: "space-between",
+  },
+  footerMeta: {
+    alignItems: "flex-end",
+    flexShrink: 0,
   },
   indicatorRow: {
     flexDirection: "row",
@@ -1449,8 +1469,8 @@ export const chatStyles = StyleSheet.create({
     marginBottom: 6,
   },
   reactionRowWrapper: {
-    marginTop: 6,
-    marginBottom: 4,
+    marginTop: 0,
+    marginBottom: 0,
   },
   timestamp: {
     color: colors.black,
