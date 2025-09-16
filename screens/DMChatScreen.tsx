@@ -325,6 +325,11 @@ const DMChatScreen = ({ navigation, route }) => {
                     const showUnreadHere = hasUnreadMarker && index === firstUnreadIndex + 1;
                     const reactions = item.reactions || [];
                     const formattedTime = formatTimestamp(item.timestamp);
+                    const canAddReaction =
+                      !isMe && !reactions.some(r => r.userId === currentUserId);
+                    const showReactionsRow =
+                      actionTargetId !== item.id &&
+                      (reactions.length > 0 || canAddReaction);
           return (
             <>
               {showUnreadHere && (
@@ -355,7 +360,7 @@ const DMChatScreen = ({ navigation, route }) => {
                       style={[
                         styles.messageBox,
                         isMe && styles.myMessageBox,
-                        reactions.length > 0 && { marginBottom: 2 },
+                        showReactionsRow && { marginBottom: 2 },
                       ]}
                     >
                       <View style={styles.metaRow}>
@@ -392,68 +397,60 @@ const DMChatScreen = ({ navigation, route }) => {
                       >
                         {item.text}
                       </Text>
-                      <View style={styles.reactionTimestampRow}>
-                        {actionTargetId !== item.id &&
-                          (reactions.length > 0 ||
-                            (!isMe && !reactions.some(r => r.userId === currentUserId))) && (
-                              <View style={styles.reactionRow}>
-                                {Array.from(new Set(reactions.map(r => r.emoji))).map(
-                                  emoji => {
-                                    const count = reactions.filter(
-                                      r => r.emoji === emoji,
-                                    ).length;
-                                    const userReacted = reactions.some(
-                                      r =>
-                                        r.emoji === emoji &&
-                                        r.userId === currentUserId,
-                                    );
-                                    return (
-                                      <TouchableOpacity
-                                        key={emoji}
-                                        style={[
-                                          styles.reactionBubble,
-                                          userReacted && styles.reactionHighlight,
-                                        ]}
-                                        onPress={() =>
-                                          !isMe && handleAddReaction(item.id, emoji)
-                                        }
-                                        disabled={isMe}
-                                        activeOpacity={0.6}
-                                      >
-                                        <Text style={{ fontSize: 15 }}>{emoji}</Text>
-                                        <Text
-                                          style={{
-                                            fontSize: 10,
-                                            color: '#666',
-                                            marginLeft: 2,
-                                          }}
-                                        >
-                                          {count}
-                                        </Text>
-                                      </TouchableOpacity>
-                                    );
-                                  },
-                                )}
-                                {!isMe &&
-                                  !reactions.some(
-                                    r => r.userId === currentUserId,
-                                  ) && (
-                                    <TouchableOpacity
-                                      onPress={() => setReactionTargetId(item.id)}
-                                      style={[
-                                        styles.reactionBubble,
-                                        styles.reactionAddBtn,
-                                      ]}
+                      <View style={styles.footerContainer}>
+                        {showReactionsRow && (
+                          <View style={[styles.reactionRow, styles.reactionRowWrapper]}>
+                            {Array.from(new Set(reactions.map(r => r.emoji))).map(
+                              emoji => {
+                                const count = reactions.filter(
+                                  r => r.emoji === emoji,
+                                ).length;
+                                const userReacted = reactions.some(
+                                  r =>
+                                    r.emoji === emoji &&
+                                    r.userId === currentUserId,
+                                );
+                                return (
+                                  <TouchableOpacity
+                                    key={emoji}
+                                    style={[
+                                      styles.reactionBubble,
+                                      userReacted && styles.reactionHighlight,
+                                    ]}
+                                    onPress={() =>
+                                      !isMe && handleAddReaction(item.id, emoji)
+                                    }
+                                    disabled={isMe}
+                                    activeOpacity={0.6}
+                                  >
+                                    <Text style={{ fontSize: 15 }}>{emoji}</Text>
+                                    <Text
+                                      style={{
+                                        fontSize: 10,
+                                        color: '#666',
+                                        marginLeft: 2,
+                                      }}
                                     >
-                                      <Icon
-                                        name="add-circle-outline"
-                                        size={18}
-                                        color="#888"
-                                      />
-                                    </TouchableOpacity>
-                                  )}
-                              </View>
+                                      {count}
+                                    </Text>
+                                  </TouchableOpacity>
+                                );
+                              },
                             )}
+                            {canAddReaction && (
+                              <TouchableOpacity
+                                onPress={() => setReactionTargetId(item.id)}
+                                style={[styles.reactionBubble, styles.reactionAddBtn]}
+                              >
+                                <Icon
+                                  name="add-circle-outline"
+                                  size={18}
+                                  color="#888"
+                                />
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        )}
                         <Text
                           style={[styles.timestamp, isMe && styles.myTimestamp]}
                         >
