@@ -8,6 +8,7 @@ import {
   Animated,
   Dimensions,
   FlatList,
+  LayoutChangeEvent,
   Linking,
   Modal,
   Pressable,
@@ -59,6 +60,35 @@ const CategoryIconRow = React.memo(({ ratings }: { ratings: CategoryRatings }) =
   const [activeCategory, setActiveCategory] = useState<CategoryLabel | null>(null);
   const tooltipAnim = useRef(new Animated.Value(0)).current;
   const hideTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [tooltipCenter, setTooltipCenter] = useState<number | null>(null);
+  const [tooltipWidth, setTooltipWidth] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const iconLayouts = useRef<Record<CategoryLabel, { x: number; width: number }>>({});
+
+  const updateTooltipCenter = useCallback((label: CategoryLabel) => {
+    const layout = iconLayouts.current[label];
+    if (layout) {
+      setTooltipCenter(layout.x + layout.width / 2);
+    }
+  }, []);
+
+  const handleContainerLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const layoutWidth = event.nativeEvent.layout.width;
+      setContainerWidth(prev => (prev === layoutWidth ? prev : layoutWidth));
+    },
+    [],
+  );
+
+  const handleTooltipLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const layoutWidth = event.nativeEvent.layout.width;
+      if (layoutWidth !== tooltipWidth) {
+        setTooltipWidth(layoutWidth);
+      }
+    },
+    [tooltipWidth],
+  );
 
   const clearExistingTimeout = useCallback(() => {
     if (hideTimeout.current) {
@@ -75,6 +105,7 @@ const CategoryIconRow = React.memo(({ ratings }: { ratings: CategoryRatings }) =
     }).start(({ finished }) => {
       if (finished) {
         setActiveCategory(null);
+        setTooltipCenter(null);
       }
     });
   }, [tooltipAnim]);
@@ -83,6 +114,12 @@ const CategoryIconRow = React.memo(({ ratings }: { ratings: CategoryRatings }) =
     (label: CategoryLabel) => {
       clearExistingTimeout();
       setActiveCategory(label);
+      const layout = iconLayouts.current[label];
+      if (layout) {
+        setTooltipCenter(layout.x + layout.width / 2);
+      } else {
+        setTooltipCenter(null);
+      }
       tooltipAnim.stopAnimation();
       tooltipAnim.setValue(0);
       Animated.timing(tooltipAnim, {
@@ -105,38 +142,64 @@ const CategoryIconRow = React.memo(({ ratings }: { ratings: CategoryRatings }) =
     };
   }, [clearExistingTimeout]);
 
+  useEffect(() => {
+    if (activeCategory) {
+      updateTooltipCenter(activeCategory);
+    }
+  }, [activeCategory, updateTooltipCenter]);
+
+  useEffect(() => {
+    if (activeCategory && !ratings[activeCategory]) {
+      setActiveCategory(null);
+      setTooltipCenter(null);
+    }
+  }, [activeCategory, ratings]);
+
   const hasRatings = useMemo(
     () => CATEGORY_LABELS.some(label => !!ratings[label]),
     [ratings],
   );
+
+  const tooltipLeft = useMemo(() => {
+    if (tooltipCenter == null) {
+      return 0;
+    }
+    const baseLeft = tooltipCenter - tooltipWidth / 2;
+    if (!containerWidth || !tooltipWidth) {
+      return Math.max(baseLeft, 0);
+    }
+    const maxLeft = Math.max(containerWidth - tooltipWidth, 0);
+    return Math.min(Math.max(baseLeft, 0), maxLeft);
+  }, [containerWidth, tooltipCenter, tooltipWidth]);
 
   if (!hasRatings) {
     return <View style={styles.cardRatings} />;
   }
 
   return (
-    <View style={styles.cardRatings}>
-      {activeCategory && (
-        <View pointerEvents="none" style={styles.categoryTooltipContainer}>
-          <Animated.View
-            style={[
-              styles.categoryTooltip,
-              {
-                opacity: tooltipAnim,
-                transform: [
-                  {
-                    translateY: tooltipAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [8, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <Text style={styles.categoryTooltipText}>{activeCategory}</Text>
-          </Animated.View>
-        </View>
+    <View style={styles.cardRatings} onLayout={handleContainerLayout}>
+      {activeCategory && tooltipCenter !== null && (
+        <Animated.View
+          pointerEvents="none"
+          onLayout={handleTooltipLayout}
+          style={[
+            styles.categoryTooltip,
+            {
+              left: tooltipLeft,
+              opacity: tooltipAnim,
+              transform: [
+                {
+                  translateY: tooltipAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [8, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <Text style={styles.categoryTooltipText}>{activeCategory}</Text>
+        </Animated.View>
       )}
       {CATEGORY_LABELS.map(label => {
         const rating = ratings[label];
@@ -145,7 +208,18 @@ const CategoryIconRow = React.memo(({ ratings }: { ratings: CategoryRatings }) =
         }
 
         return (
-          <View key={label} style={styles.categoryIconWrap}>
+          <View
+            key={label}
+            style={styles.categoryIconWrap}
+            onLayout={event => {
+              const { x, width: layoutWidth } = event.nativeEvent.layout;
+              iconLayouts.current[label] = { x, width: layoutWidth };
+              if (activeCategory === label) {
+                const center = x + layoutWidth / 2;
+                setTooltipCenter(prev => (prev === center ? prev : center));
+              }
+            }}
+          >
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${label} category`}
@@ -839,18 +913,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  categoryTooltipContainer: {
-    position: 'absolute',
-    bottom: 36,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
   categoryTooltip: {
+    position: 'absolute',
+    bottom: 40,
     backgroundColor: colors.translucentWhite,
     borderRadius: 12,
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
     paddingVertical: 4,
     borderWidth: 1,
     borderColor: colors.accent,
@@ -859,7 +927,8 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 3 },
     elevation: 3,
-    alignSelf: 'stretch',
+    alignSelf: 'center',
+    zIndex: 2,
   },
   categoryTooltipText: {
     fontFamily: fonts.semiBold,
@@ -868,6 +937,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     textAlign: 'center',
+    flexShrink: 0,
   },
   addControl: { alignSelf: 'center', marginTop: 8 },
   coralLogo: {
