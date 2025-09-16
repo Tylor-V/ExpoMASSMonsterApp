@@ -1,13 +1,6 @@
 import { FontAwesome, Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import React, {
-  memo,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
   Animated,
@@ -86,6 +79,7 @@ type UserInfo = {
   badges?: string[];
   socials?: any;
   selectedBadges?: string[];
+  accountabilityStreak?: number;
 };
 type UserMap = {
   [key: string]: UserInfo;
@@ -127,6 +121,429 @@ const formatTimestamp = (ts: any) => {
     raw instanceof Date && !Number.isNaN(raw.getTime()) ? raw : new Date();
   return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")} ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 };
+
+type ChatMessageProps = {
+  item: any;
+  index: number;
+  isLast: boolean;
+  showUnreadHere: boolean;
+  user: UserInfo | undefined;
+  currentUserId?: string;
+  currentUserRole: string;
+  actionTargetId: string | null;
+  reactionOpacityMap: Record<string, Animated.Value>;
+  wiggleAnim: Animated.Value;
+  renderCustomMessage?: (
+    params: CustomRenderParams,
+  ) => React.ReactElement | null;
+  onAddReaction: (messageId: string, emoji: string) => void;
+  onOpenReactionPicker: (messageId: string) => void;
+  onUserPreview: (userId: string) => void;
+  onLongPress: (messageId: string, item: any) => void;
+  onPinMessage: (messageId: string, pinned: boolean) => void;
+  onConfirmDelete: (messageId: string) => void;
+  onStopActions: () => void;
+};
+
+const ChatMessageRow = memo(function ChatMessageRow({
+  item,
+  index,
+  isLast,
+  showUnreadHere,
+  user,
+  currentUserId,
+  currentUserRole,
+  actionTargetId,
+  reactionOpacityMap,
+  wiggleAnim,
+  renderCustomMessage,
+  onAddReaction,
+  onOpenReactionPicker,
+  onUserPreview,
+  onLongPress,
+  onPinMessage,
+  onConfirmDelete,
+  onStopActions,
+}: ChatMessageProps) {
+  const isOwnMessage = item.userId === currentUserId;
+  const displayName = user
+    ? `${user.firstName} ${user.lastName?.charAt(0) || ""}.`
+    : "Unknown";
+  const isModerator = user?.role === "moderator";
+  const chatLevel = user?.chatLevel || 1;
+  const profilePicUrl = user?.profilePicUrl || "";
+  const badges = enforceSelectedBadges(
+    Array.isArray(user?.selectedBadges) ? user?.selectedBadges : [],
+    user,
+  );
+  const nameColor = isOwnMessage
+    ? colors.white
+    : isModerator
+      ? colors.accent
+      : colors.black;
+  const formattedTime = formatTimestamp(item.timestamp);
+  const reactions = item.reactions || [];
+
+  if (!reactionOpacityMap[item.id]) {
+    reactionOpacityMap[item.id] = new Animated.Value(1);
+  }
+
+  const pinnedScale = useRef(
+    new Animated.Value(item.pinned ? 1 : 0),
+  ).current;
+  const prevPinned = useRef(item.pinned);
+
+  useEffect(() => {
+    if (item.pinned && !prevPinned.current) {
+      Animated.sequence([
+        Animated.timing(pinnedScale, {
+          toValue: 1.2,
+          duration: ANIM_BUTTON_POP,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pinnedScale, {
+          toValue: 1,
+          duration: ANIM_BUTTON_POP,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (!item.pinned && prevPinned.current) {
+      Animated.timing(pinnedScale, {
+        toValue: 0,
+        duration: ANIM_SHORT,
+        useNativeDriver: true,
+      }).start();
+    }
+    prevPinned.current = item.pinned;
+  }, [item.pinned, pinnedScale]);
+
+  if (renderCustomMessage) {
+    const custom = renderCustomMessage({
+      item,
+      index,
+      isLast,
+      isOwnMessage,
+      showUnreadHere,
+      user,
+      addReaction: (emoji: string) => onAddReaction(item.id, emoji),
+      openReactionPicker: () => onOpenReactionPicker(item.id),
+    });
+    if (custom) {
+      return custom;
+    }
+  }
+
+  return (
+    <>
+      {showUnreadHere && (
+        <View style={chatStyles.unreadMarkerRow}>
+          <View style={chatStyles.unreadMarker}>
+            <Text style={chatStyles.unreadMarkerText}>New Messages</Text>
+          </View>
+        </View>
+      )}
+      <View
+        style={[
+          chatStyles.messageContainer,
+          actionTargetId === item.id && {
+            marginBottom: ACTION_SPACING,
+            marginTop: ACTION_SPACING / 2,
+          },
+        ]}
+      >
+        <TouchableOpacity
+          onLongPress={() => onLongPress(item.id, item)}
+          delayLongPress={400}
+          activeOpacity={1}
+          style={[
+            chatStyles.messageBox,
+            isOwnMessage && chatStyles.myMessageBox,
+            reactions.length > 0 && { marginBottom: 2 },
+            item.pinned && chatStyles.pinnedMessage,
+            actionTargetId === item.id && {
+              transform: [
+                {
+                  rotate: wiggleAnim.interpolate({
+                    inputRange: [-1, 1],
+                    outputRange: ["-2deg", "2deg"],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <View style={chatStyles.metaRow}>
+            {isOwnMessage ? (
+              <ProfileImage
+                uri={profilePicUrl}
+                style={chatStyles.profilePic}
+                isCurrentUser
+              />
+            ) : (
+              <TouchableOpacity
+                onPress={() => onUserPreview(item.userId)}
+                activeOpacity={0.8}
+              >
+                <ProfileImage
+                  uri={profilePicUrl}
+                  style={chatStyles.profilePic}
+                  isCurrentUser={false}
+                />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              onPress={() => onUserPreview(item.userId)}
+              disabled={isOwnMessage}
+            >
+              <Text
+                style={[
+                  chatStyles.username,
+                  { color: nameColor },
+                  isOwnMessage && { textAlign: "right" },
+                  isOwnMessage && chatStyles.myUsername,
+                ]}
+              >
+                {isOwnMessage ? "Me" : displayName}
+              </Text>
+            </TouchableOpacity>
+            {badges && badges.length > 0 && (
+              <View style={{ flexDirection: "row", marginLeft: 5 }}>
+                {badges.slice(0, MAX_DISPLAY_BADGES).map((b, i) => (
+                  <BadgeImage
+                    key={b}
+                    badgeKey={b}
+                    style={[
+                      { width: 19, height: 19, marginLeft: i ? 4 : 0 },
+                      chatStyles.badgeHighlight,
+                    ]}
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+          <Text
+            style={[
+              chatStyles.messageText,
+              isOwnMessage && chatStyles.myMessageText,
+            ]}
+          >
+            {item.text}
+          </Text>
+          <View>
+            <View style={chatStyles.footerRow}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginTop: 6,
+                }}
+              >
+                <View
+                  style={{
+                    backgroundColor: getChatLevelColor(chatLevel),
+                    borderRadius: 2,
+                    paddingHorizontal: 4,
+                    marginRight: 3,
+                    marginLeft: 1,
+                    paddingVertical: 2,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: colors.white,
+                      fontSize: 12,
+                      fontWeight: "bold",
+                      letterSpacing: 0.8,
+                    }}
+                  >
+                    Lv{chatLevel}
+                  </Text>
+                </View>
+                {user?.accountabilityStreak > 0 && (
+                  <View
+                    style={{
+                      backgroundColor: colors.yellow,
+                      borderRadius: 2,
+                      paddingHorizontal: 4,
+                      marginRight: 3,
+                      paddingVertical: 2,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: colors.black,
+                        fontSize: 12,
+                        fontWeight: "bold",
+                        letterSpacing: 0.8,
+                      }}
+                    >
+                      🔥{user.accountabilityStreak}
+                    </Text>
+                  </View>
+                )}
+                {ROLE_TAGS[user?.role] && (
+                  <View
+                    style={{
+                      backgroundColor: ROLE_COLORS[user.role],
+                      borderRadius: 2,
+                      paddingHorizontal: 4,
+                      marginRight: 3,
+                      paddingVertical: 2,
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}
+                  >
+                    <Text
+                      style={{
+                        color: colors.white,
+                        fontSize: 12,
+                        fontWeight: "bold",
+                        letterSpacing: 0.8,
+                      }}
+                    >
+                      {ROLE_TAGS[user.role]}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              <View style={chatStyles.reactionTimestampRow}>
+                {actionTargetId !== item.id &&
+                  (reactions.length > 0 ||
+                    (!isOwnMessage &&
+                      !reactions.some((r: any) => r.userId === currentUserId))) && (
+                    <Animated.View
+                      pointerEvents={
+                        actionTargetId === item.id ? "none" : "auto"
+                      }
+                      style={[
+                        chatStyles.reactionRow,
+                        { opacity: reactionOpacityMap[item.id] || 1 },
+                      ]}
+                    >
+                      {Array.from(new Set(reactions.map((r: any) => r.emoji))).map(
+                        (emoji: string) => {
+                          const count = reactions.filter(
+                            (r: any) => r.emoji === emoji,
+                          ).length;
+                          const userReacted = reactions.some(
+                            (r: any) =>
+                              r.emoji === emoji &&
+                              r.userId === currentUserId,
+                          );
+                          return (
+                            <TouchableOpacity
+                              key={emoji}
+                              style={[
+                                chatStyles.reactionBubble,
+                                userReacted && chatStyles.reactionHighlight,
+                              ]}
+                              onPress={() => {
+                                if (!isOwnMessage)
+                                  onAddReaction(item.id, emoji);
+                              }}
+                              disabled={isOwnMessage}
+                              activeOpacity={0.6}
+                            >
+                              <Text style={{ fontSize: 15 }}>{emoji}</Text>
+                              <Text
+                                style={{
+                                  fontSize: 10,
+                                  color: "#666",
+                                  marginLeft: 2,
+                                }}
+                              >
+                                {count}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        },
+                      )}
+                      {!isOwnMessage &&
+                        !reactions.some(
+                          (r: any) => r.userId === currentUserId,
+                        ) && (
+                          <TouchableOpacity
+                            onPress={() => onOpenReactionPicker(item.id)}
+                            style={[
+                              chatStyles.reactionBubble,
+                              chatStyles.reactionAddBtn,
+                            ]}
+                          >
+                            <Ionicons
+                              name="add-circle-outline"
+                              size={18}
+                              color="#888"
+                            />
+                          </TouchableOpacity>
+                        )}
+                    </Animated.View>
+                  )}
+                <Text
+                  style={[
+                    chatStyles.timestamp,
+                    isOwnMessage && chatStyles.myTimestamp,
+                  ]}
+                >
+                  {formattedTime}
+                </Text>
+              </View>
+            </View>
+          </View>
+          {item.pinned && (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                chatStyles.pinnedIconWrap,
+                { transform: [{ scale: pinnedScale }] },
+              ]}
+            >
+              <FontAwesome
+                name="thumb-tack"
+                size={18}
+                color={colors.gold}
+              />
+            </Animated.View>
+          )}
+        </TouchableOpacity>
+        {actionTargetId === item.id && (
+          <>
+            <Pressable style={StyleSheet.absoluteFill} onPress={onStopActions} />
+            <View style={chatStyles.actionButtons}>
+              {currentUserRole === "moderator" && (
+                <Pressable
+                  onPress={() => {
+                    onPinMessage(item.id, item.pinned);
+                  }}
+                  style={chatStyles.actionBtn}
+                >
+                  <FontAwesome
+                    name="thumb-tack"
+                    size={22}
+                    color={colors.gold}
+                  />
+                </Pressable>
+              )}
+              <Pressable
+                onPress={() => onConfirmDelete(item.id)}
+                style={chatStyles.actionBtn}
+              >
+                <Ionicons
+                  name="trash-outline"
+                  size={22}
+                  color={colors.delete}
+                />
+              </Pressable>
+            </View>
+          </>
+        )}
+      </View>
+    </>
+  );
+});
 
 const AllChannels: React.FC<ChatScreenProps> = ({
   channelId,
@@ -560,42 +977,45 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   };
 
   // --- HANDLE REACTIONS ---
-  const handleAddReaction = async (msgId: string, emoji: string) => {
-    const msgRef = firestore()
-      .collection("channels")
-      .doc(channelId)
-      .collection("messages")
-      .doc(msgId);
-    const doc = await msgRef.get();
-    if (!doc.exists) return;
-    const messageUserId = doc.data().userId;
-    if (messageUserId === currentUserId) return;
-    const reactions = doc.data().reactions || [];
-    const existing = reactions.find((r) => r.userId === currentUserId);
-    let newReactions;
-    if (existing) {
-      if (existing.emoji === emoji) {
-        // Remove current reaction
-        newReactions = reactions.filter((r) => r.userId !== currentUserId);
+  const handleAddReaction = useCallback(
+    async (msgId: string, emoji: string) => {
+      const msgRef = firestore()
+        .collection("channels")
+        .doc(channelId)
+        .collection("messages")
+        .doc(msgId);
+      const doc = await msgRef.get();
+      if (!doc.exists) return;
+      const messageUserId = doc.data().userId;
+      if (messageUserId === currentUserId) return;
+      const reactions = doc.data().reactions || [];
+      const existing = reactions.find((r) => r.userId === currentUserId);
+      let newReactions;
+      if (existing) {
+        if (existing.emoji === emoji) {
+          // Remove current reaction
+          newReactions = reactions.filter((r) => r.userId !== currentUserId);
+        } else {
+          // Replace with new emoji
+          newReactions = reactions.map((r) =>
+            r.userId === currentUserId ? { emoji, userId: currentUserId } : r,
+          );
+        }
       } else {
-        // Replace with new emoji
-        newReactions = reactions.map((r) =>
-          r.userId === currentUserId ? { emoji, userId: currentUserId } : r,
-        );
+        newReactions = [...reactions, { emoji, userId: currentUserId }];
       }
-    } else {
-      newReactions = [...reactions, { emoji, userId: currentUserId }];
-    }
-    await msgRef.update({ reactions: newReactions });
+      await msgRef.update({ reactions: newReactions });
 
-    // Award XP to message owner (not self), unique per user per message
-    if (messageUserId && messageUserId !== currentUserId) {
-      await awardXP(messageUserId, "reaction", {
-        reactorId: currentUserId,
-        messageId: msgId,
-      });
-    }
-  };
+      // Award XP to message owner (not self), unique per user per message
+      if (messageUserId && messageUserId !== currentUserId) {
+        await awardXP(messageUserId, "reaction", {
+          reactorId: currentUserId,
+          messageId: msgId,
+        });
+      }
+    },
+    [channelId, currentUserId],
+  );
 
   // --- PIN / DELETE LOGIC ---
   const handleLongPress = useCallback(
@@ -652,31 +1072,35 @@ const AllChannels: React.FC<ChatScreenProps> = ({
     prevActionIdRef.current = actionTargetId;
   }, [actionTargetId, reactionOpacityMap]);
 
-  const pinMessage = async (msgId: string, pinned: boolean) => {
-    if (!pinned && pinnedMessages.length >= 5) {
-      setLimitCaption(true);
-      setTimeout(() => setLimitCaption(false), 1300);
-      return;
-    }
-    await firestore()
-      .collection("channels")
-      .doc(channelId)
-      .collection("messages")
-      .doc(msgId)
-      .update(
-        pinned
-          ? { pinned: false, pinnedAt: firestore.FieldValue.delete() }
-          : { pinned: true, pinnedAt: firestore.FieldValue.serverTimestamp() },
-      );
-    stopActions();
-  };
+  const pinMessage = useCallback(
+    async (msgId: string, pinned: boolean) => {
+      if (!pinned && pinnedMessages.length >= 5) {
+        setLimitCaption(true);
+        setTimeout(() => setLimitCaption(false), 1300);
+        return;
+      }
+      await firestore()
+        .collection("channels")
+        .doc(channelId)
+        .collection("messages")
+        .doc(msgId)
+        .update(
+          pinned
+            ? { pinned: false, pinnedAt: firestore.FieldValue.delete() }
+            : { pinned: true, pinnedAt: firestore.FieldValue.serverTimestamp() },
+        );
+      stopActions();
+    },
+    [channelId, pinnedMessages.length, stopActions],
+  );
 
-  const confirmDelete = (msgId: string) => {
-    Alert.alert("Delete Message", "Are you sure?", [
-      { text: "Cancel", style: "cancel", onPress: stopActions },
-      {
-        text: "Delete",
-        style: "destructive",
+  const confirmDelete = useCallback(
+    (msgId: string) => {
+      Alert.alert("Delete Message", "Are you sure?", [
+        { text: "Cancel", style: "cancel", onPress: stopActions },
+        {
+          text: "Delete",
+          style: "destructive",
         onPress: async () => {
           await firestore()
             .collection("channels")
@@ -688,14 +1112,19 @@ const AllChannels: React.FC<ChatScreenProps> = ({
         },
       },
     ]);
-  };
+  },
+    [channelId, stopActions],
+  );
 
   // --- USERNAME HOLD: PROFILE / REPORT / INFO ---
-  const handleUserPreview = (userId: string) => {
-    if (userId && userId !== currentUserId) {
-      setPreviewUserId(userId);
-    }
-  };
+  const handleUserPreview = useCallback(
+    (userId: string) => {
+      if (userId && userId !== currentUserId) {
+        setPreviewUserId(userId);
+      }
+    },
+    [currentUserId],
+  );
 
   const firstUnreadIndex = messages.findIndex(
     (m) => m.id === lastReadMessageId,
@@ -706,7 +1135,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
     firstUnreadIndex < messages.length - 1;
 
   // --- UI COLOR SCHEME ---
-  const ChatMessage = useCallback(
+  const renderMessage = useCallback(
     ({ item, index }: { item: any; index: number }) => {
       const showUnreadHere = hasUnreadMarker && index === firstUnreadIndex + 1;
 
@@ -736,413 +1165,48 @@ const AllChannels: React.FC<ChatScreenProps> = ({
         );
       }
 
-      const user = userMap[item.userId];
-      let displayName = "Unknown";
-      let isModerator = false;
-      let chatLevel = 1;
-      let profilePicUrl = "";
-      let badges: string[] = [];
-      if (user) {
-        displayName = `${user.firstName} ${user.lastName?.charAt(0) || ""}.`;
-        isModerator = user.role === "moderator";
-        chatLevel = user.chatLevel || 1;
-        profilePicUrl = user.profilePicUrl || "";
-        badges = enforceSelectedBadges(
-          Array.isArray(user.selectedBadges) ? user.selectedBadges : [],
-          user,
-        );
-      }
-      const isOwnMessage = item.userId === currentUserId;
-      const nameColor = isOwnMessage
-        ? colors.white
-        : isModerator
-          ? colors.accent
-          : colors.black;
-      const formattedTime = formatTimestamp(item.timestamp);
-
-      if (renderCustomMessage) {
-        const custom = renderCustomMessage({
-          item,
-          index,
-          isLast: index === messages.length - 1,
-          isOwnMessage,
-          showUnreadHere,
-          user,
-          addReaction: (emoji: string) => handleAddReaction(item.id, emoji),
-          openReactionPicker: () => setReactionTargetId(item.id),
-        });
-        if (custom) {
-          return custom;
-        }
-      }
-      const reactions = item.reactions || [];
-      if (!reactionOpacityMap[item.id]) {
-        reactionOpacityMap[item.id] = new Animated.Value(1);
-      }
-
-      const pinnedScale = useRef(
-        new Animated.Value(item.pinned ? 1 : 0),
-      ).current;
-      const prevPinned = useRef(item.pinned);
-
-      useEffect(() => {
-        if (item.pinned && !prevPinned.current) {
-          Animated.sequence([
-            Animated.timing(pinnedScale, {
-              toValue: 1.2,
-              duration: ANIM_BUTTON_POP,
-              useNativeDriver: true,
-            }),
-            Animated.timing(pinnedScale, {
-              toValue: 1,
-              duration: ANIM_BUTTON_POP,
-              useNativeDriver: true,
-            }),
-          ]).start();
-        } else if (!item.pinned && prevPinned.current) {
-          Animated.timing(pinnedScale, {
-            toValue: 0,
-            duration: ANIM_SHORT,
-            useNativeDriver: true,
-          }).start();
-        }
-        prevPinned.current = item.pinned;
-      }, [item.pinned, pinnedScale]);
-
       return (
-        <>
-          {showUnreadHere && (
-            <View style={chatStyles.unreadMarkerRow}>
-              <View style={chatStyles.unreadMarker}>
-                <Text style={chatStyles.unreadMarkerText}>New Messages</Text>
-              </View>
-            </View>
-          )}
-          <View
-            style={[
-              chatStyles.messageContainer,
-              actionTargetId === item.id && {
-                marginBottom: ACTION_SPACING,
-                marginTop: ACTION_SPACING / 2,
-              },
-            ]}
-          >
-            <TouchableOpacity
-              onLongPress={() => handleLongPress(item.id, item)}
-              delayLongPress={400}
-              activeOpacity={1}
-              style={[
-                chatStyles.messageBox,
-                isOwnMessage && chatStyles.myMessageBox,
-                reactions.length > 0 && { marginBottom: 2 },
-                item.pinned && chatStyles.pinnedMessage,
-                actionTargetId === item.id && {
-                  transform: [
-                    {
-                      rotate: wiggleAnim.interpolate({
-                        inputRange: [-1, 1],
-                        outputRange: ["-2deg", "2deg"],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            >
-              <View style={chatStyles.metaRow}>
-                {isOwnMessage ? (
-                  <ProfileImage
-                    uri={profilePicUrl}
-                    style={chatStyles.profilePic}
-                    isCurrentUser
-                  />
-                ) : (
-                  <TouchableOpacity
-                    onPress={() => handleUserPreview(item.userId)}
-                    activeOpacity={0.8}
-                  >
-                    <ProfileImage
-                      uri={profilePicUrl}
-                      style={chatStyles.profilePic}
-                      isCurrentUser={false}
-                    />
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity
-                  onPress={() => handleUserPreview(item.userId)}
-                  disabled={isOwnMessage}
-                >
-                  <Text
-                    style={[
-                      chatStyles.username,
-                      { color: nameColor },
-                      isOwnMessage && { textAlign: "right" },
-                      isOwnMessage && chatStyles.myUsername,
-                    ]}
-                  >
-                    {isOwnMessage ? "Me" : displayName}
-                  </Text>
-                </TouchableOpacity>
-                {badges && badges.length > 0 && (
-                  <View style={{ flexDirection: "row", marginLeft: 5 }}>
-                    {badges.slice(0, MAX_DISPLAY_BADGES).map((b, i) => (
-                      <BadgeImage
-                        key={b}
-                        badgeKey={b}
-                        style={[
-                          { width: 19, height: 19, marginLeft: i ? 4 : 0 },
-                          chatStyles.badgeHighlight,
-                        ]}
-                      />
-                    ))}
-                  </View>
-                )}
-              </View>
-              <Text
-                style={[
-                  chatStyles.messageText,
-                  isOwnMessage && chatStyles.myMessageText,
-                ]}
-              >
-                {item.text}
-              </Text>
-              <View>
-                <View style={chatStyles.footerRow}>
-                    <View
-                      style={{
-                        backgroundColor: getChatLevelColor(chatLevel),
-                        borderRadius: 2,
-                        paddingHorizontal: 4,
-                        marginRight: 3,
-                        marginLeft: 1,
-                        paddingVertical: 2,
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          color: colors.white,
-                          fontSize: 12,
-                          fontWeight: "bold",
-                          letterSpacing: 0.8,
-                        }}
-                      >
-                        Lv{chatLevel}
-                      </Text>
-                    </View>
-                    {user?.accountabilityStreak > 0 && (
-                      <View
-                        style={{
-                          backgroundColor: colors.yellow,
-                          borderRadius: 2,
-                          paddingHorizontal: 4,
-                          marginRight: 3,
-                          paddingVertical: 2,
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: colors.black,
-                            fontSize: 12,
-                            fontWeight: "bold",
-                            letterSpacing: 0.8,
-                          }}
-                        >
-                          🔥{user.accountabilityStreak}
-                        </Text>
-                      </View>
-                    )}
-                    {ROLE_TAGS[user?.role] && (
-                      <View
-                        style={{
-                          backgroundColor: ROLE_COLORS[user.role],
-                          borderRadius: 2,
-                          paddingHorizontal: 4,
-                          marginRight: 3,
-                          paddingVertical: 2,
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: colors.white,
-                            fontSize: 12,
-                            fontWeight: "bold",
-                            letterSpacing: 0.8,
-                          }}
-                        >
-                          {ROLE_TAGS[user.role]}
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                <View style={chatStyles.reactionTimestampRow}>
-                  {actionTargetId !== item.id &&
-                    (reactions.length > 0 ||
-                      (!isOwnMessage &&
-                        !reactions.some((r) => r.userId === currentUserId))) && (
-                        <Animated.View
-                          pointerEvents={
-                            actionTargetId === item.id ? "none" : "auto"
-                          }
-                          style={[
-                            chatStyles.reactionRow,
-                            { opacity: reactionOpacityMap[item.id] || 1 },
-                          ]}
-                        >
-                          {Array.from(new Set(reactions.map((r) => r.emoji))).map(
-                            (emoji) => {
-                              const count = reactions.filter(
-                                (r) => r.emoji === emoji,
-                              ).length;
-                              const userReacted = reactions.some(
-                                (r) =>
-                                  r.emoji === emoji &&
-                                  r.userId === currentUserId,
-                              );
-                              return (
-                                <TouchableOpacity
-                                  key={emoji}
-                                  style={[
-                                    chatStyles.reactionBubble,
-                                    userReacted && chatStyles.reactionHighlight,
-                                  ]}
-                                  onPress={() => {
-                                    if (!isOwnMessage)
-                                      handleAddReaction(item.id, emoji);
-                                  }}
-                                  disabled={isOwnMessage}
-                                  activeOpacity={0.6}
-                                >
-                                  <Text style={{ fontSize: 15 }}>{emoji}</Text>
-                                  <Text
-                                    style={{
-                                      fontSize: 10,
-                                      color: "#666",
-                                      marginLeft: 2,
-                                    }}
-                                  >
-                                    {count}
-                                  </Text>
-                                </TouchableOpacity>
-                              );
-                            },
-                          )}
-                          {!isOwnMessage &&
-                            !reactions.some(
-                              (r) => r.userId === currentUserId,
-                            ) && (
-                              <TouchableOpacity
-                                onPress={() => setReactionTargetId(item.id)}
-                                style={[
-                                  chatStyles.reactionBubble,
-                                  chatStyles.reactionAddBtn,
-                                ]}
-                              >
-                                <Ionicons
-                                  name="add-circle-outline"
-                                  size={18}
-                                  color="#888"
-                                />
-                              </TouchableOpacity>
-                            )}
-                        </Animated.View>
-                      )}
-                  <Text
-                    style={[
-                      chatStyles.timestamp,
-                      isOwnMessage && chatStyles.myTimestamp,
-                    ]}
-                  >
-                    {formattedTime}
-                  </Text>
-                </View>
-              </View>
-              {item.pinned && (
-                <Animated.View
-                  pointerEvents="none"
-                    style={[
-                      chatStyles.pinnedIconWrap,
-                      { transform: [{ scale: pinnedScale }] },
-                    ]}
-                  >
-                    <FontAwesome
-                      name="thumb-tack"
-                      size={18}
-                      color={colors.gold}
-                    />
-                  </Animated.View>
-                )}
-              </TouchableOpacity>
-              {actionTargetId === item.id && (
-                <>
-                  <Pressable
-                    style={StyleSheet.absoluteFill}
-                    onPress={stopActions}
-                  />
-                  <View style={chatStyles.actionButtons}>
-                    {currentUserRole === "moderator" && (
-                      <Pressable
-                        onPress={() => {
-                          pinMessage(item.id, item.pinned);
-                        }}
-                        style={chatStyles.actionBtn}
-                      >
-                        <FontAwesome
-                          name="thumb-tack"
-                          size={22}
-                          color={colors.gold}
-                        />
-                      </Pressable>
-                    )}
-                    <Pressable
-                      onPress={() => confirmDelete(item.id)}
-                      style={chatStyles.actionBtn}
-                    >
-                      <Ionicons
-                        name="trash-outline"
-                        size={22}
-                        color={colors.delete}
-                      />
-                    </Pressable>
-                  </View>
-                </>
-              )}
-            </View>
-        </>
+        <ChatMessageRow
+          item={item}
+          index={index}
+          isLast={index === messages.length - 1}
+          showUnreadHere={showUnreadHere}
+          user={userMap[item.userId]}
+          currentUserId={currentUserId}
+          currentUserRole={currentUserRole}
+          actionTargetId={actionTargetId}
+          reactionOpacityMap={reactionOpacityMap}
+          wiggleAnim={wiggleAnim}
+          renderCustomMessage={renderCustomMessage}
+          onAddReaction={handleAddReaction}
+          onOpenReactionPicker={setReactionTargetId}
+          onUserPreview={handleUserPreview}
+          onLongPress={handleLongPress}
+          onPinMessage={pinMessage}
+          onConfirmDelete={confirmDelete}
+          onStopActions={stopActions}
+        />
       );
     },
     [
-      userMap,
-      currentUserId,
-      hasUnreadMarker,
-      firstUnreadIndex,
-      renderCustomMessage,
-      messages.length,
-      handleAddReaction,
-      setReactionTargetId,
-      reactionOpacityMap,
       actionTargetId,
-      wiggleAnim,
-      currentUserRole,
-      pinMessage,
       confirmDelete,
-      stopActions,
-      handleUserPreview,
+      currentUserId,
+      currentUserRole,
+      firstUnreadIndex,
+      handleAddReaction,
       handleLongPress,
+      handleUserPreview,
+      hasUnreadMarker,
+      messages.length,
+      pinMessage,
+      reactionOpacityMap,
+      renderCustomMessage,
+      setReactionTargetId,
+      stopActions,
+      userMap,
+      wiggleAnim,
     ],
-  );
-
-  const MemoizedChatMessage = useMemo(() => memo(ChatMessage), [ChatMessage]);
-
-  const renderMessage = useCallback(
-    ({ item, index }: { item: any; index: number }) => (
-      <MemoizedChatMessage item={item} index={index} />
-    ),
-    [MemoizedChatMessage],
   );
 
   return (
