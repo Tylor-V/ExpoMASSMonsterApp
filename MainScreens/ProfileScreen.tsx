@@ -1025,8 +1025,7 @@ const styles = StyleSheet.create({
   shareIconButton: {
     width: 48,
     height: 48,
-    marginLeft: 12,
-    backgroundColor: '#F3F4F6',
+    marginLeft: 0,
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
