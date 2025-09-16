@@ -10,6 +10,7 @@ import {
   Linking,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -291,6 +292,20 @@ const ProfileScreen = () => {
 
   const handleCheckin = () => {
     if (!hasCheckinToday) navigation.navigate('AccountabilityForm');
+  };
+
+  const handleReferShare = async () => {
+    try {
+      await Share.share({
+        message: 'Check out my fitness progress in the MASS Monster app!',
+      });
+    } catch (error) {
+      console.error('Failed to share referral message', error);
+      Alert.alert(
+        'Share Unavailable',
+        'We could not open your share options right now. Please try again later.',
+      );
+    }
   };
 
   const handleSignOut = async () => {
@@ -594,8 +609,14 @@ const ProfileScreen = () => {
               <TouchableOpacity style={styles.secondaryBtn} onPress={startEdit}>
                 <Text style={styles.secondaryTxt}>Edit Profile</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.secondaryBtn}>
-                <Text style={styles.secondaryTxt}>Refer-a-Friend</Text>
+              <TouchableOpacity
+                style={styles.shareIconButton}
+                onPress={handleReferShare}
+                accessibilityLabel="Share MASS Monster app"
+                accessibilityRole="button"
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="share-social-outline" size={24} color={colors.gold} />
               </TouchableOpacity>
             </>
           )}
@@ -976,6 +997,12 @@ const styles = StyleSheet.create({
     height: 40,
     backgroundColor: '#F3F4F6',
     borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareIconButton: {
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
