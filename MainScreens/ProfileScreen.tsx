@@ -1271,7 +1271,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 48,
     borderRadius: 12,
-    backgroundColor: colors.gold,
+    backgroundColor: colors.purple,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 16,
