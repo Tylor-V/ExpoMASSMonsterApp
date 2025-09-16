@@ -1,8 +1,13 @@
 module.exports = function (api) {
   api.cache(true);
+
+  const plugins = [
+    // React Native Worklets now hosts Reanimated's Babel plugin.
+    'react-native-worklets/plugin',
+  ];
+
   return {
     presets: ['babel-preset-expo'],
-    // Reanimated's Babel plugin has moved to the react-native-worklets package
-    plugins: ['react-native-worklets/plugin'],
+    plugins,
   };
 };

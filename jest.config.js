@@ -15,7 +15,7 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   testPathIgnorePatterns: ['/node_modules/', '/dist/'],
   transformIgnorePatterns: [
-    'node_modules/(?!(jest-)?react-native|@react-native|@react-navigation|@react-native-community|react-native-reanimated|react-native-screens|react-native-safe-area-context|react-native-vector-icons|react-native-device-info|react-native-video|@expo|expo(?:(-|/)|$))',
+    'node_modules/(?!(jest-)?react-native|@react-native|@react-navigation|@react-native-community|react-native-reanimated|react-native-worklets|react-native-screens|react-native-safe-area-context|react-native-vector-icons|react-native-device-info|react-native-video|@expo|expo(?:(-|/)|$))',
   ],
   moduleNameMapper: {
     '^react-native-gesture-handler$': '<rootDir>/__mocks__/react-native-gesture-handler.js',
