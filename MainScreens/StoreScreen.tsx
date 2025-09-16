@@ -36,14 +36,14 @@ import {
   ANIM_FAST,
   ANIM_MEDIUM,
 } from '../utils/animations';
+import type {
+  CategoryLabel,
+  CategoryRatings,
+} from '../utils/categoryRatings';
 import {
   CATEGORY_ICONS,
   CATEGORY_LABELS,
   parseCategoryRatings,
-} from '../utils/categoryRatings';
-import type {
-  CategoryLabel,
-  CategoryRatings,
 } from '../utils/categoryRatings';
 
 const { width, height: screenHeight } = Dimensions.get('window');
@@ -807,24 +807,24 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 18,
     color: colors.gold,
-    marginBottom: 8,
+    marginBottom: 2,
   },
   // Provide extra space below ratings so the quantity control doesn't overlap
   cardRatings: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    marginBottom: 8,
+    marginBottom: 2,
     minHeight: 42,
   },
   categoryIconWrap: {
     position: 'relative',
-    marginRight: 8,
+    marginRight: 3,
     minHeight: 32,
     justifyContent: 'flex-end',
     alignItems: 'center',
   },
   categoryIconPressable: {
-    padding: 6,
+    padding: 2,
     borderRadius: 18,
     backgroundColor: colors.translucentWhite,
     borderWidth: 1,
