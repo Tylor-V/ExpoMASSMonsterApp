@@ -594,7 +594,12 @@ const ProfileScreen = () => {
           </View>
         </View>
 
-        <View style={styles.secondaryRow}>
+        <View
+          style={[
+            styles.secondaryRow,
+            editMode ? styles.secondaryRowEditing : styles.secondaryRowViewing,
+          ]}
+        >
           {editMode ? (
             <>
               <TouchableOpacity style={styles.secondaryBtn} onPress={handleSave}>
@@ -606,7 +611,7 @@ const ProfileScreen = () => {
             </>
           ) : (
             <>
-              <TouchableOpacity style={styles.secondaryBtn} onPress={startEdit}>
+              <TouchableOpacity style={styles.editProfileBtn} onPress={startEdit}>
                 <Text style={styles.secondaryTxt}>Edit Profile</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -615,8 +620,9 @@ const ProfileScreen = () => {
                 accessibilityLabel="Share MASS Monster app"
                 accessibilityRole="button"
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                activeOpacity={0.8}
               >
-                <Ionicons name="share-social-outline" size={24} color={colors.gold} />
+                <Ionicons name="share-outline" size={24} color={colors.gold} />
               </TouchableOpacity>
             </>
           )}
@@ -987,10 +993,17 @@ const styles = StyleSheet.create({
   },
   secondaryRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    alignSelf: 'stretch',
     marginHorizontal: 16,
     marginTop: 16,
     marginBottom: 20,
+  },
+  secondaryRowViewing: {
+    justifyContent: 'flex-start',
+  },
+  secondaryRowEditing: {
+    justifyContent: 'space-between',
   },
   secondaryBtn: {
     width: '48%',
@@ -1000,9 +1013,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  editProfileBtn: {
+    flex: 1,
+    height: 48,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
   shareIconButton: {
-    width: 40,
-    height: 40,
+    width: 48,
+    height: 48,
+    marginLeft: 12,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
