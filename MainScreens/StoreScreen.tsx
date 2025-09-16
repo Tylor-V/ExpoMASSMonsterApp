@@ -30,11 +30,20 @@ import { addToCart as addCartItem } from '../firebase/cartHelpers';
 import { useCart } from '../hooks/useCart';
 import { useShopifyCollections, useShopifyProducts } from '../hooks/useShopify';
 import { colors, fonts, radius } from '../theme';
-import { ANIM_BUTTON_POP, ANIM_DRAWER, ANIM_MEDIUM } from '../utils/animations';
+import {
+  ANIM_BUTTON_POP,
+  ANIM_DRAWER,
+  ANIM_FAST,
+  ANIM_MEDIUM,
+} from '../utils/animations';
 import {
   CATEGORY_ICONS,
   CATEGORY_LABELS,
   parseCategoryRatings,
+} from '../utils/categoryRatings';
+import type {
+  CategoryLabel,
+  CategoryRatings,
 } from '../utils/categoryRatings';
 
 const { width, height: screenHeight } = Dimensions.get('window');
@@ -44,6 +53,120 @@ const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 const CARD_ROW_HEIGHT = 260;
 // Fade rows in from 50% opacity as they scroll up from the bottom
 const FADE_DISTANCE = CARD_ROW_HEIGHT;
+const CATEGORY_TOOLTIP_TIMEOUT = 1800;
+
+const CategoryIconRow = React.memo(({ ratings }: { ratings: CategoryRatings }) => {
+  const [activeCategory, setActiveCategory] = useState<CategoryLabel | null>(null);
+  const tooltipAnim = useRef(new Animated.Value(0)).current;
+  const hideTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearExistingTimeout = useCallback(() => {
+    if (hideTimeout.current) {
+      clearTimeout(hideTimeout.current);
+      hideTimeout.current = null;
+    }
+  }, []);
+
+  const hideTooltip = useCallback(() => {
+    Animated.timing(tooltipAnim, {
+      toValue: 0,
+      duration: ANIM_MEDIUM,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        setActiveCategory(null);
+      }
+    });
+  }, [tooltipAnim]);
+
+  const handleCategoryPress = useCallback(
+    (label: CategoryLabel) => {
+      clearExistingTimeout();
+      setActiveCategory(label);
+      tooltipAnim.stopAnimation();
+      tooltipAnim.setValue(0);
+      Animated.timing(tooltipAnim, {
+        toValue: 1,
+        duration: ANIM_FAST,
+        useNativeDriver: true,
+      }).start();
+
+      hideTimeout.current = setTimeout(() => {
+        hideTooltip();
+        hideTimeout.current = null;
+      }, CATEGORY_TOOLTIP_TIMEOUT);
+    },
+    [clearExistingTimeout, hideTooltip, tooltipAnim],
+  );
+
+  useEffect(() => {
+    return () => {
+      clearExistingTimeout();
+    };
+  }, [clearExistingTimeout]);
+
+  const hasRatings = useMemo(
+    () => CATEGORY_LABELS.some(label => !!ratings[label]),
+    [ratings],
+  );
+
+  if (!hasRatings) {
+    return <View style={styles.cardRatings} />;
+  }
+
+  return (
+    <View style={styles.cardRatings}>
+      {CATEGORY_LABELS.map(label => {
+        const rating = ratings[label];
+        if (!rating) {
+          return null;
+        }
+
+        const isActive = activeCategory === label;
+        return (
+          <View key={label} style={styles.categoryIconWrap}>
+            {isActive && (
+              <View pointerEvents="none" style={styles.categoryTooltipContainer}>
+                <Animated.View
+                  style={[
+                    styles.categoryTooltip,
+                    {
+                      opacity: tooltipAnim,
+                      transform: [
+                        {
+                          translateY: tooltipAnim.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [8, 0],
+                          }),
+                        },
+                      ],
+                    },
+                  ]}
+                >
+                  <Text style={styles.categoryTooltipText}>{label}</Text>
+                </Animated.View>
+              </View>
+            )}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${label} category`}
+              accessibilityHint="Shows the category name"
+              hitSlop={8}
+              style={styles.categoryIconPressable}
+              onPress={() => handleCategoryPress(label)}
+            >
+              <Ionicons
+                name={CATEGORY_ICONS[label]}
+                size={24}
+                color={colors.black}
+              />
+            </Pressable>
+          </View>
+        );
+      })}
+    </View>
+  );
+});
 
 function StoreScreen({ navigation }) {
   const {
@@ -317,20 +440,7 @@ function StoreScreen({ navigation }) {
             <Text style={styles.cardPrice}>
               ${parseFloat(item.priceRange?.minVariantPrice.amount || '0').toFixed(2)}
             </Text>
-            <View style={styles.cardRatings}>
-              {CATEGORY_LABELS.map(label => {
-                const rating = ratings[label];
-                return rating ? (
-                  <Ionicons
-                    key={label}
-                    name={CATEGORY_ICONS[label]}
-                    size={24}
-                    color={colors.black}
-                    style={styles.cardRatingIcon}
-                  />
-                ) : null;
-              })}
-            </View>
+            <CategoryIconRow ratings={ratings} />
             <AddToCartControl
               item={{
                 id: item.id,
@@ -700,8 +810,60 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   // Provide extra space below ratings so the quantity control doesn't overlap
-  cardRatings: { flexDirection: 'row', marginBottom: 8 },
-  cardRatingIcon: { marginRight: 4 },
+  cardRatings: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginBottom: 8,
+    minHeight: 42,
+  },
+  categoryIconWrap: {
+    position: 'relative',
+    marginRight: 8,
+    minHeight: 32,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  categoryIconPressable: {
+    padding: 6,
+    borderRadius: 18,
+    backgroundColor: colors.translucentWhite,
+    borderWidth: 1,
+    borderColor: colors.grayOutline,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryTooltipContainer: {
+    position: 'absolute',
+    bottom: 36,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  categoryTooltip: {
+    backgroundColor: colors.translucentWhite,
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
+  categoryTooltipText: {
+    fontFamily: fonts.semiBold,
+    fontSize: 12,
+    color: colors.black,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   addControl: { alignSelf: 'center', marginTop: 8 },
   coralLogo: {
     width: 80,
