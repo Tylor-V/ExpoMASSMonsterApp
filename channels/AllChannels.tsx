@@ -335,23 +335,23 @@ const ChatMessageRow = memo(function ChatMessageRow({
             {item.text}
           </Text>
           <View>
-            <View
-              style={[
-                chatStyles.footerContainer,
-                showReactionsRow
-                  ? chatStyles.footerContainerWithReactions
-                  : undefined,
-              ]}
-            >
-              {showReactionsRow && (
-                <Animated.View
-                  pointerEvents={actionTargetId === item.id ? "none" : "auto"}
-                  style={[
-                    chatStyles.reactionRow,
-                    chatStyles.reactionRowWrapper,
-                    { opacity: reactionOpacityMap[item.id] || 1 },
-                  ]}
-                >
+              <View
+                style={[
+                  chatStyles.footerContainer,
+                  showReactionsRow
+                    ? chatStyles.footerContainerWithReactions
+                    : undefined,
+                ]}
+              >
+                {showReactionsRow && (
+                  <Animated.View
+                    pointerEvents={actionTargetId === item.id ? "none" : "auto"}
+                    style={[
+                      chatStyles.reactionRow,
+                      chatStyles.reactionRowWrapper,
+                      { opacity: reactionOpacityMap[item.id] || 1 },
+                    ]}
+                  >
                   {Array.from(new Set(reactions.map((r: any) => r.emoji))).map(
                     (emoji: string) => {
                       const count = reactions.filter(
@@ -406,13 +406,15 @@ const ChatMessageRow = memo(function ChatMessageRow({
                   )}
                 </Animated.View>
               )}
-              <View style={chatStyles.footerMeta}>
-                <View
-                  style={[
-                    chatStyles.indicatorRow,
-                    showReactionsRow ? chatStyles.indicatorRowWithReactions : undefined,
-                  ]}
-                >
+                <View style={chatStyles.footerMeta}>
+                  <View
+                    style={[
+                      chatStyles.indicatorRow,
+                      showReactionsRow
+                        ? chatStyles.indicatorRowWithReactions
+                        : undefined,
+                    ]}
+                  >
                   <View
                     style={{
                       backgroundColor: getChatLevelColor(chatLevel),
@@ -1448,38 +1450,39 @@ export const chatStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "flex-end",
-    flexWrap: "wrap",
   },
   footerContainerWithReactions: {
     justifyContent: "space-between",
   },
   footerMeta: {
     alignItems: "flex-end",
-    flexShrink: 0,
+    flexDirection: "column",
+    flexShrink: 1,
   },
   indicatorRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     alignItems: "center",
     justifyContent: "flex-end",
-    width: "100%",
-    marginBottom: 4,
+    alignSelf: "flex-end",
+    marginBottom: 2,
   },
   indicatorRowWithReactions: {
-    marginBottom: 6,
+    marginBottom: 4,
   },
   reactionRowWrapper: {
     marginTop: 0,
     marginBottom: 0,
+    marginRight: 12,
+    flexShrink: 1,
   },
   timestamp: {
     color: colors.black,
     fontSize: 10,
     fontWeight: "400",
     fontFamily: fonts.regular,
-    marginTop: 0,
+    marginTop: 2,
     marginBottom: 0,
-    marginLeft: "auto",
     marginRight: 2,
     textAlign: "right",
     alignSelf: "flex-end",
@@ -1585,8 +1588,8 @@ export const chatStyles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     paddingHorizontal: 3,
-    alignSelf: "flex-start",
     marginLeft: 4,
+    alignItems: "center",
   },
   reactionBubble: {
     flexDirection: "row",
