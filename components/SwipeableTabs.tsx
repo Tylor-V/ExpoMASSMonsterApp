@@ -1,9 +1,7 @@
 import { Ionicons as Icon } from '@expo/vector-icons';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
-  Animated,
   FlatList,
-  LayoutChangeEvent,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -55,8 +53,6 @@ export default function SwipeableTabs({
   const { width } = useWindowDimensions();
   const scrollRef = useRef<FlatList<Route>>(null);
   const tabIndexRef = useRef(tabIndex);
-  const scrollX = useRef(new Animated.Value(tabIndex * width)).current;
-  const [tabBarWidth, setTabBarWidth] = useState(0);
 
   useEffect(() => {
     tabIndexRef.current = tabIndex;
@@ -86,12 +82,6 @@ export default function SwipeableTabs({
     scrollRef.current?.scrollToOffset({ offset: width * tabIndex, animated: animationEnabled });
   }, [tabIndex, width, animationEnabled]);
 
-  useEffect(() => {
-    if (!animationEnabled) {
-      scrollX.setValue(width * tabIndex);
-    }
-  }, [animationEnabled, scrollX, tabIndex, width]);
-
   const handleScroll = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
       const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
@@ -105,49 +95,13 @@ export default function SwipeableTabs({
 
   const jumpTo = (key: string) => {
     const idx = routes.findIndex(r => r.key === key);
-    if (idx < 0) {
-      return;
-    }
     scrollRef.current?.scrollToOffset({ offset: width * idx, animated: animationEnabled });
     onTabChange?.(idx);
   };
 
-  const handleTabBarLayout = useCallback((event: LayoutChangeEvent) => {
-    setTabBarWidth(event.nativeEvent.layout.width);
-  }, []);
-
-  const tabWidth = tabBarWidth / (routes.length || 1);
-
-  const indicatorTranslateX = useMemo(() => {
-    if (!tabBarWidth) {
-      return null;
-    }
-
-    const inputRange = routes.map((_, index) => index * width);
-    const outputRange = routes.map((_, index) => index * tabWidth);
-
-    return scrollX.interpolate({
-      inputRange,
-      outputRange,
-      extrapolate: 'clamp',
-    });
-  }, [scrollX, tabWidth, tabBarWidth, routes, width]);
-
-  const animatedOnScroll = useMemo(
-    () =>
-      Animated.event(
-        [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-        {
-          useNativeDriver: true,
-          listener: handleScroll,
-        },
-      ),
-    [handleScroll, scrollX],
-  );
-
   return (
     <View style={{ flex: 1 }}>
-      <Animated.FlatList
+      <FlatList
         ref={scrollRef}
         data={routes}
         horizontal
@@ -157,27 +111,14 @@ export default function SwipeableTabs({
           <View style={{ width, flex: 1 }}>{renderScene(item)}</View>
         )}
         keyExtractor={item => item.key}
-        onScroll={animatedOnScroll}
+        onScroll={handleScroll}
         scrollEventThrottle={16}
         getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
         testID="swipeable-tabs-list"
       />
       {tabBarVisible && (
         <View style={[styles.tabBarContainer, { paddingBottom: insets.bottom }]}>
-          <View style={styles.tabBar} onLayout={handleTabBarLayout}>
-            {tabBarWidth > 0 && indicatorTranslateX && (
-              <Animated.View
-                pointerEvents="none"
-                style={[
-                  styles.tabIndicator,
-                  {
-                    width: tabWidth,
-                    transform: [{ translateX: indicatorTranslateX }],
-                    backgroundColor: activeTintColor,
-                  },
-                ]}
-              />
-            )}
+          <View style={styles.tabBar}>
             {routes.map((route, i) => (
               <Pressable
                 key={route.key}
@@ -220,7 +161,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     alignItems: 'center',
-    overflow: 'hidden',
   },
   tabItem: {
     alignItems: 'center',
@@ -229,12 +169,5 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     minHeight: 48,
     minWidth: 48,
-  },
-  tabIndicator: {
-    position: 'absolute',
-    top: 4,
-    bottom: 4,
-    borderRadius: 24,
-    opacity: 0.3,
   },
 });
