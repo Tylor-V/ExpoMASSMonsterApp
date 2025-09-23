@@ -1,13 +1,24 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { firestore } from '../firebase/firebase';
 import { auth } from '../firebase/firebase';
 
 export default function useChannelUnread(channelIds: string[], activeId: string) {
   const [unreadMap, setUnreadMap] = useState<Record<string, boolean>>({});
+  const uid = auth().currentUser?.uid ?? null;
+  const previousUidRef = useRef<string | null>(uid);
 
   useEffect(() => {
-    const uid = auth().currentUser?.uid;
-    if (!uid || !channelIds.length) return;
+    if (previousUidRef.current !== uid) {
+      setUnreadMap({});
+    }
+    previousUidRef.current = uid;
+  }, [uid]);
+
+  useEffect(() => {
+    if (!uid || !channelIds.length) {
+      setUnreadMap({});
+      return;
+    }
 
     const lastReads: Record<string, number> = {};
     const latest: Record<string, number> = {};
@@ -54,7 +65,7 @@ export default function useChannelUnread(channelIds: string[], activeId: string)
     return () => {
       unsubs.forEach(u => u());
     };
-  }, [activeId, channelIds.join('|')]);
+  }, [activeId, channelIds.join('|'), uid]);
 
   useEffect(() => {
     setUnreadMap(prev => ({ ...prev, [activeId]: false }));
