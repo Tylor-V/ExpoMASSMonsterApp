@@ -106,7 +106,7 @@ export default function App() {
     }
   }, [fontsLoaded, assetsLoaded]);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded || !assetsLoaded) {
     return null;
   }
 
