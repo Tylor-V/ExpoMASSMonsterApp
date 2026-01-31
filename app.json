@@ -13,6 +13,7 @@
     "scheme": "expomassmonsterapp",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "buildNumber": "2",
       "supportsTablet": false,
       "bundleIdentifier": "com.expomassmonster.app",
       "infoPlist": {
