@@ -5,23 +5,21 @@ import { htmlToText } from '../utils/htmlToText';
 const {
   SHOPIFY_DOMAIN,
   SHOPIFY_API_VERSION,
-  SHOPIFY_TOKEN,
+  SHOPIFY_STOREFRONT_TOKEN,
 } = env;
 
 function getConfig() {
   return {
     domain: SHOPIFY_DOMAIN,
     version: SHOPIFY_API_VERSION || '2026-01',
-    token: SHOPIFY_TOKEN,
+    token: SHOPIFY_STOREFRONT_TOKEN,
   };
 }
 
 function buildShopifyUrl() {
   const { domain, version } = getConfig();
-  // Allow SHOPIFY_DOMAIN to be either the full GraphQL endpoint or the base domain
-  return domain.includes('graphql.json')
-    ? domain
-    : `${domain}/api/${version}/graphql.json`;
+  const normalizedDomain = domain?.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  return `https://${normalizedDomain}/api/${version}/graphql.json`;
 }
 
 async function shopifyFetch(query: string, variables?: Record<string, any>) {
@@ -167,13 +165,32 @@ export function useShopifyProducts(collectionId?: string) {
 export async function createShopifyCheckout(
   items: { id: string; quantity: number; variantId?: string }[],
 ): Promise<string | null> {
-  const lineItems = items.map(i => ({
-    variantId: i.variantId || i.id,
+  const lines = items.map(i => ({
+    merchandiseId: i.variantId || i.id,
     quantity: i.quantity,
   }));
-  const data = await shopifyFetch(
-    `mutation checkoutCreate($lineItems:[CheckoutLineItemInput!]!){checkoutCreate(input:{lineItems:$lineItems}){checkout{webUrl}}}`,
-    { lineItems },
+  const created = await shopifyFetch(
+    `mutation cartCreate { cartCreate(input: {}) { cart { id checkoutUrl } userErrors { field message } } }`,
   );
-  return data?.checkoutCreate?.checkout?.webUrl ?? null;
+  const cartId = created?.cartCreate?.cart?.id;
+  if (!cartId || created?.cartCreate?.userErrors?.length) {
+    console.error('Shopify cartCreate failed', created?.cartCreate?.userErrors);
+    return null;
+  }
+  const added = await shopifyFetch(
+    `mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
+      cartLinesAdd(cartId: $cartId, lines: $lines) {
+        cart { id checkoutUrl }
+        userErrors { field message }
+      }
+    }`,
+    { cartId, lines },
+  );
+  if (added?.cartLinesAdd?.userErrors?.length) {
+    console.error('Shopify cartLinesAdd failed', added?.cartLinesAdd?.userErrors);
+    return null;
+  }
+  return added?.cartLinesAdd?.cart?.checkoutUrl ?? null;
 }
+
+export { shopifyFetch };

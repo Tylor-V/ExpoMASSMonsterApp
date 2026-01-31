@@ -29,7 +29,7 @@ import RollingNumber from '../components/RollingNumber';
 import { TAB_BAR_HEIGHT } from '../components/SwipeableTabs';
 import { addToCart as addCartItem } from '../firebase/cartHelpers';
 import { useCart } from '../hooks/useCart';
-import { useShopifyCollections, useShopifyProducts } from '../hooks/useShopify';
+import { createShopifyCheckout, useShopifyCollections, useShopifyProducts } from '../hooks/useShopify';
 import { colors, fonts, radius } from '../theme';
 import {
   ANIM_BUTTON_POP,
@@ -48,7 +48,6 @@ import {
 } from '../utils/categoryRatings';
 
 const { width, height: screenHeight } = Dimensions.get('window');
-const SHOPIFY_DOMAIN = 'zhcfc2-it.myshopify.com'; // <-- Replace with your shop domain
 const CART_BAR_HEIGHT = 55;
 const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 const CARD_ROW_HEIGHT = 260;
@@ -543,11 +542,17 @@ function StoreScreen({ navigation }) {
       Alert.alert('Invalid cart', 'Some items are missing variant info or quantity.');
       return;
     }
-    // Build Shopify cart URL
-    const cartPath = cartItems
-      .map(i => `${i.variantId.replace('gid://shopify/ProductVariant/', '')}:${i.quantity}`)
-      .join(',');
-    const url = `https://${SHOPIFY_DOMAIN}/cart/${cartPath}`;
+    const url = await createShopifyCheckout(
+      cartItems.map(item => ({
+        id: item.variantId || item.id,
+        quantity: item.quantity,
+        variantId: item.variantId,
+      })),
+    );
+    if (!url) {
+      Alert.alert('Checkout failed', 'Could not start checkout. Please try again.');
+      return;
+    }
     try {
       const supported = await Linking.canOpenURL(url);
       if (supported) {
@@ -561,7 +566,7 @@ function StoreScreen({ navigation }) {
       }
     } catch (err) {
       Alert.alert('Checkout failed', 'Could not open checkout. Please try again.');
-      console.error('Failed to open Shopify cart URL', err);
+      console.error('Failed to open Shopify checkout URL', err);
     }
   };
 

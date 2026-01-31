@@ -16,7 +16,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ANIM_MEDIUM } from '../utils/animations';
 import { useCart } from '../hooks/useCart';
-import { createShopifyCheckout, shopifyFetch } from '../hooks/useShopify'; // add this import
+import { createShopifyCheckout, shopifyFetch } from '../hooks/useShopify';
 import { colors, fonts } from '../theme';
 import { TAB_BAR_HEIGHT } from './SwipeableTabs';
 // Toast implementation removed in favor of JS fallback or Expo-compatible toast
