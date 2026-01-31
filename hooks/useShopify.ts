@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { htmlToText } from '../utils/htmlToText';
 import env from '../utils/env';
+import { htmlToText } from '../utils/htmlToText';
 
 const {
   SHOPIFY_DOMAIN,
@@ -11,7 +11,7 @@ const {
 function getConfig() {
   return {
     domain: SHOPIFY_DOMAIN,
-    version: SHOPIFY_API_VERSION || '2024-01',
+    version: SHOPIFY_API_VERSION || '2026-01',
     token: SHOPIFY_TOKEN,
   };
 }
