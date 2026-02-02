@@ -5,6 +5,7 @@ type ShopifyConfig = {
   apiVersion: string;
   token: string;
   endpoint: string;
+  testProductHandle?: string;
 };
 
 const extra = Constants.expoConfig?.extra ?? {};
@@ -12,15 +13,21 @@ const devEnv = __DEV__ ? process.env : {};
 
 export function getShopifyConfig(): ShopifyConfig {
   const domain =
-    (extra?.SHOPIFY_DOMAIN as string | undefined) ?? devEnv.EXPO_PUBLIC_SHOPIFY_DOMAIN;
+    (extra?.SHOPIFY_STOREFRONT_DOMAIN as string | undefined) ??
+    (extra?.SHOPIFY_DOMAIN as string | undefined) ??
+    devEnv.EXPO_PUBLIC_SHOPIFY_STOREFRONT_DOMAIN ??
+    devEnv.EXPO_PUBLIC_SHOPIFY_DOMAIN;
   const apiVersion =
     (extra?.SHOPIFY_API_VERSION as string | undefined) ?? devEnv.EXPO_PUBLIC_SHOPIFY_API_VERSION;
   const token =
     (extra?.SHOPIFY_STOREFRONT_TOKEN as string | undefined) ??
     devEnv.EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN;
+  const testProductHandle =
+    (extra?.SHOPIFY_TEST_PRODUCT_HANDLE as string | undefined) ??
+    devEnv.EXPO_PUBLIC_SHOPIFY_TEST_PRODUCT_HANDLE;
 
   const missing: string[] = [];
-  if (!domain) missing.push('EXPO_PUBLIC_SHOPIFY_DOMAIN');
+  if (!domain) missing.push('EXPO_PUBLIC_SHOPIFY_STOREFRONT_DOMAIN');
   if (!apiVersion) missing.push('EXPO_PUBLIC_SHOPIFY_API_VERSION');
   if (!token) missing.push('EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN');
 
@@ -36,5 +43,6 @@ export function getShopifyConfig(): ShopifyConfig {
     apiVersion,
     token,
     endpoint,
+    testProductHandle,
   };
 }

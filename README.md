@@ -8,7 +8,7 @@ Custom fitness platform built with Expo and React Native. The app delivers cours
    ```bash
    npm install
    ```
-2. Create a `.env` file (copy from `.env.example`) and add the Shopify Storefront values.
+2. Create a `.env` file (copy from `.env.example`) and add the Shopify Storefront values (domain, API version, token, and optional test handle).
 3. Launch the app
    ```bash
    npx expo start -c

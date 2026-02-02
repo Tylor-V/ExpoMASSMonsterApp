@@ -1,34 +1,36 @@
 import { useEffect, useState } from 'react';
-import { getShopifyConfig } from '../src/lib/shopify/config';
+import {
+  fetchCollectionProductsPage,
+  fetchProductByHandle,
+  fetchProductsPage,
+  shopifyFetch,
+  type StorefrontProduct,
+} from '../src/lib/shopify/storefrontClient';
 import { htmlToText } from '../utils/htmlToText';
 
-async function shopifyFetch(query: string, variables?: Record<string, any>) {
-  const config = getShopifyConfig();
-  const { endpoint, token } = config;
-  try {
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        'X-Shopify-Storefront-Access-Token': token,
-      },
-      body: JSON.stringify({ query, variables }),
-    });
-    if (!res.ok) {
-      console.error('Shopify request failed with status', res.status);
-      return null;
-    }
-    const json = await res.json();
-    if (json.errors) {
-      console.error('Shopify returned errors', json.errors);
-      return null;
-    }
-    return json.data;
-  } catch (error) {
-    console.error('Shopify request failed', error);
-    return null;
-  }
+type ShopifyProduct = StorefrontProduct & {
+  images: string[];
+  collections: { id: string; title: string }[];
+  variantId?: string;
+  variantTitle?: string;
+  variantAvailable?: boolean;
+};
+
+function mapProduct(node: StorefrontProduct): ShopifyProduct {
+  const images = node.images.map(image => image.url).filter(Boolean);
+  const firstVariant = node.variants[0];
+  return {
+    ...node,
+    description: htmlToText(node.descriptionHtml || node.description),
+    images,
+    collections: node.collections.map(collection => ({
+      id: collection.id,
+      title: collection.title,
+    })),
+    variantId: firstVariant?.id,
+    variantTitle: firstVariant?.title,
+    variantAvailable: firstVariant?.availableForSale,
+  };
 }
 
 export function useShopifyCollections() {
@@ -41,21 +43,19 @@ export function useShopifyCollections() {
     const load = async () => {
       setLoading(true);
       try {
-        const data = await shopifyFetch(
+        const data = await shopifyFetch<{
+          collections: { edges: { node: { id: string; title: string } }[] };
+        }>(
           `query collections { collections(first: 20) { edges { node { id title } } } }`,
         );
         if (!cancelled) {
-          if (data) {
-            const edges = data.collections?.edges ?? [];
-            const list = edges.map((e: any) => e.node);
-            setCollections(list);
-            setError(false);
-          } else {
-            setCollections([]);
-            setError(true);
-          }
+          const edges = data.collections?.edges ?? [];
+          const list = edges.map(edge => edge.node);
+          setCollections(list);
+          setError(false);
         }
-      } catch {
+      } catch (error) {
+        console.error('Failed to load Shopify collections', error);
         if (!cancelled) {
           setCollections([]);
           setError(true);
@@ -73,7 +73,7 @@ export function useShopifyCollections() {
 }
 
 export function useShopifyProducts(collectionId?: string) {
-  const [products, setProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -82,55 +82,21 @@ export function useShopifyProducts(collectionId?: string) {
     const load = async () => {
       setLoading(true);
       try {
-        const fragment = `
-  id
-  title
-  descriptionHtml
-  availableForSale
-  images(first:5){edges{node{url}}}
-  priceRange{minVariantPrice{amount}}
-  collections(first:5){edges{node{id title}}}
-  variants(first:1){edges{node{id title availableForSale}}}
-`;
-        let data;
+        let nodes: StorefrontProduct[] = [];
         if (!collectionId || collectionId === 'all') {
-          data = await shopifyFetch(
-            `query products { products(first: 20) { edges { node { ${fragment} } } } }`,
-          );
-          if (data) data = data.products.edges.map((e: any) => e.node);
+          const res = await fetchProductsPage({ first: 20 });
+          nodes = res.products;
         } else {
-          const res = await shopifyFetch(
-            `query collectionProducts($id: ID!) { collection(id:$id) { products(first:20){ edges{ node{ ${fragment} } } } } }`,
-            { id: collectionId },
-          );
-          if (res?.collection?.products?.edges) {
-            data = res.collection.products.edges.map((e: any) => e.node);
-          }
+          const res = await fetchCollectionProductsPage({ collectionId, first: 20 });
+          nodes = res.products;
         }
         if (!cancelled) {
-          if (data) {
-            const list = (data as any[]).map(node => ({
-              ...node,
-              description: htmlToText(node.descriptionHtml),
-              descriptionHtml: node.descriptionHtml,
-              images:
-                node.images?.edges
-                  ?.map((edge: any) => edge?.node?.url)
-                  .filter((url: string | undefined) => Boolean(url)) ?? [],
-              collections: node.collections?.edges?.map((edge: any) => edge.node) ?? [],
-              variantId: node.variants?.edges?.[0]?.node?.id,
-              variantTitle: node.variants?.edges?.[0]?.node?.title,
-              availableForSale: node.availableForSale,
-              variantAvailable: node.variants?.edges?.[0]?.node?.availableForSale,
-            }));
-            setProducts(list);
-            setError(false);
-          } else {
-            setProducts([]);
-            setError(true);
-          }
+          const list = nodes.map(mapProduct);
+          setProducts(list);
+          setError(false);
         }
-      } catch {
+      } catch (error) {
+        console.error('Failed to load Shopify products', error);
         if (!cancelled) {
           setProducts([]);
           setError(true);
@@ -150,32 +116,79 @@ export function useShopifyProducts(collectionId?: string) {
 export async function createShopifyCheckout(
   items: { id: string; quantity: number; variantId?: string }[],
 ): Promise<string | null> {
-  const lines = items.map(i => ({
-    merchandiseId: i.variantId || i.id,
-    quantity: i.quantity,
-  }));
-  const created = await shopifyFetch(
-    `mutation cartCreate { cartCreate(input: {}) { cart { id checkoutUrl } userErrors { field message } } }`,
-  );
-  const cartId = created?.cartCreate?.cart?.id;
-  if (!cartId || created?.cartCreate?.userErrors?.length) {
-    console.error('Shopify cartCreate failed', created?.cartCreate?.userErrors);
+  try {
+    const lines = items.map(i => ({
+      merchandiseId: i.variantId || i.id,
+      quantity: i.quantity,
+    }));
+    const created = await shopifyFetch<{
+      cartCreate: {
+        cart: { id: string; checkoutUrl: string | null } | null;
+        userErrors: { field: string[] | null; message: string }[];
+      };
+    }>(
+      `mutation cartCreate { cartCreate(input: {}) { cart { id checkoutUrl } userErrors { field message } } }`,
+    );
+    const cartId = created?.cartCreate?.cart?.id;
+    if (!cartId || created?.cartCreate?.userErrors?.length) {
+      console.error('Shopify cartCreate failed', created?.cartCreate?.userErrors);
+      return null;
+    }
+    const added = await shopifyFetch<{
+      cartLinesAdd: {
+        cart: { id: string; checkoutUrl: string | null } | null;
+        userErrors: { field: string[] | null; message: string }[];
+      };
+    }>(
+      `mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
+        cartLinesAdd(cartId: $cartId, lines: $lines) {
+          cart { id checkoutUrl }
+          userErrors { field message }
+        }
+      }`,
+      { cartId, lines },
+    );
+    if (added?.cartLinesAdd?.userErrors?.length) {
+      console.error('Shopify cartLinesAdd failed', added?.cartLinesAdd?.userErrors);
+      return null;
+    }
+    return added?.cartLinesAdd?.cart?.checkoutUrl ?? null;
+  } catch (error) {
+    console.error('Shopify checkout failed', error);
     return null;
   }
-  const added = await shopifyFetch(
-    `mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
-      cartLinesAdd(cartId: $cartId, lines: $lines) {
-        cart { id checkoutUrl }
-        userErrors { field message }
-      }
-    }`,
-    { cartId, lines },
-  );
-  if (added?.cartLinesAdd?.userErrors?.length) {
-    console.error('Shopify cartLinesAdd failed', added?.cartLinesAdd?.userErrors);
-    return null;
-  }
-  return added?.cartLinesAdd?.cart?.checkoutUrl ?? null;
 }
 
-export { shopifyFetch };
+export async function runShopifyRuntimeTest(handle?: string) {
+  try {
+    const { products } = await fetchProductsPage({ first: 5 });
+    if (products.length === 0) {
+      console.debug('[Shopify] Runtime test: no products returned.');
+    } else {
+      console.debug(
+        '[Shopify] Runtime test products:',
+        products.map(product => product.title),
+      );
+    }
+  } catch (error) {
+    console.error('[Shopify] Runtime test products failed', error);
+  }
+
+  if (!handle) {
+    console.debug('[Shopify] Runtime test skipped handle lookup (no handle configured).');
+    return;
+  }
+
+  try {
+    const product = await fetchProductByHandle(handle);
+    if (!product) {
+      console.debug(`[Shopify] Runtime test: no product found for handle "${handle}".`);
+    } else {
+      console.debug(`[Shopify] Runtime test handle "${handle}": ${product.title}`);
+    }
+  } catch (error) {
+    console.error('[Shopify] Runtime test handle fetch failed', error);
+  }
+}
+
+export { shopifyFetch, fetchProductByHandle };

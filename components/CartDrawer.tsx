@@ -16,7 +16,8 @@ import * as WebBrowser from 'expo-web-browser';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ANIM_MEDIUM } from '../utils/animations';
 import { useCart } from '../hooks/useCart';
-import { createShopifyCheckout, shopifyFetch } from '../hooks/useShopify';
+import { createShopifyCheckout } from '../hooks/useShopify';
+import { shopifyFetch } from '../src/lib/shopify/storefrontClient';
 import { colors, fonts } from '../theme';
 import { TAB_BAR_HEIGHT } from './SwipeableTabs';
 // Toast implementation removed in favor of JS fallback or Expo-compatible toast
@@ -86,33 +87,38 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
         }
       }
     `;
-    const data = await shopifyFetch(query, { ids: variantIds });
-    if (!data || !data.nodes) return false;
-    // Map variantId to inventory
-    const inventoryMap = {};
-    data.nodes.forEach(node => {
-      if (node && node.id) {
-        inventoryMap[node.id] = {
-          quantityAvailable: node.quantityAvailable,
-          availableForSale: node.availableForSale,
-        };
-      }
-    });
-    // Check each cart item against inventory
-    for (const item of items) {
-      const stock = inventoryMap[item.variantId];
-      if (!stock) {
-        return false;
-      }
-      if (typeof stock.quantityAvailable === 'number') {
-        if (item.quantity > stock.quantityAvailable) {
+    try {
+      const data = await shopifyFetch<{ nodes: any[] }>(query, { ids: variantIds });
+      if (!data || !data.nodes) return false;
+      // Map variantId to inventory
+      const inventoryMap = {};
+      data.nodes.forEach(node => {
+        if (node && node.id) {
+          inventoryMap[node.id] = {
+            quantityAvailable: node.quantityAvailable,
+            availableForSale: node.availableForSale,
+          };
+        }
+      });
+      // Check each cart item against inventory
+      for (const item of items) {
+        const stock = inventoryMap[item.variantId];
+        if (!stock) {
           return false;
         }
-      } else if (stock.availableForSale === false) {
-        return false;
+        if (typeof stock.quantityAvailable === 'number') {
+          if (item.quantity > stock.quantityAvailable) {
+            return false;
+          }
+        } else if (stock.availableForSale === false) {
+          return false;
+        }
       }
+      return true;
+    } catch (error) {
+      console.error('Failed to check Shopify inventory', error);
+      return false;
     }
-    return true;
   }
 
   // Checkout handler
