@@ -73,13 +73,15 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
   // Helper to check stock for all items
   async function checkStock(items) {
     // Query Shopify for inventory for each variantId
-    const variantIds = items.map(i => i.variantId);
+    const variantIds = Array.from(new Set(items.map(i => i.variantId).filter(Boolean)));
+    if (variantIds.length === 0) return false;
     const query = `
       query ($ids: [ID!]!) {
         nodes(ids: $ids) {
           ... on ProductVariant {
             id
-            inventoryQuantity
+            quantityAvailable
+            availableForSale
           }
         }
       }
@@ -89,12 +91,24 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
     // Map variantId to inventory
     const inventoryMap = {};
     data.nodes.forEach(node => {
-      if (node && node.id) inventoryMap[node.id] = node.inventoryQuantity;
+      if (node && node.id) {
+        inventoryMap[node.id] = {
+          quantityAvailable: node.quantityAvailable,
+          availableForSale: node.availableForSale,
+        };
+      }
     });
     // Check each cart item against inventory
     for (const item of items) {
       const stock = inventoryMap[item.variantId];
-      if (typeof stock !== 'number' || item.quantity > stock) {
+      if (!stock) {
+        return false;
+      }
+      if (typeof stock.quantityAvailable === 'number') {
+        if (item.quantity > stock.quantityAvailable) {
+          return false;
+        }
+      } else if (stock.availableForSale === false) {
         return false;
       }
     }

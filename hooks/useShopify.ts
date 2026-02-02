@@ -18,7 +18,8 @@ function getConfig() {
 
 function buildShopifyUrl() {
   const { domain, version } = getConfig();
-  const normalizedDomain = domain?.replace(/^https?:\/\//, '').replace(/\/$/, '');
+  if (!domain) return null;
+  const normalizedDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
   return `https://${normalizedDomain}/api/${version}/graphql.json`;
 }
 
@@ -28,24 +29,35 @@ async function shopifyFetch(query: string, variables?: Record<string, any>) {
     console.error('Shopify configuration missing');
     return null;
   }
-  const res = await fetch(buildShopifyUrl(), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': token,
-    },
-    body: JSON.stringify({query, variables}),
-  });
-  if (!res.ok) {
-    console.error('Shopify request failed with status', res.status);
+  const url = buildShopifyUrl();
+  if (!url) {
+    console.error('Shopify domain missing or invalid');
     return null;
   }
-  const json = await res.json();
-  if (json.errors) {
-    console.error('Shopify returned errors', json.errors);
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-Shopify-Storefront-Access-Token': token,
+      },
+      body: JSON.stringify({ query, variables }),
+    });
+    if (!res.ok) {
+      console.error('Shopify request failed with status', res.status);
+      return null;
+    }
+    const json = await res.json();
+    if (json.errors) {
+      console.error('Shopify returned errors', json.errors);
+      return null;
+    }
+    return json.data;
+  } catch (error) {
+    console.error('Shopify request failed', error);
     return null;
   }
-  return json.data;
 }
 
 export function useShopifyCollections() {
@@ -120,7 +132,9 @@ export function useShopifyProducts(collectionId?: string) {
             `query collectionProducts($id: ID!) { collection(id:$id) { products(first:20){ edges{ node{ ${fragment} } } } } }`,
             { id: collectionId },
           );
-          if (res) data = res.collection.products.edges.map((e: any) => e.node);
+          if (res?.collection?.products?.edges) {
+            data = res.collection.products.edges.map((e: any) => e.node);
+          }
         }
         if (!cancelled) {
           if (data) {
