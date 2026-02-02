@@ -3,18 +3,11 @@ import { getShopifyConfig } from '../src/lib/shopify/config';
 import { htmlToText } from '../utils/htmlToText';
 
 async function shopifyFetch(query: string, variables?: Record<string, any>) {
-  let endpoint: string;
-  let token: string;
-  try {
-    const config = getShopifyConfig();
-    endpoint = config.endpoint;
-    token = config.token;
-  } catch (error) {
-    console.error(
-      error instanceof Error ? error.message : 'Shopify configuration missing'
-    );
+  const config = getShopifyConfig();
+  if (!config) {
     return null;
   }
+  const { endpoint, token } = config;
   try {
     const res = await fetch(endpoint, {
       method: 'POST',

@@ -13,7 +13,7 @@ function getEnvValue(key: keyof typeof process.env) {
   return process.env[key] ?? (extra?.[key] as string | undefined);
 }
 
-export function getShopifyConfig(): ShopifyConfig {
+export function getShopifyConfig(): ShopifyConfig | null {
   const domain = getEnvValue('EXPO_PUBLIC_SHOPIFY_DOMAIN');
   const apiVersion = getEnvValue('EXPO_PUBLIC_SHOPIFY_API_VERSION');
   const token = getEnvValue('EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN');
@@ -24,7 +24,7 @@ export function getShopifyConfig(): ShopifyConfig {
   if (!token) missing.push('EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN');
 
   if (missing.length) {
-    throw new Error(`Shopify configuration missing: ${missing.join(', ')}`);
+    return null;
   }
 
   const normalizedDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
