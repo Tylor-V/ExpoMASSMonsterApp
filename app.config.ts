@@ -11,11 +11,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ],
   extra: {
     ...(config.extra ?? {}),
-    SHOPIFY_DOMAIN: process.env.EXPO_PUBLIC_SHOPIFY_DOMAIN,
+    SHOPIFY_DOMAIN:
+      process.env.EXPO_PUBLIC_SHOPIFY_DOMAIN ?? process.env.SHOPIFY_DOMAIN,
     SHOPIFY_API_VERSION:
-      process.env.EXPO_PUBLIC_SHOPIFY_API_VERSION,
+      process.env.EXPO_PUBLIC_SHOPIFY_API_VERSION ?? process.env.SHOPIFY_API_VERSION,
     SHOPIFY_STOREFRONT_TOKEN:
-      process.env.EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN,
+      process.env.EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN ??
+      process.env.SHOPIFY_STOREFRONT_TOKEN,
     GOOGLE_PLACES_API_KEY:
       process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY ?? process.env.GOOGLE_PLACES_API_KEY,
     FIREBASE_API_KEY:
