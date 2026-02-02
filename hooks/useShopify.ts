@@ -1,41 +1,22 @@
 import { useEffect, useState } from 'react';
-import env from '../utils/env';
+import { getShopifyConfig } from '../src/lib/shopify/config';
 import { htmlToText } from '../utils/htmlToText';
 
-const {
-  SHOPIFY_DOMAIN,
-  SHOPIFY_API_VERSION,
-  SHOPIFY_STOREFRONT_TOKEN,
-} = env;
-
-function getConfig() {
-  return {
-    domain: SHOPIFY_DOMAIN,
-    version: SHOPIFY_API_VERSION || '2026-01',
-    token: SHOPIFY_STOREFRONT_TOKEN,
-  };
-}
-
-function buildShopifyUrl() {
-  const { domain, version } = getConfig();
-  if (!domain) return null;
-  const normalizedDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
-  return `https://${normalizedDomain}/api/${version}/graphql.json`;
-}
-
 async function shopifyFetch(query: string, variables?: Record<string, any>) {
-  const { token, domain } = getConfig();
-  if (!domain || !token) {
-    console.error('Shopify configuration missing');
-    return null;
-  }
-  const url = buildShopifyUrl();
-  if (!url) {
-    console.error('Shopify domain missing or invalid');
+  let endpoint: string;
+  let token: string;
+  try {
+    const config = getShopifyConfig();
+    endpoint = config.endpoint;
+    token = config.token;
+  } catch (error) {
+    console.error(
+      error instanceof Error ? error.message : 'Shopify configuration missing'
+    );
     return null;
   }
   try {
-    const res = await fetch(url, {
+    const res = await fetch(endpoint, {
       method: 'POST',
       headers: {
         Accept: 'application/json',

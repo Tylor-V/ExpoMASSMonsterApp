@@ -32,6 +32,7 @@ import TermsPrivacyScreen from './screens/TermsPrivacyScreen';
 import WorkoutHistoryScreen from './screens/WorkoutHistoryScreen';
 import { preloadGlobals } from './utils/preloadTools';
 import { useNews } from './hooks/useNews';
+import { getShopifyConfig } from './src/lib/shopify/config';
 
 // Keep the native splash screen visible until the first render
 NativeSplashScreen.preventAutoHideAsync().catch(err =>
@@ -96,6 +97,18 @@ export default function App() {
 
   useEffect(() => {
     preloadGlobals().finally(() => setAssetsLoaded(true));
+  }, []);
+
+  useEffect(() => {
+    if (!__DEV__) return;
+    try {
+      const { endpoint } = getShopifyConfig();
+      console.debug(`[Shopify] Storefront endpoint: ${endpoint}`);
+    } catch (error) {
+      console.debug(
+        error instanceof Error ? error.message : 'Shopify configuration missing'
+      );
+    }
   }, []);
 
   useEffect(() => {

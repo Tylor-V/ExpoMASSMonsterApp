@@ -1,9 +1,15 @@
-module.exports = {
-  GOOGLE_PLACES_API_KEY: 'test-key',
-  SHOPIFY_DOMAIN: 'test-domain',
-  SHOPIFY_API_VERSION: '2026-01',
-  SHOPIFY_STOREFRONT_TOKEN: 'test-token',
-  AGORA_APP_ID: 'test-id',
-  AGORA_CERTIFICATE: 'test-cert',
-  AGORA_CHANNEL_NAME: "test-channel",
-};
+declare namespace NodeJS {
+  interface ProcessEnv {
+    EXPO_PUBLIC_SHOPIFY_DOMAIN?: string;
+    EXPO_PUBLIC_SHOPIFY_API_VERSION?: string;
+    EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN?: string;
+    EXPO_PUBLIC_GOOGLE_PLACES_API_KEY?: string;
+    EXPO_PUBLIC_FIREBASE_API_KEY?: string;
+    EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN?: string;
+    EXPO_PUBLIC_FIREBASE_PROJECT_ID?: string;
+    EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET?: string;
+    EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID?: string;
+    EXPO_PUBLIC_FIREBASE_APP_ID?: string;
+    EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID?: string;
+  }
+}
