@@ -101,13 +101,13 @@ export default function App() {
 
   useEffect(() => {
     if (!__DEV__) return;
-    const config = getShopifyConfig();
-    if (config) {
-      console.debug(`[Shopify] Storefront endpoint: ${config.endpoint}`);
-    } else {
-      console.debug(
-        'Shopify configuration missing: EXPO_PUBLIC_SHOPIFY_DOMAIN, EXPO_PUBLIC_SHOPIFY_API_VERSION, EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN'
-      );
+    try {
+      const config = getShopifyConfig();
+      if (config) {
+        console.debug(`[Shopify] Storefront endpoint: ${config.endpoint}`);
+      }
+    } catch (error) {
+      console.debug(error instanceof Error ? error.message : 'Shopify configuration missing');
     }
   }, []);
 

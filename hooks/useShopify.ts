@@ -4,9 +4,6 @@ import { htmlToText } from '../utils/htmlToText';
 
 async function shopifyFetch(query: string, variables?: Record<string, any>) {
   const config = getShopifyConfig();
-  if (!config) {
-    return null;
-  }
   const { endpoint, token } = config;
   try {
     const res = await fetch(endpoint, {

@@ -7,16 +7,17 @@ type ShopifyConfig = {
   endpoint: string;
 };
 
-const extra = Constants.expoConfig?.extra ?? Constants.manifest?.extra ?? {};
+const extra = Constants.expoConfig?.extra ?? {};
+const devEnv = __DEV__ ? process.env : {};
 
-function getEnvValue(key: keyof typeof process.env) {
-  return process.env[key] ?? (extra?.[key] as string | undefined);
-}
-
-export function getShopifyConfig(): ShopifyConfig | null {
-  const domain = getEnvValue('EXPO_PUBLIC_SHOPIFY_DOMAIN');
-  const apiVersion = getEnvValue('EXPO_PUBLIC_SHOPIFY_API_VERSION');
-  const token = getEnvValue('EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN');
+export function getShopifyConfig(): ShopifyConfig {
+  const domain =
+    (extra?.SHOPIFY_DOMAIN as string | undefined) ?? devEnv.EXPO_PUBLIC_SHOPIFY_DOMAIN;
+  const apiVersion =
+    (extra?.SHOPIFY_API_VERSION as string | undefined) ?? devEnv.EXPO_PUBLIC_SHOPIFY_API_VERSION;
+  const token =
+    (extra?.SHOPIFY_STOREFRONT_TOKEN as string | undefined) ??
+    devEnv.EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN;
 
   const missing: string[] = [];
   if (!domain) missing.push('EXPO_PUBLIC_SHOPIFY_DOMAIN');
@@ -24,7 +25,7 @@ export function getShopifyConfig(): ShopifyConfig | null {
   if (!token) missing.push('EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN');
 
   if (missing.length) {
-    return null;
+    throw new Error(`Shopify configuration missing: ${missing.join(', ')}`);
   }
 
   const normalizedDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
