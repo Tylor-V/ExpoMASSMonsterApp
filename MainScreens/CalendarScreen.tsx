@@ -16,6 +16,7 @@ import {
   Animated,
   DeviceEventEmitter,
   FlatList,
+  InteractionManager,
   KeyboardAvoidingView,
   LayoutChangeEvent,
   Linking,
@@ -1553,15 +1554,20 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     if (!plan || !dayArrowRef.current) return;
     setShowPlanDrawer(false);
     setShowWorkoutDrawer(false);
-    dayArrowRef.current.measureInWindow((x, y, width, height) => {
-      setDayArrowPos({ x: x + width / 2, y: y + height });
-      dayMenuOpenedAt.current = Date.now();
-      ignoreNextDayMenuPress.current = true;
-      setDayMenuOpen(true);
-      setTimeout(() => {
-        ignoreNextDayMenuPress.current = false;
-      }, 250);
+    dayMenuOpenedAt.current = Date.now();
+    ignoreNextDayMenuPress.current = true;
+    setDayDropdownWidth(0);
+    setDayMenuOpen(true);
+    InteractionManager.runAfterInteractions(() => {
+      requestAnimationFrame(() => {
+        dayArrowRef.current?.measureInWindow((x, y, width, height) => {
+          setDayArrowPos({ x: x + width / 2, y: y + height });
+        });
+      });
     });
+    setTimeout(() => {
+      ignoreNextDayMenuPress.current = false;
+    }, 250);
   };
 
   const closeDayMenu = () => {
@@ -1715,56 +1721,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           </View>
         );
       })}
-      {plan && (
-        <Modal
-          visible={dayMenuOpen}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setDayMenuOpen(false)}
-        >
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPress={() => {
-              if (ignoreNextDayMenuPress.current) {
-                ignoreNextDayMenuPress.current = false;
-                return;
-              }
-              if (Date.now() - dayMenuOpenedAt.current < 250) return;
-              closeDayMenu();
-            }}
-          >
-            <Pressable
-              style={[
-                styles.dayDropdown,
-                {
-                  top: dayArrowPos.y,
-                  left: dayArrowPos.x - dayDropdownWidth / 2,
-                },
-              ]}
-              onLayout={e => setDayDropdownWidth(e.nativeEvent.layout.width)}
-              onPress={e => e.stopPropagation()}
-            >
-              {plan.days.map((d, idx) => (
-                <TouchableOpacity
-                  key={idx}
-                  style={styles.dayDropdownItem}
-                  onPress={() => handleSelectDay(idx)}
-                >
-                  <Text
-                    style={[
-                      styles.dayDropdownItemText,
-                      idx === getCurrentDayIndex(plan) &&
-                        styles.dayDropdownItemTextActive,
-                    ]}
-                  >
-                    {d.title}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </Pressable>
-          </Pressable>
-        </Modal>
-      )}
     </View>
   );
 
@@ -1982,6 +1938,59 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             </View>
           </View>
         </View>
+
+        {plan && (
+          <Modal
+            visible={dayMenuOpen}
+            transparent
+            animationType="fade"
+            presentationStyle="overFullScreen"
+            statusBarTranslucent
+            onRequestClose={() => setDayMenuOpen(false)}
+          >
+            <Pressable
+              style={StyleSheet.absoluteFill}
+              onPress={() => {
+                if (ignoreNextDayMenuPress.current) {
+                  ignoreNextDayMenuPress.current = false;
+                  return;
+                }
+                if (Date.now() - dayMenuOpenedAt.current < 250) return;
+                closeDayMenu();
+              }}
+            >
+              <Pressable
+                style={[
+                  styles.dayDropdown,
+                  {
+                    top: dayArrowPos.y,
+                    left: dayArrowPos.x - dayDropdownWidth / 2,
+                  },
+                ]}
+                onLayout={e => setDayDropdownWidth(e.nativeEvent.layout.width)}
+                onPress={e => e.stopPropagation()}
+              >
+                {plan.days.map((d, idx) => (
+                  <TouchableOpacity
+                    key={idx}
+                    style={styles.dayDropdownItem}
+                    onPress={() => handleSelectDay(idx)}
+                  >
+                    <Text
+                      style={[
+                        styles.dayDropdownItemText,
+                        idx === getCurrentDayIndex(plan) &&
+                          styles.dayDropdownItemTextActive,
+                      ]}
+                    >
+                      {d.title}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </Pressable>
+            </Pressable>
+          </Modal>
+        )}
 
         {showScheduler && (
         <Modal visible={showScheduler} transparent animationType="slide">
