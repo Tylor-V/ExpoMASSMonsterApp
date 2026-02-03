@@ -32,7 +32,7 @@ import TermsPrivacyScreen from './screens/TermsPrivacyScreen';
 import WorkoutHistoryScreen from './screens/WorkoutHistoryScreen';
 import { preloadGlobals } from './utils/preloadTools';
 import { useNews } from './hooks/useNews';
-import { getShopifyConfig } from './src/lib/shopify/config';
+import { getShopifyConfigStatus } from './src/lib/shopify/config';
 import { runShopifyRuntimeTest } from './hooks/useShopify';
 
 // Keep the native splash screen visible until the first render
@@ -102,15 +102,12 @@ export default function App() {
 
   useEffect(() => {
     if (!__DEV__) return;
-    try {
-      const config = getShopifyConfig();
-      if (config) {
-        console.debug(`[Shopify] Storefront endpoint: ${config.endpoint}`);
-        runShopifyRuntimeTest(config.testProductHandle);
-      }
-    } catch (error) {
-      console.debug(error instanceof Error ? error.message : 'Shopify configuration missing');
+    const { config } = getShopifyConfigStatus();
+    if (!config) {
+      return;
     }
+    console.debug(`[Shopify] Storefront endpoint: ${config.endpoint}`);
+    runShopifyRuntimeTest(config.testProductHandle);
   }, []);
 
   useEffect(() => {
