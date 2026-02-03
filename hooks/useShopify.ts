@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import {
   fetchCollectionProductsPage,
   fetchCollections,
-  fetchProductByHandle,
   fetchProductsPage,
   isAbortError,
   shopifyFetch,
@@ -220,36 +219,4 @@ export async function createShopifyCheckout(
   return added?.cartLinesAdd?.cart?.checkoutUrl ?? null;
 }
 
-export async function runShopifyRuntimeTest(handle?: string) {
-  try {
-    const { products } = await fetchProductsPage({ first: 5 });
-    if (products.length === 0) {
-      console.debug('[Shopify] Runtime test: no products returned.');
-    } else {
-      console.debug(
-        '[Shopify] Runtime test products:',
-        products.map(product => product.title),
-      );
-    }
-  } catch (error) {
-    console.error('[Shopify] Runtime test products failed', error);
-  }
-
-  if (!handle) {
-    console.debug('[Shopify] Runtime test skipped handle lookup (no handle configured).');
-    return;
-  }
-
-  try {
-    const product = await fetchProductByHandle(handle);
-    if (!product) {
-      console.debug(`[Shopify] Runtime test: no product found for handle "${handle}".`);
-    } else {
-      console.debug(`[Shopify] Runtime test handle "${handle}": ${product.title}`);
-    }
-  } catch (error) {
-    console.error('[Shopify] Runtime test handle fetch failed', error);
-  }
-}
-
-export { shopifyFetch, fetchProductByHandle };
+export { shopifyFetch };
