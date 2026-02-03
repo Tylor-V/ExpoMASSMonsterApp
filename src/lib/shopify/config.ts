@@ -9,7 +9,6 @@ type ShopifyConfig = {
 };
 
 const extra = Constants.expoConfig?.extra ?? {};
-const devEnv = __DEV__ ? process.env : {};
 
 const apiVersionPathMatch = /\/api\/([^/]+)\/graphql\.json/i;
 
@@ -30,24 +29,17 @@ function normalizeDomainInput(input?: string) {
 
 export function getShopifyConfig(): ShopifyConfig {
   const rawDomain =
-    (extra?.SHOPIFY_STOREFRONT_DOMAIN as string | undefined) ??
-    (extra?.SHOPIFY_DOMAIN as string | undefined) ??
-    devEnv.EXPO_PUBLIC_SHOPIFY_STOREFRONT_DOMAIN ??
-    devEnv.EXPO_PUBLIC_SHOPIFY_DOMAIN ??
-    devEnv.SHOPIFY_STOREFRONT_DOMAIN ??
-    devEnv.SHOPIFY_DOMAIN;
+    (extra?.EXPO_PUBLIC_SHOPIFY_STOREFRONT_DOMAIN as string | undefined) ??
+    process.env.EXPO_PUBLIC_SHOPIFY_STOREFRONT_DOMAIN;
   const apiVersion =
-    (extra?.SHOPIFY_API_VERSION as string | undefined) ??
-    devEnv.EXPO_PUBLIC_SHOPIFY_API_VERSION ??
-    devEnv.SHOPIFY_API_VERSION;
+    (extra?.EXPO_PUBLIC_SHOPIFY_API_VERSION as string | undefined) ??
+    process.env.EXPO_PUBLIC_SHOPIFY_API_VERSION;
   const token =
-    (extra?.SHOPIFY_STOREFRONT_TOKEN as string | undefined) ??
-    devEnv.EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN ??
-    devEnv.SHOPIFY_STOREFRONT_TOKEN ??
-    devEnv.SHOPIFY_TOKEN;
+    (extra?.EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN as string | undefined) ??
+    process.env.EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN;
   const testProductHandle =
-    (extra?.SHOPIFY_TEST_PRODUCT_HANDLE as string | undefined) ??
-    devEnv.EXPO_PUBLIC_SHOPIFY_TEST_PRODUCT_HANDLE;
+    (extra?.EXPO_PUBLIC_SHOPIFY_TEST_PRODUCT_HANDLE as string | undefined) ??
+    process.env.EXPO_PUBLIC_SHOPIFY_TEST_PRODUCT_HANDLE;
 
   const normalizedInput = normalizeDomainInput(rawDomain);
   const domain = normalizedInput.domain;
