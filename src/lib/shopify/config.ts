@@ -76,7 +76,9 @@ export function isShopifyConfigError(error: unknown): boolean {
 }
 
 export function getShopifyConfigStatus(): { config: ShopifyConfig | null; missing: string[] } {
-  const rawDomain = extra?.EXPO_PUBLIC_SHOPIFY_STOREFRONT_DOMAIN as string | undefined;
+  const rawDomain =
+    (extra?.EXPO_PUBLIC_SHOPIFY_STOREFRONT_DOMAIN as string | undefined) ??
+    (extra?.EXPO_PUBLIC_SHOPIFY_DOMAIN as string | undefined);
   const apiVersion = extra?.EXPO_PUBLIC_SHOPIFY_API_VERSION as string | undefined;
   const token = extra?.EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN as string | undefined;
   const testProductHandle = extra?.EXPO_PUBLIC_SHOPIFY_TEST_PRODUCT_HANDLE as string | undefined;
