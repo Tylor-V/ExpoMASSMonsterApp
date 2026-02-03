@@ -442,6 +442,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   );
 
   const [showWorkout, setShowWorkout] = useState(false);
+  const [showWorkoutLoaded, setShowWorkoutLoaded] = useState(false);
   const [plan, setPlan] = useState<WorkoutPlan | null>(null);
   const [customSplit, setCustomSplit] = useState<WorkoutPlan | null>(null);
   const [customSplitLoaded, setCustomSplitLoaded] = useState(false);
@@ -678,6 +679,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     }, [refreshDays]),
   );
 
+  const workoutVisible = showWorkout && !!plan;
+
   const computeEventsForDate = React.useCallback(
     (date: Date): CalendarEvent[] => {
       const iso = date.toISOString().slice(0, 10);
@@ -699,7 +702,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       events.forEach(ev => {
         if (ev.date === iso) list.push(ev);
       });
-      if (showWorkout && plan) {
+      if (workoutVisible && plan) {
         const totalDiff = Math.floor(
           (date.getTime() - new Date(plan.startDate).getTime()) / 86400000,
         );
@@ -719,7 +722,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       }
       return list;
     },
-    [events, showWorkout, plan],
+    [events, workoutVisible, plan],
   );
 
 
@@ -787,15 +790,17 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       if (Array.isArray(shared)) setSharedSplits(shared);
       setSharedLoaded(true);
       setCustomSplitLoaded(true);
+      setShowWorkoutLoaded(true);
     })();
   }, []);
 
   useEffect(() => {
+    if (!showWorkoutLoaded) return;
     AsyncStorage.setItem('showWorkout', showWorkout ? 'true' : 'false');
     saveShowWorkout(showWorkout).catch(err =>
       console.error('Failed to save showWorkout', err)
     );
-  }, [showWorkout]);
+  }, [showWorkout, showWorkoutLoaded]);
 
   useEffect(() => {
     if (plan) AsyncStorage.setItem('workoutPlan', JSON.stringify(plan));
@@ -853,7 +858,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       return { ...info, next, diff };
     });
   
-    if (showWorkout && plan) {
+    if (workoutVisible && plan) {
       const today = new Date();
       today.setHours(9, 0, 0, 0);
       const iso = today.toISOString().slice(0, 10);
@@ -881,12 +886,12 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     }
 
     return base;
-  }, [tick, showWorkout, plan]);
+  }, [tick, workoutVisible, plan]);
 
-  const showSplitPlaceholder = !showWorkout || !plan;
+  const showSplitPlaceholder = !workoutVisible;
 
   const todayWorkout = useMemo(() => {
-    if (!showWorkout || !plan) return null;
+    if (!workoutVisible || !plan) return null;
     const today = new Date();
     today.setHours(9, 0, 0, 0);
     const iso = today.toISOString().slice(0, 10);
@@ -901,7 +906,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       return plan.days[diffIdx % plan.days.length];
     }
     return null;
-  }, [tick, showWorkout, plan]);
+  }, [tick, workoutVisible, plan]);
 
   const [liftChecks, setLiftChecks] = useState<Record<string, boolean>>({});
 
@@ -1004,7 +1009,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     } else {
       setShowWorkout(false);
     }
-    saveShowWorkout(v).catch(err => console.error('Failed to save showWorkout', err));
   };
 
   const selectPlan = (p: WorkoutPlan) => {
@@ -1063,9 +1067,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   };
 
   const closePlanDrawer = () => {
-    if (!showWorkout) {
-      setShowWorkout(true);
-    }
     setDayMenuOpen(false);
     setShowPlanDrawer(false);
     if (plan)
