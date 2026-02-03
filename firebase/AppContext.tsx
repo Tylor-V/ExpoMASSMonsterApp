@@ -50,6 +50,20 @@ export function AppContextProvider({children}) {
     setAppReady(true);
   }
 
+  const buildUserData = (authUser: any, data: any) => {
+    const displayName = authUser?.displayName || '';
+    const firstName = displayName.split(' ')[0] || '';
+    const lastName = displayName.split(' ').slice(1).join(' ') || '';
+    return {
+      ...userDefaults,
+      uid: authUser?.uid || '',
+      email: authUser?.email || '',
+      firstName,
+      lastName,
+      ...(data || {}),
+    };
+  };
+
   // Subscribe to auth changes and load user data accordingly
   useEffect(() => {
     let userUnsub: (() => void) | null = null;
@@ -70,7 +84,7 @@ export function AppContextProvider({children}) {
         // Fetch user data once immediately so UI updates even if snapshot is delayed
         try {
           const snap = await firestore().collection('users').doc(user.uid).get();
-          const data = { ...userDefaults, ...(snap.data() || {}) };
+          const data = buildUserData(user, snap.data());
           setUser(data);
           setPoints(data.accountabilityPoints ?? 0);
           const history = data.workoutHistory;
@@ -83,7 +97,7 @@ export function AppContextProvider({children}) {
           .collection('users')
           .doc(user.uid)
           .onSnapshot(doc => {
-            const data = { ...userDefaults, ...(doc.data() || {}) };
+            const data = buildUserData(user, doc.data());
             setUser(data);
             setPoints(data.accountabilityPoints ?? 0);
             const history = data.workoutHistory;

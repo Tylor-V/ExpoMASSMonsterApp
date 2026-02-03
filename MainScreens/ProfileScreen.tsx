@@ -94,6 +94,14 @@ const ProfileScreen = () => {
   useEffect(() => {
     const uid = auth().currentUser?.uid;
     if (!uid) return;
+    const authUser = auth().currentUser;
+    const displayName = authUser?.displayName || '';
+    const authProfile = {
+      uid,
+      email: authUser?.email || '',
+      firstName: displayName.split(' ')[0] || '',
+      lastName: displayName.split(' ').slice(1).join(' ') || '',
+    };
     const ref: any = firestore().collection('users');
     if (typeof ref.doc !== 'function') return;
     ref
@@ -101,7 +109,7 @@ const ProfileScreen = () => {
       .get()
       .then((doc: any) => {
         if (!doc.exists) return;
-        const data = doc.data() || {};
+        const data = { ...authProfile, ...(doc.data() || {}) };
         setAppStatus({
           user: data,
           points: data.accountabilityPoints ?? 0,
