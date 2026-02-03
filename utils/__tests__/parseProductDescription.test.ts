@@ -35,7 +35,7 @@ These statements have not been evaluated by the Food and Drug Administration. Th
 
   it('strips About and Info labels from parsed text', () => {
     const parsed = parseProductDescription(`
-      About: About: Clean formula.
+      Title about section About: About: Clean formula.
       Info: Info: Directions: Take one daily.
     `);
     expect(parsed.about).toBe('Clean formula.');

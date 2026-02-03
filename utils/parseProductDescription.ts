@@ -33,6 +33,15 @@ const INFO_HEADERS = [
 const stripSectionLabel = (value: string, label: string) =>
   value.replace(new RegExp(`^\\s*${label}\\s*:?\\s*`, 'i'), '').trim();
 
+const stripLeadingSectionContent = (value: string, label: string) => {
+  const labelRegex = new RegExp(`${label}\\s*:?`, 'i');
+  const match = value.match(labelRegex);
+  if (!match || match.index === undefined) {
+    return value.trim();
+  }
+  return value.slice(match.index + match[0].length).trim();
+};
+
 const stripSectionLabels = (value: string, labels: string[]) => {
   let result = value.trim();
   let didStrip = true;
@@ -87,8 +96,11 @@ export function parseProductDescription(description: string): ParsedProductDescr
   let quantity: string | undefined;
   const quantityMatch = text.match(/\(([^)]+)\)/);
   if (quantityMatch) {
-    quantity = quantityMatch[1].trim();
-    text = text.replace(quantityMatch[0], '').trim();
+    const candidate = quantityMatch[1].trim();
+    if (/\d/.test(candidate)) {
+      quantity = candidate;
+      text = text.replace(quantityMatch[0], '').trim();
+    }
   }
 
   // Extract About and Info sections using explicit markers
@@ -99,10 +111,16 @@ export function parseProductDescription(description: string): ParsedProductDescr
   const infoIndex = lowerText.indexOf('info:');
   if (aboutIndex !== -1) {
     if (infoIndex !== -1 && infoIndex > aboutIndex) {
-      about = stripSectionLabels(text.substring(aboutIndex, infoIndex).trim(), ['About']);
+      about = stripSectionLabels(
+        stripLeadingSectionContent(text.substring(aboutIndex, infoIndex).trim(), 'About'),
+        ['About'],
+      );
       infoText = stripSectionLabels(text.substring(infoIndex).trim(), ['Info']);
     } else {
-      about = stripSectionLabels(text.substring(aboutIndex).trim(), ['About']);
+      about = stripSectionLabels(
+        stripLeadingSectionContent(text.substring(aboutIndex).trim(), 'About'),
+        ['About'],
+      );
     }
   } else if (infoIndex !== -1) {
     infoText = stripSectionLabels(text.substring(infoIndex).trim(), ['Info']);
