@@ -4,6 +4,7 @@ import {
   fetchCollections,
   fetchProductByHandle,
   fetchProductsPage,
+  isAbortError,
   shopifyFetch,
   type StorefrontProduct,
 } from '../src/lib/shopify/storefrontClient';
@@ -41,10 +42,11 @@ export function useShopifyCollections() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     const load = async () => {
       setLoading(true);
       try {
-        const data = await fetchCollections();
+        const data = await fetchCollections({ signal: controller.signal });
         if (!cancelled) {
           const list = data.map(collection => ({
             id: collection.id,
@@ -54,11 +56,17 @@ export function useShopifyCollections() {
           setError(null);
         }
       } catch (error) {
-        console.error('Failed to load Shopify collections', error);
-        if (!cancelled) {
+        if (cancelled) return;
+        if (isAbortError(error)) {
           setCollections([]);
-          setError(error instanceof Error ? error : new Error('Unable to load collections.'));
+          setError(error instanceof Error ? error : new Error('Shopify request canceled.'));
+          return;
         }
+        console.error('Failed to load Shopify collections', error);
+        setCollections([]);
+        setError(
+          error instanceof Error ? error : new Error('Unable to load collections.'),
+        );
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -66,6 +74,7 @@ export function useShopifyCollections() {
     load();
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, []);
 
@@ -83,6 +92,7 @@ export function useShopifyProducts(
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     const load = async () => {
       if (!enabled) {
         if (!cancelled) {
@@ -96,10 +106,13 @@ export function useShopifyProducts(
       try {
         let nodes: StorefrontProduct[] = [];
         if (!collectionId || collectionId === 'all') {
-          const res = await fetchProductsPage({ first: 20 });
+          const res = await fetchProductsPage({ first: 20 }, { signal: controller.signal });
           nodes = res.products;
         } else {
-          const res = await fetchCollectionProductsPage({ collectionId, first: 20 });
+          const res = await fetchCollectionProductsPage(
+            { collectionId, first: 20 },
+            { signal: controller.signal },
+          );
           nodes = res.products;
         }
         if (!cancelled) {
@@ -108,11 +121,15 @@ export function useShopifyProducts(
           setError(null);
         }
       } catch (error) {
-        console.error('Failed to load Shopify products', error);
-        if (!cancelled) {
+        if (cancelled) return;
+        if (isAbortError(error)) {
           setProducts([]);
-          setError(error instanceof Error ? error : new Error('Unable to load products.'));
+          setError(error instanceof Error ? error : new Error('Shopify request canceled.'));
+          return;
         }
+        console.error('Failed to load Shopify products', error);
+        setProducts([]);
+        setError(error instanceof Error ? error : new Error('Unable to load products.'));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -120,6 +137,7 @@ export function useShopifyProducts(
     load();
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [collectionId, enabled]);
 

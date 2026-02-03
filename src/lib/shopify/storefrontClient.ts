@@ -46,7 +46,13 @@ export type StorefrontProduct = {
   collections: StorefrontCollectionRef[];
 };
 
+type ShopifyRequestOptions = {
+  signal?: AbortSignal;
+  timeoutMs?: number;
+};
+
 const DEFAULT_MONEY: Money = { amount: '0', currencyCode: 'USD' };
+const DEFAULT_TIMEOUT_MS = 15000;
 
 const PRODUCT_FRAGMENT = `
   id
@@ -127,33 +133,74 @@ function normalizeProduct(node: any): StorefrontProduct {
 export async function shopifyFetch<T>(
   query: string,
   variables?: Record<string, any>,
+  options?: ShopifyRequestOptions,
 ): Promise<T> {
   const config = getShopifyConfig();
   const { endpoint, token } = config;
-  const res = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': token,
-    },
-    body: JSON.stringify({ query, variables }),
-  });
+  const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const controller = new AbortController();
+  let timedOut = false;
+  const cleanupListeners: Array<() => void> = [];
 
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Shopify request failed (${res.status}): ${body}`);
+  if (options?.signal) {
+    if (options.signal.aborted) {
+      controller.abort();
+    } else {
+      const onAbort = () => controller.abort();
+      options.signal.addEventListener('abort', onAbort);
+      cleanupListeners.push(() => options.signal?.removeEventListener('abort', onAbort));
+    }
   }
 
-  const json = (await res.json()) as { data?: T; errors?: ShopifyError[] };
-  if (json.errors?.length) {
-    const message = json.errors.map(error => error.message).join(' | ');
-    throw new Error(`Shopify GraphQL error: ${message}`);
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  if (timeoutMs > 0) {
+    timeoutId = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
+    cleanupListeners.push(() => {
+      if (timeoutId) clearTimeout(timeoutId);
+    });
   }
-  if (!json.data) {
-    throw new Error('Shopify response missing data.');
+
+  try {
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        'X-Shopify-Storefront-Access-Token': token,
+      },
+      body: JSON.stringify({ query, variables }),
+      signal: controller.signal,
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Shopify request failed (${res.status}): ${body}`);
+    }
+
+    const json = (await res.json()) as { data?: T; errors?: ShopifyError[] };
+    if (json.errors?.length) {
+      const message = json.errors.map(error => error.message).join(' | ');
+      throw new Error(`Shopify GraphQL error: ${message}`);
+    }
+    if (!json.data) {
+      throw new Error('Shopify response missing data.');
+    }
+    return json.data;
+  } catch (error) {
+    if (isAbortError(error)) {
+      const abortError = new Error(
+        timedOut ? 'Shopify request timed out.' : 'Shopify request was cancelled.',
+      );
+      abortError.name = 'AbortError';
+      throw abortError;
+    }
+    throw error;
+  } finally {
+    cleanupListeners.forEach(cleanup => cleanup());
   }
-  return json.data;
 }
 
 export async function fetchProductsPage({
@@ -162,7 +209,9 @@ export async function fetchProductsPage({
 }: {
   first?: number;
   after?: string | null;
-} = {}): Promise<{ products: StorefrontProduct[]; pageInfo: { hasNextPage: boolean; endCursor?: string | null } }> {
+} = {},
+options?: ShopifyRequestOptions,
+): Promise<{ products: StorefrontProduct[]; pageInfo: { hasNextPage: boolean; endCursor?: string | null } }> {
   const data = await shopifyFetch<{
     products: {
       edges: { node: StorefrontProduct }[];
@@ -176,16 +225,21 @@ export async function fetchProductsPage({
       }
     }`,
     { first, after },
+    options,
   );
 
   const products = data.products?.edges?.map(edge => normalizeProduct(edge.node)) ?? [];
   return { products, pageInfo: data.products?.pageInfo ?? { hasNextPage: false } };
 }
 
-export async function fetchCollections(): Promise<StorefrontCollectionRef[]> {
+export async function fetchCollections(options?: ShopifyRequestOptions): Promise<StorefrontCollectionRef[]> {
   const data = await shopifyFetch<{
     collections: { edges: { node: StorefrontCollectionRef }[] };
-  }>(`query collections { collections(first: 20) { edges { node { id title handle } } } }`);
+  }>(
+    `query collections { collections(first: 20) { edges { node { id title handle } } } }`,
+    undefined,
+    options,
+  );
 
   const edges = data.collections?.edges ?? [];
   return edges
@@ -201,7 +255,9 @@ export async function fetchCollectionProductsPage({
   collectionId: string;
   first?: number;
   after?: string | null;
-}): Promise<{ products: StorefrontProduct[]; pageInfo: { hasNextPage: boolean; endCursor?: string | null } }> {
+},
+options?: ShopifyRequestOptions,
+): Promise<{ products: StorefrontProduct[]; pageInfo: { hasNextPage: boolean; endCursor?: string | null } }> {
   const data = await shopifyFetch<{
     collection: {
       products: {
@@ -219,6 +275,7 @@ export async function fetchCollectionProductsPage({
       }
     }`,
     { id: collectionId, first, after },
+    options,
   );
 
   const products =
@@ -229,7 +286,10 @@ export async function fetchCollectionProductsPage({
   };
 }
 
-export async function fetchProductByHandle(handle: string): Promise<StorefrontProduct | null> {
+export async function fetchProductByHandle(
+  handle: string,
+  options?: ShopifyRequestOptions,
+): Promise<StorefrontProduct | null> {
   const data = await shopifyFetch<{ productByHandle: StorefrontProduct | null }>(
     `query productByHandle($handle: String!) {
       productByHandle(handle: $handle) {
@@ -237,8 +297,13 @@ export async function fetchProductByHandle(handle: string): Promise<StorefrontPr
       }
     }`,
     { handle },
+    options,
   );
 
   if (!data.productByHandle) return null;
   return normalizeProduct(data.productByHandle);
+}
+
+export function isAbortError(error: unknown): boolean {
+  return error instanceof Error && error.name === 'AbortError';
 }

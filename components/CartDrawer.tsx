@@ -75,7 +75,9 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
   async function checkStock(items) {
     // Query Shopify for inventory for each variantId
     const variantIds = Array.from(new Set(items.map(i => i.variantId).filter(Boolean)));
-    if (variantIds.length === 0) return false;
+    if (variantIds.length === 0) {
+      throw new Error('Missing product variants for stock check.');
+    }
     const query = `
       query ($ids: [ID!]!) {
         nodes(ids: $ids) {
@@ -89,7 +91,9 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
     `;
     try {
       const data = await shopifyFetch<{ nodes: any[] }>(query, { ids: variantIds });
-      if (!data || !data.nodes) return false;
+      if (!data || !data.nodes) {
+        throw new Error('Shopify inventory response missing data.');
+      }
       // Map variantId to inventory
       const inventoryMap = {};
       data.nodes.forEach(node => {
@@ -117,7 +121,7 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
       return true;
     } catch (error) {
       console.error('Failed to check Shopify inventory', error);
-      return false;
+      throw error instanceof Error ? error : new Error('Unable to verify inventory.');
     }
   }
 
@@ -163,7 +167,8 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
         Alert.alert('Checkout failed', 'Could not start checkout. Please try again.');
       }
     } catch (err) {
-      Alert.alert('Checkout failed', 'Please try again.');
+      const message = err instanceof Error ? err.message : 'Please try again.';
+      Alert.alert('Checkout failed', message);
       console.error('Failed to start checkout', err);
     }
     setCheckoutLoading(false);
