@@ -8,7 +8,23 @@ type ShopifyConfig = {
   testProductHandle?: string;
 };
 
-const extra = Constants.expoConfig?.extra ?? {};
+type ExpoExtra = Record<string, unknown>;
+
+function getExpoExtra(): ExpoExtra {
+  const manifest2 = (Constants as { manifest2?: { extra?: ExpoExtra } }).manifest2;
+  const expoClientExtra = (manifest2?.extra as { expoClient?: { extra?: ExpoExtra } } | undefined)
+    ?.expoClient?.extra;
+
+  return (
+    Constants.expoConfig?.extra ??
+    expoClientExtra ??
+    manifest2?.extra ??
+    (Constants.manifest as { extra?: ExpoExtra } | undefined)?.extra ??
+    {}
+  );
+}
+
+const extra = getExpoExtra();
 
 const apiVersionPathMatch = /\/api\/([^/]+)\/graphql\.json/i;
 const REQUIRED_KEYS = [
