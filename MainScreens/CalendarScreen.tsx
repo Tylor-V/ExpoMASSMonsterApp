@@ -52,6 +52,10 @@ import {
 } from '../firebase/userProfileHelpers';
 import { postSystemMessage } from '../firebase/systemMessages';
 import { formatUserDisplayName } from '../utils/userDisplayName';
+import {
+  normalizeSharedSplitList,
+  normalizeWorkoutPlan,
+} from '../utils/splitSharing';
 import { colors, fonts } from '../theme';
 import {
   ANIM_BUTTON_POP,
@@ -744,7 +748,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       let custom = null;
       if (storedCustom) {
         try {
-          custom = JSON.parse(storedCustom);
+          custom = normalizeWorkoutPlan(JSON.parse(storedCustom));
+          if (!custom) await AsyncStorage.removeItem(customSplitKey);
         } catch {
           await AsyncStorage.removeItem(customSplitKey);
         }
@@ -754,7 +759,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       let shared: any[] = [];
       if (storedShared) {
         try {
-          shared = JSON.parse(storedShared);
+          shared = normalizeSharedSplitList(JSON.parse(storedShared));
+          if (!shared.length) await AsyncStorage.removeItem('sharedSplits');
         } catch {
           await AsyncStorage.removeItem('sharedSplits');
         }
@@ -768,7 +774,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             setShowWorkout(remoteToggle);
             await AsyncStorage.setItem('showWorkout', remoteToggle ? 'true' : 'false');
           }
-          const remote = doc.data()?.customSplit;
+          const remote = normalizeWorkoutPlan(doc.data()?.customSplit);
           if (remote) {
             custom = remote;
             await AsyncStorage.setItem(customSplitKey, JSON.stringify(remote));
@@ -776,8 +782,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           try {
             const remoteShared = await fetchSharedSplits();
             if (remoteShared && Array.isArray(remoteShared)) {
-              shared = remoteShared;
-              await AsyncStorage.setItem('sharedSplits', JSON.stringify(remoteShared));
+              shared = normalizeSharedSplitList(remoteShared);
+              await AsyncStorage.setItem('sharedSplits', JSON.stringify(shared));
             }
           } catch (err) {
             console.error('Failed to fetch shared splits', err);
@@ -1051,11 +1057,13 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       const uid = auth().currentUser?.uid;
       if (uid) {
         const doc = await firestore().collection('users').doc(uid).get();
-        const remote = doc.data()?.customSplit;
+        const remote = normalizeWorkoutPlan(doc.data()?.customSplit);
         if (remote) setCustomSplit(remote);
         try {
           const remoteShared = await fetchSharedSplits();
-          if (Array.isArray(remoteShared)) setSharedSplits(remoteShared);
+          if (Array.isArray(remoteShared)) {
+            setSharedSplits(normalizeSharedSplitList(remoteShared));
+          }
         } catch (err) {
           console.error('Failed to fetch shared splits', err);
         }
@@ -1138,7 +1146,11 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             try {
               const uid = auth().currentUser?.uid;
               if (!uid) return;
-              const splitCopy = JSON.parse(JSON.stringify(customSplit));
+              const splitCopy = normalizeWorkoutPlan(customSplit);
+              if (!splitCopy) {
+                Alert.alert('Share Failed', 'This split is missing required details.');
+                return;
+              }
               const channelDoc = firestore()
                 .collection('channels')
                 .doc('split-sharing');

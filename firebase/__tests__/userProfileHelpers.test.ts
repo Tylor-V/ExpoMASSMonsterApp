@@ -9,6 +9,23 @@ describe('userProfileHelpers save/fetch', () => {
     __reset();
   });
 
+  const makeSplit = (name: string) => ({
+    id: name.toLowerCase(),
+    msgId: name.toLowerCase(),
+    fromName: 'Tester',
+    fromPic: '',
+    savedAt: Date.now(),
+    split: {
+      name,
+      startDate: '2024-01-01',
+      days: [
+        { title: 'Day 1', lifts: [], notes: '' },
+        { title: 'Day 2', lifts: [], notes: '' },
+        { title: 'Day 3', lifts: [], notes: '' },
+      ],
+    },
+  });
+
   test('updateProfileField writes to user doc', async () => {
     await updateProfileField('bio', 'Hello world');
     const doc = __getDoc(['users', 'test-uid']);
@@ -25,9 +42,9 @@ describe('userProfileHelpers save/fetch', () => {
   });
 
   test('saveSharedSplits replaces existing and fetchSharedSplits returns saved data', async () => {
-    await saveSharedSplits([{ id: 'old', name: 'Old' }]);
-    await saveSharedSplits([{ id: 'new', name: 'New' }]);
+    await saveSharedSplits([makeSplit('Old')]);
+    await saveSharedSplits([makeSplit('New')]);
     const splits = await fetchSharedSplits();
-    expect(splits).toEqual([{ id: 'new', name: 'New' }]);
+    expect(splits).toEqual([makeSplit('New')]);
   });
 });

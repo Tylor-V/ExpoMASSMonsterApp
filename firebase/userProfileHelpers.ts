@@ -2,6 +2,7 @@
 import { firestore } from './firebase';
 import { auth } from './firebase';
 import { getTodayKey } from './dateHelpers';
+import { normalizeSharedSplitList } from '../utils/splitSharing';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
@@ -176,14 +177,15 @@ export async function saveShowWorkout(value: boolean) {
 export async function saveSharedSplits(splits: any[]) {
   const uid = auth().currentUser?.uid;
   if (!uid) throw new Error('No user logged in');
-  
+
+  const normalized = normalizeSharedSplitList(splits);
   const colRef = firestore().collection('users').doc(uid).collection('sharedSplits');
   const existing = await colRef.get();
   const batch = firestore().batch();
 
   existing.forEach(doc => batch.delete(doc.ref));
 
-  splits.forEach((s: any) => {
+  normalized.forEach((s: any) => {
     const id = s.msgId || s.id;
     if (!id) return;
     batch.set(colRef.doc(id).ref, s);

@@ -28,6 +28,10 @@ import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { auth, firestore } from '../firebase/firebase';
 import { colors, fonts } from '../theme';
 import { ANIM_INSTANT, ANIM_BUTTON_PRESS, ANIM_WIGGLE } from '../utils/animations';
+import {
+  normalizeSharedSplitList,
+  normalizeWorkoutPlan,
+} from '../utils/splitSharing';
 import useCarousel from '../hooks/useCarousel';
 import CarouselNavigator from '../components/CarouselNavigator';
 import { Image } from 'expo-image';
@@ -280,7 +284,7 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
   const loadSavedSplitIds = useCallback(async () => {
     try {
       const stored = await AsyncStorage.getItem('sharedSplits');
-      const list = stored ? JSON.parse(stored) : [];
+      const list = normalizeSharedSplitList(stored ? JSON.parse(stored) : []);
       const ids = list
         .map((s: any) => s.msgId)
         .filter((id: any) => typeof id === 'string');
@@ -325,8 +329,13 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
 
   const handleSaveSplit = async (msgId: string, split: any, user: any) => {
     try {
+      const normalizedSplit = normalizeWorkoutPlan(split);
+      if (!normalizedSplit) {
+        Alert.alert('Save Failed', 'This split is missing required details.');
+        return;
+      }
       const stored = await AsyncStorage.getItem('sharedSplits');
-      const list = stored ? JSON.parse(stored) : [];
+      const list = normalizeSharedSplitList(stored ? JSON.parse(stored) : []);
       const existing = list.findIndex((s: any) => s.msgId === msgId);
       const msgRef = firestore()
         .collection('channels')
@@ -354,16 +363,16 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
       }
 
       const newSplit = {
-        id: Date.now().toString(),
+        id: msgId,
         msgId,
-        split,
+        split: normalizedSplit,
         fromName: `${user.firstName || 'User'} ${
           user.lastName?.charAt(0) || ''
         }.`,
         fromPic: user.profilePicUrl || '',
         savedAt: Date.now(),
       };
-      const updated = [...list, newSplit];
+      const updated = normalizeSharedSplitList([...list, newSplit]);
       await AsyncStorage.setItem('sharedSplits', JSON.stringify(updated));
       await saveSharedSplits(updated);
       await addSharedSplit(newSplit);
