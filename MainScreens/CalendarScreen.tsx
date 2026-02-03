@@ -64,6 +64,8 @@ import {
 } from '../utils/animations';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
+const MASS_LOGO = require('../assets/mass-logo.png');
+const COMPS_LOGO = require('../assets/comps-logo.png');
 
 type IoniconProps = ComponentProps<typeof Ionicons> & {
   style?: any;
@@ -73,6 +75,24 @@ const AnimatedIcon = ({ style, pointerEvents, ...rest }: IoniconProps) => (
   <Animated.View style={style} pointerEvents={pointerEvents}>
     <Ionicons {...rest} />
   </Animated.View>
+);
+
+const SectionHeader = React.memo(
+  ({
+    title,
+    logo,
+    children,
+  }: {
+    title?: string;
+    logo: any;
+    children?: React.ReactNode;
+  }) => (
+    <View style={styles.massHeaderRow}>
+      <Image source={logo} style={styles.massHeaderLogo} contentFit="contain" />
+      {title ? <Text style={styles.massHeaderTxt}>{title}</Text> : null}
+      {children}
+    </View>
+  ),
 );
 
 const CAROUSEL_INDEX_KEY = 'calendarCarouselIndex';
@@ -522,6 +542,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const [daysRowHeight, setDaysRowHeight] = useState(0);
   const [eventListMaxHeight, setEventListMaxHeight] = useState<number>();
   const [drawerOffset, setDrawerOffset] = useState(DRAWER_HEIGHT);
+  const drawerOffsetRef = useRef(DRAWER_HEIGHT);
   const drawerAnim = useRef(new Animated.Value(DRAWER_HEIGHT)).current;
   const drawerOverlay = useRef(new Animated.Value(0)).current;
   const lastTodayKeyRef = useRef(getTodayKey());
@@ -650,6 +671,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   }, [massCardTop, daysRowHeight]);
 
   useEffect(() => {
+    drawerOffsetRef.current = drawerOffset;
     if (!showWorkoutDrawer) {
       drawerAnim.setValue(drawerOffset);
     }
@@ -1000,8 +1022,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   }, [selectedIndex]);
 
   useEffect(() => {
+    const currentDrawerOffset = drawerOffsetRef.current;
     if (showWorkoutDrawer) {
-      drawerAnim.setValue(drawerOffset);
+      drawerAnim.setValue(currentDrawerOffset);
       drawerOverlay.setValue(0);
       setRenderWorkoutDrawer(true);
       Animated.parallel([
@@ -1019,7 +1042,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     } else if (renderWorkoutDrawer) {
       Animated.parallel([
         Animated.timing(drawerAnim, {
-          toValue: drawerOffset,
+          toValue: currentDrawerOffset,
           duration: DRAWER_ANIM_DURATION,
           useNativeDriver: true,
         }),
@@ -1030,7 +1053,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         }),
       ]).start(() => setRenderWorkoutDrawer(false));
     }
-  }, [showWorkoutDrawer, drawerOffset]);
+  }, [showWorkoutDrawer, renderWorkoutDrawer]);
 
   useEffect(() => {
     if (showPlanDrawer) {
@@ -1526,14 +1549,14 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   };
 
   const openDayMenu = () => {
-    if (!plan) return;
+    if (!plan || !dayArrowRef.current) return;
     setShowPlanDrawer(false);
     setShowWorkoutDrawer(false);
-    dayArrowRef.current?.measureInWindow((x, y, width, height) => {
+    dayArrowRef.current.measureInWindow((x, y, width, height) => {
       setDayArrowPos({ x: x + width / 2, y: y + height });
+      dayMenuOpenedAt.current = Date.now();
+      setDayMenuOpen(true);
     });
-    dayMenuOpenedAt.current = Date.now();
-    setDayMenuOpen(true);
   };
 
   const closeDayMenu = () => {
@@ -1601,16 +1624,22 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     outputRange: ['0deg', '180deg'],
   });
 
+  const addNewsButton = useMemo(() => {
+    if (user?.role !== 'moderator') return null;
+    return (
+      <TouchableOpacity
+        onPress={() => setAddNewsOpen(true)}
+        style={styles.addNewsBtn}
+        testID="add-news-btn"
+      >
+        <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
+      </TouchableOpacity>
+    );
+  }, [user?.role]);
+
   const MassEventsSection = () => (
     <View style={carouselCardStyle} onLayout={onMassCardLayout}>
-      <View style={styles.massHeaderRow}>
-        <Image
-          source={require('../assets/mass-logo.png')}
-          style={styles.massHeaderLogo}
-          contentFit="contain"
-        />
-        <Text style={styles.massHeaderTxt}>EVENTS</Text>
-      </View>
+      <SectionHeader title="EVENTS" logo={MASS_LOGO} />
       {showSplitPlaceholder && <ChooseSplitButton />}
       {massEvents.map((ev, idx) => {
         const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][ev.weekday];
@@ -1732,23 +1761,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
   const NewsSection = () => (
     <View style={carouselCardStyle}>
-      <View style={styles.massHeaderRow}>
-        <Image
-          source={require('../assets/mass-logo.png')}
-          style={styles.massHeaderLogo}
-          contentFit="contain"
-        />
-        <Text style={styles.massHeaderTxt}>NEWS</Text>
-        {user?.role === 'moderator' && (
-          <TouchableOpacity
-            onPress={() => setAddNewsOpen(true)}
-            style={styles.addNewsBtn}
-            testID="add-news-btn"
-          >
-            <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
-          </TouchableOpacity>
-        )}
-      </View>
+      <SectionHeader title="NEWS" logo={MASS_LOGO}>
+        {addNewsButton}
+      </SectionHeader>
         {newsLoaded ? (
           mergedNews.length ? (
             <ScrollView
@@ -1808,13 +1823,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
   const CompetitionsSection = () => (
     <View style={carouselCardStyle}>
-      <View style={styles.massHeaderRow}>
-        <Image
-          source={require('../assets/comps-logo.png')}
-          style={styles.massHeaderLogo}
-          contentFit="contain"
-        />
-      </View>
+      <SectionHeader logo={COMPS_LOGO} />
       {fakeComps.map((c, idx) => (
         <View key={c.id} style={[
           carouselChipStyle,
