@@ -99,6 +99,7 @@ const DMChatScreen = ({ navigation, route }) => {
   const [lastReadDM, markAsReadDM] = useLastReadDM(threadId);
   const initialLastReadLoaded = useRef(false);
   const initialScrollDone = useRef(false);
+  const prevMessagesRef = useRef<any[]>([]);
 
   useEffect(() => {
     initialLastReadLoaded.current = false;
@@ -136,11 +137,13 @@ const DMChatScreen = ({ navigation, route }) => {
         const ordered = dedupeById(msgs.reverse());
         setMessages(ordered);
         setLoading(false);
-        const lastId = ordered.length ? ordered[ordered.length - 1].id : null;
-        if (lastId) {
-          markAsReadDM(lastId, Date.now());
+        if (isAtBottomRef.current) {
+          const lastId = ordered.length ? ordered[ordered.length - 1].id : null;
+          if (lastId) {
+            markAsReadDM(lastId, Date.now());
+          }
+          scrollToLatest(false);
         }
-        scrollToLatest(false);
       });
     return unsub;
   }, [threadId]);
@@ -153,31 +156,48 @@ const DMChatScreen = ({ navigation, route }) => {
     };
   }, [threadId, latestMessageId]);
   
-  // When new messages arrive from others, show marker if user isn't at bottom
-  useEffect(() => {
-    if (
-      messages.length > 0 &&
-      lastReadMessageId &&
-      latestMessageId !== lastReadMessageId &&
-      latestMessageUserId !== currentUserId
-    ) {
-      setShowNewMarker(true);
-    }
-  }, [messages, currentUserId, latestMessageUserId, lastReadMessageId, latestMessageId]);
-
   useEffect(() => {
     if (!messages.length) return;
     if (!initialScrollDone.current) {
       scrollToLatest(false);
       initialScrollDone.current = true;
+      prevMessagesRef.current = messages;
       return;
     }
-    if (messages[messages.length - 1].userId === currentUserId) {
-      scrollToLatest(true);
-    } else if (isAtBottomRef.current) {
-      scrollToLatest(false);
+
+    const prevMessages = prevMessagesRef.current;
+    const prevLastMessage =
+      prevMessages.length > 0 ? prevMessages[prevMessages.length - 1] : null;
+    const currentLastMessage =
+      messages.length > 0 ? messages[messages.length - 1] : null;
+    const hasNewMessage =
+      messages.length > prevMessages.length ||
+      (!!currentLastMessage && !prevLastMessage) ||
+      (!!currentLastMessage &&
+        !!prevLastMessage &&
+        currentLastMessage.id !== prevLastMessage.id);
+
+    if (
+      hasNewMessage &&
+      messages.length > 0 &&
+      lastReadMessageId &&
+      latestMessageId !== lastReadMessageId &&
+      latestMessageUserId !== currentUserId &&
+      !isAtBottomRef.current
+    ) {
+      setShowNewMarker(true);
     }
-  }, [messages]);
+
+    if (hasNewMessage && currentLastMessage) {
+      if (currentLastMessage.userId === currentUserId) {
+        scrollToLatest(true);
+      } else if (isAtBottomRef.current) {
+        scrollToLatest(false);
+      }
+    }
+
+    prevMessagesRef.current = messages;
+  }, [messages, currentUserId, latestMessageUserId, lastReadMessageId, latestMessageId]);
 
   const handleScroll = (e: any) => {
     const yOffset = e.nativeEvent.contentOffset.y;
@@ -213,7 +233,8 @@ const DMChatScreen = ({ navigation, route }) => {
       Alert.alert('Timed Out', `You cannot send messages for ${hLeft}h ${mLeft}m.`);
       return;
     }
-    if (!text.trim()) return;
+    const trimmedText = text.trim();
+    if (!trimmedText) return;
     const otherUid = otherUser?.uid;
     // Ensure thread document exists so DM inbox can list it
     await firestore()
@@ -228,7 +249,7 @@ const DMChatScreen = ({ navigation, route }) => {
       );
     await firestore().collection('dms').doc(threadId).collection('messages').add({
       userId: currentUserId,
-      text,
+      text: trimmedText,
       timestamp: firestore.FieldValue.serverTimestamp(),
       reactions: [],
       mediaUrl: '',
@@ -325,8 +346,7 @@ const DMChatScreen = ({ navigation, route }) => {
                     const showUnreadHere = hasUnreadMarker && index === firstUnreadIndex + 1;
                     const reactions = item.reactions || [];
                     const formattedTime = formatTimestamp(item.timestamp);
-                    const canAddReaction =
-                      !isMe && !reactions.some(r => r.userId === currentUserId);
+                    const canAddReaction = !isMe;
                     const showReactionsRow =
                       actionTargetId !== item.id &&
                       (reactions.length > 0 || canAddReaction);

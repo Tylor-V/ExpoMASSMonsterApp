@@ -28,16 +28,10 @@ const DMsInboxScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
 
-  const fetchDMs = useCallback(async () => {
-    if (!currentUserId) return;
-    setLoading(true);
-    try {
-      const dmsSnap = await firestore()
-        .collection('dms')
-        .where('participants', 'array-contains', currentUserId)
-        .get();
-      const threadDocs = dmsSnap.docs;
+  const searchTerm = search.trim();
+  const term = searchTerm.toLowerCase();
 
+  const buildThreads = useCallback(async (threadDocs) => {
     const promises = threadDocs.map(async doc => {
       const threadId = doc.id;
       const participants = doc.data()?.participants || [];
@@ -87,32 +81,74 @@ const DMsInboxScreen = ({ navigation }) => {
         isUnread,
       };
     });
-
     const result = await Promise.all(promises);
-      const sorted = result.sort((a, b) => b.updatedAt - a.updatedAt);
-      setThreads(sorted);
-    } catch (err) {
-      console.warn('Failed to load DMs', err);
-      setThreads([]);
-    } finally {
-      setLoading(false);
-    }
+    return result.sort((a, b) => b.updatedAt - a.updatedAt);
   }, [currentUserId]);
 
   useEffect(() => {
-    const unsub = firestore()
-      .collection('users')
-      .onSnapshot(snap => {
-        const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        setUsers(arr);
-      });
-    return unsub;
-  }, []);
+    if (!searchTerm || !currentUserId) {
+      setUsers([]);
+      return;
+    }
+    let isActive = true;
+    const fetchUsers = async () => {
+      try {
+        const firstNameQuery = firestore()
+          .collection('users')
+          .orderBy('firstName')
+          .startAt(searchTerm)
+          .endAt(`${searchTerm}\uf8ff`)
+          .limit(10)
+          .get();
+        const lastNameQuery = firestore()
+          .collection('users')
+          .orderBy('lastName')
+          .startAt(searchTerm)
+          .endAt(`${searchTerm}\uf8ff`)
+          .limit(10)
+          .get();
+        const [firstSnap, lastSnap] = await Promise.all([
+          firstNameQuery,
+          lastNameQuery,
+        ]);
+        if (!isActive) return;
+        const merged = new Map<string, any>();
+        firstSnap.docs.forEach(doc => merged.set(doc.id, { id: doc.id, ...doc.data() }));
+        lastSnap.docs.forEach(doc => merged.set(doc.id, { id: doc.id, ...doc.data() }));
+        setUsers(Array.from(merged.values()));
+      } catch (err) {
+        console.warn('Failed to search users', err);
+        if (isActive) {
+          setUsers([]);
+        }
+      }
+    };
+    fetchUsers();
+    return () => {
+      isActive = false;
+    };
+  }, [searchTerm, currentUserId]);
 
   useFocusEffect(
     useCallback(() => {
-      fetchDMs();
-    }, [fetchDMs]),
+      if (!currentUserId) return;
+      setLoading(true);
+      const unsubscribe = firestore()
+        .collection('dms')
+        .where('participants', 'array-contains', currentUserId)
+        .onSnapshot(async snap => {
+          try {
+            const sorted = await buildThreads(snap.docs);
+            setThreads(sorted);
+          } catch (err) {
+            console.warn('Failed to load DMs', err);
+            setThreads([]);
+          } finally {
+            setLoading(false);
+          }
+        });
+      return unsubscribe;
+    }, [buildThreads, currentUserId]),
   );
 
   const filteredThreads = threads.filter(t => {
@@ -120,7 +156,6 @@ const DMsInboxScreen = ({ navigation }) => {
     return name.includes(search.toLowerCase());
   });
 
-  const term = search.trim().toLowerCase();
   const nameMatches = React.useCallback(
     (name: string) =>
       name

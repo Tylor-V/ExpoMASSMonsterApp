@@ -122,6 +122,16 @@ const formatTimestamp = (ts: any) => {
   return `${String(date.getMonth() + 1).padStart(2, "0")}/${String(date.getDate()).padStart(2, "0")} ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
 };
 
+const getMessageMillis = (ts: any) => {
+  if (!ts) return Number.MAX_SAFE_INTEGER;
+  if (ts.toMillis) return ts.toMillis();
+  const date = ts instanceof Date ? ts : new Date(ts);
+  const time = date.getTime();
+  return Number.isNaN(time) ? Number.MAX_SAFE_INTEGER : time;
+};
+
+const PAGE_SIZE = 40;
+
 type ChatMessageProps = {
   item: any;
   index: number;
@@ -560,6 +570,10 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   onRegisterScrollToMessage,
 }) => {
   const [messages, setMessages] = useState<any[]>([]);
+  const [latestMessages, setLatestMessages] = useState<any[]>([]);
+  const [olderMessages, setOlderMessages] = useState<any[]>([]);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [userMap, setUserMap] = useState<UserMap>({});
   const [text, setText] = useState("");
   const [currentUserRole, setCurrentUserRole] = useState<string>("member");
@@ -599,6 +613,14 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   const flatListRef = useRef<FlatList<any>>(null);
   const isAtBottomRef = useRef(true);
   const prevMessagesRef = useRef<any[]>([]);
+  const lastVisibleRef = useRef<any>(null);
+
+  useEffect(() => {
+    const combined = dedupeById([...olderMessages, ...latestMessages]).sort(
+      (a, b) => getMessageMillis(a.timestamp) - getMessageMillis(b.timestamp),
+    );
+    setMessages(combined);
+  }, [latestMessages, olderMessages]);
 
   const scrollToLatest = useCallback(
     (animated = true) => {
@@ -693,6 +715,39 @@ const AllChannels: React.FC<ChatScreenProps> = ({
     return unsubscribe;
   }, [channelId]);
 
+  const loadMoreMessages = useCallback(async () => {
+    if (!channelId || loadingMore || !hasMoreMessages || !lastVisibleRef.current) {
+      return;
+    }
+    setLoadingMore(true);
+    try {
+      const snap = await firestore()
+        .collection("channels")
+        .doc(channelId)
+        .collection("messages")
+        .orderBy("timestamp", "desc")
+        .startAfter(lastVisibleRef.current)
+        .limit(PAGE_SIZE)
+        .get();
+      if (snap.docs.length === 0) {
+        setHasMoreMessages(false);
+        return;
+      }
+      const olderBatch = snap.docs
+        .map((doc) => ({ id: doc.id, ...doc.data() }))
+        .sort(
+          (a, b) => getMessageMillis(a.timestamp) - getMessageMillis(b.timestamp),
+        );
+      setOlderMessages((prev) => dedupeById([...prev, ...olderBatch]));
+      lastVisibleRef.current = snap.docs[snap.docs.length - 1];
+      setHasMoreMessages(snap.docs.length === PAGE_SIZE);
+    } catch (err) {
+      console.warn("Failed to load older messages", err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [channelId, hasMoreMessages, loadingMore]);
+
   // Fetch messages in real-time
   useEffect(() => {
     if (!channelId) return;
@@ -702,19 +757,24 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       .collection("messages")
       // Load newest messages first
       .orderBy("timestamp", "desc")
+      .limit(PAGE_SIZE)
       .onSnapshot((snapshot) => {
         if (snapshot && snapshot.docs) {
-          const getMillis = (ts: any) => {
-            if (!ts) return Number.MAX_SAFE_INTEGER;
-            if (ts.toMillis) return ts.toMillis();
-            return new Date(ts).getTime();
-          };
           const msgs = snapshot.docs
             .map((doc) => ({ id: doc.id, ...doc.data() }))
-            .sort((a, b) => getMillis(a.timestamp) - getMillis(b.timestamp));
-          setMessages(dedupeById(msgs));
+            .sort(
+              (a, b) => getMessageMillis(a.timestamp) - getMessageMillis(b.timestamp),
+            );
+          setLatestMessages(dedupeById(msgs));
+          lastVisibleRef.current =
+            snapshot.docs.length > 0
+              ? snapshot.docs[snapshot.docs.length - 1]
+              : null;
+          setHasMoreMessages(snapshot.docs.length === PAGE_SIZE);
         } else {
-          setMessages([]);
+          setLatestMessages([]);
+          lastVisibleRef.current = null;
+          setHasMoreMessages(false);
         }
       });
     return unsubscribe;
@@ -809,6 +869,12 @@ const AllChannels: React.FC<ChatScreenProps> = ({
     setShowJump(false);
     setShowNewMarker(false);
     prevMessagesRef.current = [];
+    setLatestMessages([]);
+    setOlderMessages([]);
+    setMessages([]);
+    setHasMoreMessages(true);
+    setLoadingMore(false);
+    lastVisibleRef.current = null;
   }, [channelId]);
 
   useEffect(() => {
@@ -880,7 +946,6 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       messages.length > 0 ? messages[messages.length - 1] : null;
 
     const hasNewMessage =
-      messages.length > prevMessages.length ||
       (!!currentLastMessage && !prevLastMessage) ||
       (!!currentLastMessage &&
         !!prevLastMessage &&
@@ -929,6 +994,9 @@ const AllChannels: React.FC<ChatScreenProps> = ({
         setLastReadMessageId(latestMessageId);
         markAsRead(latestMessageId, Date.now());
       }
+    }
+    if (yOffset < 120 && hasMoreMessages && !loadingMore) {
+      loadMoreMessages();
     }
   };
 
