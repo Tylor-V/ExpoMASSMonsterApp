@@ -32,4 +32,13 @@ These statements have not been evaluated by the Food and Drug Administration. Th
     ]);
     expect(parsed.manufactured).toBe('Manufactured in USA.');
   });
+
+  it('strips About and Info labels from parsed text', () => {
+    const parsed = parseProductDescription(`
+      About: About: Clean formula.
+      Info: Info: Directions: Take one daily.
+    `);
+    expect(parsed.about).toBe('Clean formula.');
+    expect(parsed.info['Directions']).toBe('Take one daily.');
+  });
 });

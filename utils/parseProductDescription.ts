@@ -31,7 +31,23 @@ const INFO_HEADERS = [
 ];
 
 const stripSectionLabel = (value: string, label: string) =>
-  value.replace(new RegExp(`^${label}\\s*:?\\s*`, 'i'), '').trim();
+  value.replace(new RegExp(`^\\s*${label}\\s*:?\\s*`, 'i'), '').trim();
+
+const stripSectionLabels = (value: string, labels: string[]) => {
+  let result = value.trim();
+  let didStrip = true;
+  while (didStrip) {
+    didStrip = false;
+    labels.forEach(label => {
+      const stripped = stripSectionLabel(result, label);
+      if (stripped !== result) {
+        result = stripped;
+        didStrip = true;
+      }
+    });
+  }
+  return result.trim();
+};
 
 export function parseProductDescription(description: string): ParsedProductDescription {
   if (!description) {
@@ -83,13 +99,13 @@ export function parseProductDescription(description: string): ParsedProductDescr
   const infoIndex = lowerText.indexOf('info:');
   if (aboutIndex !== -1) {
     if (infoIndex !== -1 && infoIndex > aboutIndex) {
-      about = stripSectionLabel(text.substring(aboutIndex, infoIndex).trim(), 'About');
-      infoText = stripSectionLabel(text.substring(infoIndex).trim(), 'Info');
+      about = stripSectionLabels(text.substring(aboutIndex, infoIndex).trim(), ['About']);
+      infoText = stripSectionLabels(text.substring(infoIndex).trim(), ['Info']);
     } else {
-      about = stripSectionLabel(text.substring(aboutIndex).trim(), 'About');
+      about = stripSectionLabels(text.substring(aboutIndex).trim(), ['About']);
     }
   } else if (infoIndex !== -1) {
-    infoText = stripSectionLabel(text.substring(infoIndex).trim(), 'Info');
+    infoText = stripSectionLabels(text.substring(infoIndex).trim(), ['Info']);
   }
 
   const infoSections: ParsedInfoSections = {};
