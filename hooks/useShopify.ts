@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   fetchCollectionProductsPage,
+  fetchCollections,
   fetchProductByHandle,
   fetchProductsPage,
   shopifyFetch,
@@ -17,7 +18,7 @@ type ShopifyProduct = StorefrontProduct & {
 };
 
 function mapProduct(node: StorefrontProduct): ShopifyProduct {
-  const images = node.images.map(image => image.url).filter(Boolean);
+  const images = (node.images ?? []).map(image => image.url).filter(Boolean);
   const firstVariant = node.variants[0];
   return {
     ...node,
@@ -34,34 +35,33 @@ function mapProduct(node: StorefrontProduct): ShopifyProduct {
 }
 
 export function useShopifyCollections() {
-  const [collections, setCollections] = useState<any[]>([]);
+  const [collections, setCollections] = useState<{ id: string; title: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       setLoading(true);
       try {
-        const data = await shopifyFetch<{
-          collections: { edges: { node: { id: string; title: string } }[] };
-        }>(
-          `query collections { collections(first: 20) { edges { node { id title } } } }`,
-        );
+        const data = await fetchCollections();
         if (!cancelled) {
-          const edges = data.collections?.edges ?? [];
-          const list = edges.map(edge => edge.node);
+          const list = data.map(collection => ({
+            id: collection.id,
+            title: collection.title,
+          }));
           setCollections(list);
-          setError(false);
+          setError(null);
         }
       } catch (error) {
         console.error('Failed to load Shopify collections', error);
         if (!cancelled) {
           setCollections([]);
-          setError(true);
+          setError(error instanceof Error ? error : new Error('Unable to load collections.'));
         }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      if (!cancelled) setLoading(false);
     };
     load();
     return () => {
@@ -75,7 +75,7 @@ export function useShopifyCollections() {
 export function useShopifyProducts(collectionId?: string) {
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -93,16 +93,17 @@ export function useShopifyProducts(collectionId?: string) {
         if (!cancelled) {
           const list = nodes.map(mapProduct);
           setProducts(list);
-          setError(false);
+          setError(null);
         }
       } catch (error) {
         console.error('Failed to load Shopify products', error);
         if (!cancelled) {
           setProducts([]);
-          setError(true);
+          setError(error instanceof Error ? error : new Error('Unable to load products.'));
         }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      if (!cancelled) setLoading(false);
     };
     load();
     return () => {
@@ -116,47 +117,46 @@ export function useShopifyProducts(collectionId?: string) {
 export async function createShopifyCheckout(
   items: { id: string; quantity: number; variantId?: string }[],
 ): Promise<string | null> {
-  try {
-    const lines = items.map(i => ({
-      merchandiseId: i.variantId || i.id,
-      quantity: i.quantity,
-    }));
-    const created = await shopifyFetch<{
-      cartCreate: {
-        cart: { id: string; checkoutUrl: string | null } | null;
-        userErrors: { field: string[] | null; message: string }[];
-      };
-    }>(
-      `mutation cartCreate { cartCreate(input: {}) { cart { id checkoutUrl } userErrors { field message } } }`,
-    );
-    const cartId = created?.cartCreate?.cart?.id;
-    if (!cartId || created?.cartCreate?.userErrors?.length) {
-      console.error('Shopify cartCreate failed', created?.cartCreate?.userErrors);
-      return null;
-    }
-    const added = await shopifyFetch<{
-      cartLinesAdd: {
-        cart: { id: string; checkoutUrl: string | null } | null;
-        userErrors: { field: string[] | null; message: string }[];
-      };
-    }>(
-      `mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
-        cartLinesAdd(cartId: $cartId, lines: $lines) {
-          cart { id checkoutUrl }
-          userErrors { field message }
-        }
-      }`,
-      { cartId, lines },
-    );
-    if (added?.cartLinesAdd?.userErrors?.length) {
-      console.error('Shopify cartLinesAdd failed', added?.cartLinesAdd?.userErrors);
-      return null;
-    }
-    return added?.cartLinesAdd?.cart?.checkoutUrl ?? null;
-  } catch (error) {
-    console.error('Shopify checkout failed', error);
-    return null;
+  const lines = items.map(i => ({
+    merchandiseId: i.variantId || i.id,
+    quantity: i.quantity,
+  }));
+  const created = await shopifyFetch<{
+    cartCreate: {
+      cart: { id: string; checkoutUrl: string | null } | null;
+      userErrors: { field: string[] | null; message: string }[];
+    };
+  }>(
+    `mutation cartCreate { cartCreate(input: {}) { cart { id checkoutUrl } userErrors { field message } } }`,
+  );
+  const cartId = created?.cartCreate?.cart?.id;
+  if (!cartId || created?.cartCreate?.userErrors?.length) {
+    const message =
+      created?.cartCreate?.userErrors?.map(error => error.message).join(' | ') ||
+      'Unable to create cart.';
+    throw new Error(message);
   }
+  const added = await shopifyFetch<{
+    cartLinesAdd: {
+      cart: { id: string; checkoutUrl: string | null } | null;
+      userErrors: { field: string[] | null; message: string }[];
+    };
+  }>(
+    `mutation cartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
+      cartLinesAdd(cartId: $cartId, lines: $lines) {
+        cart { id checkoutUrl }
+        userErrors { field message }
+      }
+    }`,
+    { cartId, lines },
+  );
+  if (added?.cartLinesAdd?.userErrors?.length) {
+    const message =
+      added?.cartLinesAdd?.userErrors?.map(error => error.message).join(' | ') ||
+      'Unable to add cart lines.';
+    throw new Error(message);
+  }
+  return added?.cartLinesAdd?.cart?.checkoutUrl ?? null;
 }
 
 export async function runShopifyRuntimeTest(handle?: string) {

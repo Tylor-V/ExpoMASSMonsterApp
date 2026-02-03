@@ -11,6 +11,7 @@ interface ProductImageProps {
 export default function ProductImage({ uri, style, contentFit = 'cover' }: ProductImageProps) {
   const [loaded, setLoaded] = useState(false);
   const imageStyle = StyleSheet.flatten(style);
+  const placeholder = require('../assets/mass-logo.png');
 
   // Reset loading state and prefetch whenever the URI changes so images are
   // available immediately when the component mounts or is reused in a list.
@@ -29,7 +30,7 @@ export default function ProductImage({ uri, style, contentFit = 'cover' }: Produ
   if (!uri) {
     return (
       <View style={[imageStyle, styles.center]}>
-        <ActivityIndicator />
+        <Image source={placeholder} style={[StyleSheet.absoluteFill, imageStyle]} contentFit="contain" />
       </View>
     );
   }

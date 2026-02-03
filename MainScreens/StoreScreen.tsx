@@ -248,6 +248,10 @@ function StoreScreen({ navigation }) {
   } = useShopifyCollections();
   const [selected, setSelected] = useState<string>('all');
   const { products, loading, error: productError } = useShopifyProducts(selected);
+  const collectionsErrorMessage =
+    collectionsError instanceof Error ? collectionsError.message : null;
+  const productErrorMessage =
+    productError instanceof Error ? productError.message : null;
 
   useEffect(() => {
     products?.forEach(p => {
@@ -542,13 +546,21 @@ function StoreScreen({ navigation }) {
       Alert.alert('Invalid cart', 'Some items are missing variant info or quantity.');
       return;
     }
-    const url = await createShopifyCheckout(
-      cartItems.map(item => ({
-        id: item.variantId || item.id,
-        quantity: item.quantity,
-        variantId: item.variantId,
-      })),
-    );
+    let url: string | null = null;
+    try {
+      url = await createShopifyCheckout(
+        cartItems.map(item => ({
+          id: item.variantId || item.id,
+          quantity: item.quantity,
+          variantId: item.variantId,
+        })),
+      );
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Could not start checkout. Please try again.';
+      Alert.alert('Checkout failed', message);
+      return;
+    }
     if (!url) {
       Alert.alert('Checkout failed', 'Could not start checkout. Please try again.');
       return;
@@ -600,7 +612,10 @@ function StoreScreen({ navigation }) {
           style={{ marginTop: 40 }}
         />
         ) : collectionsError ? (
-        <Text style={styles.errorText}>Unable to load ratings.</Text>
+        <Text style={styles.errorText}>
+          Unable to load categories.
+          {collectionsErrorMessage ? ` ${collectionsErrorMessage}` : ''}
+        </Text>
       ) : (
         <ScrollView
           horizontal
@@ -651,7 +666,10 @@ function StoreScreen({ navigation }) {
           style={{ marginTop: 60 }}
         />
         ) : productError ? (
-        <Text style={styles.errorText}>Unable to load products.</Text>
+        <Text style={styles.errorText}>
+          Unable to load products.
+          {productErrorMessage ? ` ${productErrorMessage}` : ''}
+        </Text>
       ) : products.length === 0 ? (
         <Text style={styles.emptyText}>No products here yet. Check back soon!</Text>
       ) : (

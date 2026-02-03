@@ -46,6 +46,8 @@ export type StorefrontProduct = {
   collections: StorefrontCollectionRef[];
 };
 
+const DEFAULT_MONEY: Money = { amount: '0', currencyCode: 'USD' };
+
 const PRODUCT_FRAGMENT = `
   id
   handle
@@ -62,12 +64,47 @@ const PRODUCT_FRAGMENT = `
   collections(first: 5) { edges { node { id title handle } } }
 `;
 
-function normalizeProduct(node: any): StorefrontProduct {
-  const images = node?.images?.edges?.map((edge: any) => edge?.node).filter(Boolean) ?? [];
+function normalizeMoney(value?: Money | null): Money {
+  if (!value?.amount || !value?.currencyCode) {
+    return DEFAULT_MONEY;
+  }
+  return value;
+}
+
+function normalizeImages(node: any): StorefrontImage[] {
+  const images =
+    node?.images?.edges
+      ?.map((edge: any) => edge?.node)
+      .filter((image: StorefrontImage | undefined) => Boolean(image?.url)) ?? [];
+  if (images.length > 0) {
+    return images;
+  }
+  if (node?.featuredImage?.url) {
+    return [node.featuredImage];
+  }
+  return [];
+}
+
+function normalizeVariants(node: any, fallbackPrice: Money): StorefrontVariant[] {
   const variants =
     node?.variants?.edges?.map((edge: any) => edge?.node).filter(Boolean) ?? [];
+  return variants.map((variant: StorefrontVariant) => ({
+    ...variant,
+    price: normalizeMoney(variant?.price ?? fallbackPrice),
+    availableForSale: Boolean(variant?.availableForSale),
+    title: variant?.title ?? '',
+    id: variant?.id ?? '',
+  }));
+}
+
+function normalizeProduct(node: any): StorefrontProduct {
   const collections =
     node?.collections?.edges?.map((edge: any) => edge?.node).filter(Boolean) ?? [];
+  const fallbackPrice =
+    node?.priceRange?.minVariantPrice ?? node?.variants?.edges?.[0]?.node?.price ?? DEFAULT_MONEY;
+  const images = normalizeImages(node);
+  const variants = normalizeVariants(node, normalizeMoney(fallbackPrice));
+  const featuredImage = node?.featuredImage?.url ? node.featuredImage : images[0] ?? null;
   return {
     id: node?.id ?? '',
     handle: node?.handle ?? '',
@@ -77,9 +114,11 @@ function normalizeProduct(node: any): StorefrontProduct {
     vendor: node?.vendor ?? '',
     productType: node?.productType ?? '',
     availableForSale: Boolean(node?.availableForSale),
-    featuredImage: node?.featuredImage ?? null,
+    featuredImage,
     images,
-    priceRange: node?.priceRange ?? { minVariantPrice: { amount: '0', currencyCode: 'USD' } },
+    priceRange: {
+      minVariantPrice: normalizeMoney(node?.priceRange?.minVariantPrice ?? fallbackPrice),
+    },
     variants,
     collections,
   };
@@ -141,6 +180,17 @@ export async function fetchProductsPage({
 
   const products = data.products?.edges?.map(edge => normalizeProduct(edge.node)) ?? [];
   return { products, pageInfo: data.products?.pageInfo ?? { hasNextPage: false } };
+}
+
+export async function fetchCollections(): Promise<StorefrontCollectionRef[]> {
+  const data = await shopifyFetch<{
+    collections: { edges: { node: StorefrontCollectionRef }[] };
+  }>(`query collections { collections(first: 20) { edges { node { id title handle } } } }`);
+
+  const edges = data.collections?.edges ?? [];
+  return edges
+    .map(edge => edge.node)
+    .filter(collection => Boolean(collection?.id));
 }
 
 export async function fetchCollectionProductsPage({
