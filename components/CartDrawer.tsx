@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ANIM_MEDIUM } from '../utils/animations';
 import { useCart } from '../hooks/useCart';
 import { createShopifyCheckout } from '../hooks/useShopify';
+import { isShopifyConfigError } from '../src/lib/shopify/config';
 import { shopifyFetch } from '../src/lib/shopify/storefrontClient';
 import { colors, fonts } from '../theme';
 import { TAB_BAR_HEIGHT } from './SwipeableTabs';
@@ -120,7 +121,9 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
       }
       return true;
     } catch (error) {
-      console.error('Failed to check Shopify inventory', error);
+      if (!isShopifyConfigError(error)) {
+        console.error('Failed to check Shopify inventory', error);
+      }
       throw error instanceof Error ? error : new Error('Unable to verify inventory.');
     }
   }
@@ -169,7 +172,9 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Please try again.';
       Alert.alert('Checkout failed', message);
-      console.error('Failed to start checkout', err);
+      if (!isShopifyConfigError(err)) {
+        console.error('Failed to start checkout', err);
+      }
     }
     setCheckoutLoading(false);
   };

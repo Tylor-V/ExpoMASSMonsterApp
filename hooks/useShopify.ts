@@ -8,6 +8,11 @@ import {
   shopifyFetch,
   type StorefrontProduct,
 } from '../src/lib/shopify/storefrontClient';
+import {
+  createShopifyConfigError,
+  getShopifyConfigStatus,
+  isShopifyConfigError,
+} from '../src/lib/shopify/config';
 import { htmlToText } from '../utils/htmlToText';
 
 type ShopifyProduct = StorefrontProduct & {
@@ -46,6 +51,15 @@ export function useShopifyCollections() {
     const load = async () => {
       setLoading(true);
       try {
+        const { config, missing } = getShopifyConfigStatus();
+        if (!config) {
+          const error = createShopifyConfigError(missing);
+          if (!cancelled) {
+            setCollections([]);
+            setError(error);
+          }
+          return;
+        }
         const data = await fetchCollections({ signal: controller.signal });
         if (!cancelled) {
           const list = data.map(collection => ({
@@ -62,7 +76,9 @@ export function useShopifyCollections() {
           setError(error instanceof Error ? error : new Error('Shopify request canceled.'));
           return;
         }
-        console.error('Failed to load Shopify collections', error);
+        if (!isShopifyConfigError(error)) {
+          console.error('Failed to load Shopify collections', error);
+        }
         setCollections([]);
         setError(
           error instanceof Error ? error : new Error('Unable to load collections.'),
@@ -104,6 +120,15 @@ export function useShopifyProducts(
       }
       setLoading(true);
       try {
+        const { config, missing } = getShopifyConfigStatus();
+        if (!config) {
+          const error = createShopifyConfigError(missing);
+          if (!cancelled) {
+            setProducts([]);
+            setError(error);
+          }
+          return;
+        }
         let nodes: StorefrontProduct[] = [];
         if (!collectionId || collectionId === 'all') {
           const res = await fetchProductsPage({ first: 20 }, { signal: controller.signal });
@@ -127,7 +152,9 @@ export function useShopifyProducts(
           setError(error instanceof Error ? error : new Error('Shopify request canceled.'));
           return;
         }
-        console.error('Failed to load Shopify products', error);
+        if (!isShopifyConfigError(error)) {
+          console.error('Failed to load Shopify products', error);
+        }
         setProducts([]);
         setError(error instanceof Error ? error : new Error('Unable to load products.'));
       } finally {
@@ -147,6 +174,10 @@ export function useShopifyProducts(
 export async function createShopifyCheckout(
   items: { id: string; quantity: number; variantId?: string }[],
 ): Promise<string | null> {
+  const { config, missing } = getShopifyConfigStatus();
+  if (!config) {
+    throw createShopifyConfigError(missing);
+  }
   const lines = items.map(i => ({
     merchandiseId: i.variantId || i.id,
     quantity: i.quantity,

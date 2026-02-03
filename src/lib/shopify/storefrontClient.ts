@@ -1,4 +1,7 @@
-import { getShopifyConfig } from './config';
+import {
+  createShopifyConfigError,
+  getShopifyConfigStatus,
+} from './config';
 
 type ShopifyError = {
   message: string;
@@ -135,7 +138,10 @@ export async function shopifyFetch<T>(
   variables?: Record<string, any>,
   options?: ShopifyRequestOptions,
 ): Promise<T> {
-  const config = getShopifyConfig();
+  const { config, missing } = getShopifyConfigStatus();
+  if (!config) {
+    throw createShopifyConfigError(missing);
+  }
   const { endpoint, token } = config;
   const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const controller = new AbortController();

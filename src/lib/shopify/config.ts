@@ -11,6 +11,13 @@ type ShopifyConfig = {
 const extra = Constants.expoConfig?.extra ?? {};
 
 const apiVersionPathMatch = /\/api\/([^/]+)\/graphql\.json/i;
+const REQUIRED_KEYS = [
+  'EXPO_PUBLIC_SHOPIFY_STOREFRONT_DOMAIN',
+  'EXPO_PUBLIC_SHOPIFY_API_VERSION',
+  'EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN',
+];
+
+export const SHOPIFY_CONFIG_ERROR_NAME = 'ShopifyConfigError';
 
 function normalizeDomainInput(input?: string) {
   if (!input) {
@@ -27,7 +34,20 @@ function normalizeDomainInput(input?: string) {
   return { domain: host || undefined, apiVersion };
 }
 
-export function getShopifyConfig(): ShopifyConfig {
+export function createShopifyConfigError(missing: string[]): Error {
+  const message = missing.length
+    ? `Shopify configuration missing: ${missing.join(', ')}`
+    : 'Shopify configuration missing.';
+  const error = new Error(message);
+  error.name = SHOPIFY_CONFIG_ERROR_NAME;
+  return error;
+}
+
+export function isShopifyConfigError(error: unknown): boolean {
+  return error instanceof Error && error.name === SHOPIFY_CONFIG_ERROR_NAME;
+}
+
+export function getShopifyConfigStatus(): { config: ShopifyConfig | null; missing: string[] } {
   const rawDomain =
     (extra?.EXPO_PUBLIC_SHOPIFY_STOREFRONT_DOMAIN as string | undefined) ??
     process.env.EXPO_PUBLIC_SHOPIFY_STOREFRONT_DOMAIN;
@@ -46,12 +66,12 @@ export function getShopifyConfig(): ShopifyConfig {
   const resolvedApiVersion = apiVersion ?? normalizedInput.apiVersion;
 
   const missing: string[] = [];
-  if (!domain) missing.push('EXPO_PUBLIC_SHOPIFY_STOREFRONT_DOMAIN');
-  if (!resolvedApiVersion) missing.push('EXPO_PUBLIC_SHOPIFY_API_VERSION');
-  if (!token) missing.push('EXPO_PUBLIC_SHOPIFY_STOREFRONT_TOKEN');
+  if (!domain) missing.push(REQUIRED_KEYS[0]);
+  if (!resolvedApiVersion) missing.push(REQUIRED_KEYS[1]);
+  if (!token) missing.push(REQUIRED_KEYS[2]);
 
   if (missing.length) {
-    throw new Error(`Shopify configuration missing: ${missing.join(', ')}`);
+    return { config: null, missing };
   }
 
   const normalizedDomain = domain.replace(/^https?:\/\//, '').replace(/\/$/, '');
@@ -59,10 +79,21 @@ export function getShopifyConfig(): ShopifyConfig {
   const endpoint = `https://${normalizedDomain}/api/${apiVersionValue}/graphql.json`;
 
   return {
-    domain: normalizedDomain,
-    apiVersion: apiVersionValue,
-    token,
-    endpoint,
-    testProductHandle,
+    config: {
+      domain: normalizedDomain,
+      apiVersion: apiVersionValue,
+      token,
+      endpoint,
+      testProductHandle,
+    },
+    missing: [],
   };
+}
+
+export function getShopifyConfig(): ShopifyConfig {
+  const { config, missing } = getShopifyConfigStatus();
+  if (!config) {
+    throw createShopifyConfigError(missing);
+  }
+  return config;
 }
