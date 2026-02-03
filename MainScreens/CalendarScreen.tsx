@@ -484,6 +484,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const dayArrowRef = useRef<TouchableOpacity | null>(null);
   const [dayArrowPos, setDayArrowPos] = useState({ x: 0, y: 0 });
   const [dayDropdownWidth, setDayDropdownWidth] = useState(0);
+  const dayMenuOpenedAt = useRef(0);
   const chevronScale = useRef(new Animated.Value(1)).current;
   const chevronRotate = useRef(new Animated.Value(0)).current;
 
@@ -649,8 +650,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   }, [massCardTop, daysRowHeight]);
 
   useEffect(() => {
-    drawerAnim.setValue(drawerOffset);
-  }, [drawerOffset, showPlanDrawer, PLAN_DRAWER_HEIGHT]);
+    if (!showWorkoutDrawer) {
+      drawerAnim.setValue(drawerOffset);
+    }
+  }, [drawerOffset, showWorkoutDrawer]);
 
   const selectedDate = useMemo(() => {
     if (!days.length) return new Date();
@@ -1522,16 +1525,32 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     );
   };
 
-  const toggleDayMenu = () => {
+  const openDayMenu = () => {
+    if (!plan) return;
+    setShowPlanDrawer(false);
+    setShowWorkoutDrawer(false);
     dayArrowRef.current?.measureInWindow((x, y, width, height) => {
       setDayArrowPos({ x: x + width / 2, y: y + height });
     });
-    setDayMenuOpen(x => !x);
+    dayMenuOpenedAt.current = Date.now();
+    setDayMenuOpen(true);
+  };
+
+  const closeDayMenu = () => {
+    setDayMenuOpen(false);
+  };
+
+  const toggleDayMenu = () => {
+    if (dayMenuOpen) {
+      closeDayMenu();
+    } else {
+      openDayMenu();
+    }
   };
 
   const openWorkoutDrawer = useCallback(() => {
     setShowPlanDrawer(false);
-    setDayMenuOpen(false);
+    closeDayMenu();
     setShowWorkoutDrawer(true);
   }, []);
 
@@ -1671,7 +1690,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         >
           <Pressable
             style={StyleSheet.absoluteFill}
-            onPress={() => setDayMenuOpen(false)}
+            onPress={() => {
+              if (Date.now() - dayMenuOpenedAt.current < 150) return;
+              closeDayMenu();
+            }}
           >
             <Pressable
               style={[
