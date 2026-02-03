@@ -1,6 +1,7 @@
 import { DescriptionIcon, DESCRIPTION_ICONS } from './descriptionIcons';
 
 export interface ParsedInfoSections {
+  Info?: string;
   directions?: string;
   precautions?: string;
   "Shelf life"?: string;
@@ -28,6 +29,9 @@ const INFO_HEADERS = [
   'Storage',
   'The Pack includes',
 ];
+
+const stripSectionLabel = (value: string, label: string) =>
+  value.replace(new RegExp(`^${label}\\s*:?\\s*`, 'i'), '').trim();
 
 export function parseProductDescription(description: string): ParsedProductDescription {
   if (!description) {
@@ -73,33 +77,47 @@ export function parseProductDescription(description: string): ParsedProductDescr
 
   // Extract About section
   let about: string | undefined;
-  const aboutMatch = text.match(/About:(.*?)(Directions:|$)/is);
+  const aboutMatch = text.match(/About:(.*?)(Info:|$)/is);
   if (aboutMatch) {
-    about = aboutMatch[1].trim();
+    about = stripSectionLabel(aboutMatch[1].trim(), 'About');
   }
 
-  // Extract info sections starting from Directions
-  const infoTextIndex = text.toLowerCase().indexOf('directions:');
+  // Extract info sections starting from Info
+  const infoTextIndex = text.toLowerCase().indexOf('info:');
   const infoSections: ParsedInfoSections = {};
   if (infoTextIndex !== -1) {
-    const infoText = text.substring(infoTextIndex);
+    const infoText = stripSectionLabel(text.substring(infoTextIndex), 'Info');
     const headerRegex = new RegExp(`(${INFO_HEADERS.join('|')}):`, 'gi');
     const matches: { header: string; index: number }[] = [];
     let match: RegExpExecArray | null;
     while ((match = headerRegex.exec(infoText)) !== null) {
       matches.push({ header: match[1], index: match.index });
     }
+<<<<<<< ours
     for (let i = 0; i < matches.length; i++) {
       const { header, index } = matches[i];
       const start = index + header.length + 1; // account for colon
       const end = i + 1 < matches.length ? matches[i + 1].index : infoText.length;
-      const content = infoText.substring(start, end).trim();
+      const content = stripSectionLabel(infoText.substring(start, end).trim(), header);
+=======
+    if (matches.length === 0) {
+      const content = infoText.trim();
+>>>>>>> theirs
       if (content) {
-        (infoSections as any)[header] = content;
+        infoSections.Info = content;
+      }
+    } else {
+      for (let i = 0; i < matches.length; i++) {
+        const { header, index } = matches[i];
+        const start = index + header.length + 1; // account for colon
+        const end = i + 1 < matches.length ? matches[i + 1].index : infoText.length;
+        const content = stripSectionLabel(infoText.substring(start, end).trim(), header);
+        if (content) {
+          (infoSections as any)[header] = content;
+        }
       }
     }
   }
 
   return { quantity, about, info: infoSections, features, manufactured };
 }
-

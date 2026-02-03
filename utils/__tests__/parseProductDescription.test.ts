@@ -5,7 +5,7 @@ describe('parseProductDescription', () => {
 (30 capsules)
 
 About: Great supplement.
-Directions: Take one daily.
+Info: Directions: Take one daily.
 Precautions: Keep out of reach of children.
 Shelf life: 2 years.
 Storage: Store in a cool, dry place.
