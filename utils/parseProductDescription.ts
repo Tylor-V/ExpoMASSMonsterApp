@@ -78,17 +78,18 @@ export function parseProductDescription(description: string): ParsedProductDescr
   // Extract About and Info sections using explicit markers
   let about: string | undefined;
   let infoText: string | undefined;
-  const sectionMatch = text.match(/About:(.*?)(Info:([\s\S]*))?$/i);
-  if (sectionMatch) {
-    about = stripSectionLabel(sectionMatch[1].trim(), 'About');
-    if (sectionMatch[2]) {
-      infoText = stripSectionLabel(sectionMatch[2].trim(), 'Info');
+  const lowerText = text.toLowerCase();
+  const aboutIndex = lowerText.indexOf('about:');
+  const infoIndex = lowerText.indexOf('info:');
+  if (aboutIndex !== -1) {
+    if (infoIndex !== -1 && infoIndex > aboutIndex) {
+      about = stripSectionLabel(text.substring(aboutIndex, infoIndex).trim(), 'About');
+      infoText = stripSectionLabel(text.substring(infoIndex).trim(), 'Info');
+    } else {
+      about = stripSectionLabel(text.substring(aboutIndex).trim(), 'About');
     }
-  } else {
-    const infoOnlyIndex = text.toLowerCase().indexOf('info:');
-    if (infoOnlyIndex !== -1) {
-      infoText = stripSectionLabel(text.substring(infoOnlyIndex), 'Info');
-    }
+  } else if (infoIndex !== -1) {
+    infoText = stripSectionLabel(text.substring(infoIndex).trim(), 'Info');
   }
 
   const infoSections: ParsedInfoSections = {};
