@@ -1,6 +1,6 @@
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import type { ComponentProps } from 'react';
 import React, {
@@ -259,6 +259,10 @@ function getNext7Days() {
   return out;
 }
 
+function getDateKey(date: Date) {
+  return date.toISOString().slice(0, 10);
+}
+
 function getCurrentDayIndex(plan: WorkoutPlan): number | null {
   const today = new Date();
   today.setHours(9, 0, 0, 0);
@@ -416,8 +420,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const isTimedOut = timeoutMs > 0;
   const hLeft = Math.floor(timeoutMs / 3600000);
   const mLeft = Math.floor((timeoutMs % 3600000) / 60000);
-  const [days] = useState(getNext7Days());
+  const [days, setDays] = useState(getNext7Days());
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedDateKey, setSelectedDateKey] = useState(getDateKey(new Date()));
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [showScheduler, setShowScheduler] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -499,6 +504,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const [drawerOffset, setDrawerOffset] = useState(DRAWER_HEIGHT);
   const drawerAnim = useRef(new Animated.Value(DRAWER_HEIGHT)).current;
   const drawerOverlay = useRef(new Animated.Value(0)).current;
+  const lastTodayKeyRef = useRef(getTodayKey());
 
   useEffect(() => {
     Animated.timing(chevronRotate, {
@@ -621,7 +627,56 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     drawerAnim.setValue(drawerOffset);
   }, [drawerOffset, showPlanDrawer, PLAN_DRAWER_HEIGHT]);
 
-  const selectedDate = days[selectedIndex].date;
+  const selectedDate = useMemo(() => {
+    if (!days.length) return new Date();
+    const safeIndex = Math.min(Math.max(selectedIndex, 0), days.length - 1);
+    return days[safeIndex]?.date ?? new Date();
+  }, [days, selectedIndex]);
+
+  const refreshDays = useCallback(() => {
+    setDays(getNext7Days());
+  }, []);
+
+  useEffect(() => {
+    if (!days.length) return;
+    const matchIndex = days.findIndex(day => getDateKey(day.date) === selectedDateKey);
+    if (matchIndex >= 0 && matchIndex !== selectedIndex) {
+      setSelectedIndex(matchIndex);
+      return;
+    }
+    if (matchIndex === -1) {
+      const todayKey = getTodayKey();
+      const todayIndex = days.findIndex(day => getDateKey(day.date) === todayKey);
+      const fallbackIndex = todayIndex >= 0 ? todayIndex : 0;
+      if (fallbackIndex !== selectedIndex) {
+        setSelectedIndex(fallbackIndex);
+      }
+      setSelectedDateKey(getDateKey(days[fallbackIndex].date));
+    }
+  }, [days, selectedDateKey, selectedIndex]);
+
+  useEffect(() => {
+    const nextKey = getDateKey(selectedDate);
+    if (nextKey !== selectedDateKey) {
+      setSelectedDateKey(nextKey);
+    }
+  }, [selectedDate, selectedDateKey]);
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshDays();
+      return () => {
+        setDayMenuOpen(false);
+        setShowPlanDrawer(false);
+        setRenderPlanDrawer(false);
+        setShowWorkoutDrawer(false);
+        setRenderWorkoutDrawer(false);
+        setShowScheduler(false);
+        setShowDatePicker(false);
+        setShowTimePicker(false);
+      };
+    }, [refreshDays]),
+  );
 
   const computeEventsForDate = React.useCallback(
     (date: Date): CalendarEvent[] => {
@@ -773,6 +828,14 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     const id = setInterval(() => setTick(t => t + 1), 60000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    const todayKey = getTodayKey();
+    if (todayKey !== lastTodayKeyRef.current) {
+      lastTodayKeyRef.current = todayKey;
+      refreshDays();
+    }
+  }, [tick, refreshDays]);
 
   const dayEvents = useMemo(
     () => computeEventsForDate(selectedDate),
@@ -976,6 +1039,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   }, [handleCustomPlanSaved]);
 
   const openPlanDrawerFromButton = async () => {
+    setShowWorkoutDrawer(false);
+    setDayMenuOpen(false);
     setShowPlanDrawer(true);
     setPlanLoading(true);
     try {
@@ -1001,6 +1066,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     if (!showWorkout) {
       setShowWorkout(true);
     }
+    setDayMenuOpen(false);
     setShowPlanDrawer(false);
     if (plan)
       saveWorkoutPlan(plan).catch(err =>
@@ -1230,7 +1296,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const renderDay = ({ item, index }) => (
     <Pressable
       key={item.date.toISOString()}
-      onPress={() => setSelectedIndex(index)}
+      onPress={() => {
+        setSelectedIndex(index);
+        setSelectedDateKey(getDateKey(item.date));
+      }}
       style={({ pressed }) => [
         styles.dayBtn,
         selectedIndex === index && styles.dayBtnActive,
@@ -1362,6 +1431,12 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     setDayMenuOpen(x => !x);
   };
 
+  const openWorkoutDrawer = useCallback(() => {
+    setShowPlanDrawer(false);
+    setDayMenuOpen(false);
+    setShowWorkoutDrawer(true);
+  }, []);
+
   const handleChevronPressIn = () => {
     Animated.timing(chevronScale, {
       toValue: 1.1,
@@ -1457,7 +1532,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                   )}
                 </View>
                 <TouchableOpacity
-                  onPress={() => setShowWorkoutDrawer(true)}
+                  onPress={openWorkoutDrawer}
                   style={styles.zoomBtn}
                 >
                   <Ionicons
