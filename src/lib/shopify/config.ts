@@ -10,18 +10,30 @@ type ShopifyConfig = {
 
 type ExpoExtra = Record<string, unknown>;
 
+function getProcessEnvExtra(): ExpoExtra {
+  if (typeof process === 'undefined' || !process.env) {
+    return {};
+  }
+  return Object.keys(process.env).reduce<ExpoExtra>((acc, key) => {
+    if (key.startsWith('EXPO_PUBLIC_')) {
+      acc[key] = process.env[key];
+    }
+    return acc;
+  }, {});
+}
+
 function getExpoExtra(): ExpoExtra {
   const manifest2 = (Constants as { manifest2?: { extra?: ExpoExtra } }).manifest2;
   const expoClientExtra = (manifest2?.extra as { expoClient?: { extra?: ExpoExtra } } | undefined)
     ?.expoClient?.extra;
 
-  return (
-    Constants.expoConfig?.extra ??
-    expoClientExtra ??
-    manifest2?.extra ??
-    (Constants.manifest as { extra?: ExpoExtra } | undefined)?.extra ??
-    {}
-  );
+  return {
+    ...Constants.expoConfig?.extra,
+    ...expoClientExtra,
+    ...manifest2?.extra,
+    ...(Constants.manifest as { extra?: ExpoExtra } | undefined)?.extra,
+    ...getProcessEnvExtra(),
+  };
 }
 
 const extra = getExpoExtra();
