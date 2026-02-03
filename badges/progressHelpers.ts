@@ -7,6 +7,8 @@ type BadgeProgress = {
 
 import { getBadgeAsset, getUnlockedBadges } from './UnlockableBadges';
 
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+
 export function getUserBadgeProgress(user: any): BadgeProgress[] {
   if (!user) return [];
   const progressItems: BadgeProgress[] = [];
@@ -16,10 +18,10 @@ export function getUserBadgeProgress(user: any): BadgeProgress[] {
   // Scholar Badge progress - show until unlocked
   if (!unlocked.includes('SCHOLAR')) {
     const combined =
-      (coursesProgress['welcome'] || 0) +
-      (coursesProgress['push-pull-legs'] || 0) +
-      (coursesProgress['fuel'] || 0);
-    const progress = combined / 3;
+      clamp01(coursesProgress['welcome'] || 0) +
+      clamp01(coursesProgress['push-pull-legs'] || 0) +
+      clamp01(coursesProgress['fuel'] || 0);
+    const progress = clamp01(combined / 3);
     const asset = getBadgeAsset('SCHOLAR');
     if (asset?.type === 'image') {
       progressItems.push({
@@ -32,7 +34,7 @@ export function getUserBadgeProgress(user: any): BadgeProgress[] {
   }
 
   // Mindset Badge
-  const mindsetProg = coursesProgress['mindset'] || 0;
+  const mindsetProg = clamp01(coursesProgress['mindset'] || 0);
   if (mindsetProg > 0 && !unlocked.includes('MINDSET')) {
     const asset = getBadgeAsset('MINDSET');
     if (asset?.type === 'image') {

@@ -56,6 +56,7 @@ const COURSES = [
   },
 ];
 
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
 function ClassroomScreen({ onRequestTabChange, onCourseOpenChange }) {
   const [openCourseId, setOpenCourseId] = useState(null);
@@ -103,7 +104,8 @@ function ClassroomScreen({ onRequestTabChange, onCourseOpenChange }) {
           keyExtractor={item => item.id}
           renderItem={({ item }) => {
           const expanded = openCourseId === item.id;
-          const progress = user?.coursesProgress?.[item.id] || 0;
+          const progress = clamp01(user?.coursesProgress?.[item.id] || 0);
+          const percent = Math.round(progress * 100);
           return (
             <View style={[styles.classCard, expanded && styles.expandedCard]}>
               <TouchableOpacity
@@ -128,10 +130,10 @@ function ClassroomScreen({ onRequestTabChange, onCourseOpenChange }) {
                 <View style={{ marginTop: 10, paddingHorizontal: 3 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                     <View style={styles.progressTrack}>
-                      <View style={[styles.progressBar, { width: `${Math.round(progress * 100)}%` }]} />
+                      <View style={[styles.progressBar, { width: `${percent}%` }]} />
                     </View>
                     <Text style={{ color: colors.accent, fontWeight: 'bold', fontSize: 14 }}>
-                      {Math.round(progress * 100)}% Complete
+                      {percent}% Complete
                     </Text>
                   </View>
                   <TouchableOpacity

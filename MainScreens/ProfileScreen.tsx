@@ -338,14 +338,19 @@ const ProfileScreen = () => {
   );
 
   const badgeProgress = useMemo(() => {
+    const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
     const cp = user.coursesProgress || {};
     const unlocked = getUnlockedBadges(user);
     return {
       SCHOLAR: unlocked.includes('SCHOLAR')
         ? 1
-        : ((cp['welcome'] || 0) + (cp['push-pull-legs'] || 0) + (cp['fuel'] || 0)) /
-          3,
-      MINDSET: unlocked.includes('MINDSET') ? 1 : cp['mindset'] || 0,
+        : clamp01(
+            (clamp01(cp['welcome'] || 0) +
+              clamp01(cp['push-pull-legs'] || 0) +
+              clamp01(cp['fuel'] || 0)) /
+              3,
+          ),
+      MINDSET: unlocked.includes('MINDSET') ? 1 : clamp01(cp['mindset'] || 0),
       ACCOUNTABILITY: unlocked.includes('ACCOUNTABILITY')
         ? 1
         : Math.min(1, (user.accountabilityPoints || 0) / 5),

@@ -3,6 +3,8 @@ import { firestore } from './firebase';
 import { auth } from './firebase';
 import { getTodayKey } from './dateHelpers';
 
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+
 function buildSocialUrl(platform: string, handle: string) {
   if (!handle) return '';
   if (handle.startsWith('http')) return handle;
@@ -51,20 +53,23 @@ export async function updateCourseProgress(courseId: string, progress: number) {
   const ref = firestore().collection('users').doc(uid);
   const doc = await ref.get();
   const current = doc.data()?.coursesProgress?.[courseId] || 0;
-  if (progress <= current) return;
+  const normalized = clamp01(progress);
+  const currentNormalized = clamp01(current);
+  if (normalized <= currentNormalized && current === currentNormalized) return;
+  const nextProgress = Math.max(normalized, currentNormalized);
 
   await ref.set(
-    { coursesProgress: { [courseId]: progress } },
+    { coursesProgress: { [courseId]: nextProgress } },
     { merge: true },
   );
 
-  if (courseId === 'mindset' && progress >= 1) {
+  if (courseId === 'mindset' && nextProgress >= 1) {
     await unlockBadge('MINDSET');
   }
 
   await checkScholarBadge({
     ...(doc.data()?.coursesProgress || {}),
-    [courseId]: progress,
+    [courseId]: nextProgress,
   });
 }
 

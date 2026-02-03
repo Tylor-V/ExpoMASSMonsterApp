@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useCurrentUserDoc } from './useCurrentUserDoc';
 
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
+
 export default function useSavedCoursePage(
   courseId: string,
   pageCount: number,
@@ -17,7 +19,7 @@ export default function useSavedCoursePage(
       return;
     }
     if (!user) return;
-    const progress = user.coursesProgress?.[courseId] || 0;
+    const progress = clamp01(user.coursesProgress?.[courseId] || 0);
     const idx = Math.max(
       0,
       Math.min(pageCount - 1, Math.round(progress * pageCount) - 1),
