@@ -39,7 +39,7 @@ import { TAB_BAR_HEIGHT } from '../components/SwipeableTabs';
 import WhiteBackgroundWrapper from '../components/WhiteBackgroundWrapper';
 import { LIFT_RATINGS } from '../constants/liftRatings';
 import { useAppContext } from '../firebase/AppContext';
-import { getTodayKey } from '../firebase/dateHelpers';
+import { getDateKey, getTodayKey, parseDateKey } from '../firebase/dateHelpers';
 import { auth, firestore } from '../firebase/firebase';
 import {
   fetchSharedSplits,
@@ -97,7 +97,7 @@ type WorkoutPlan = {
 
 // ---------- Default Splits ----------
 function getDefaultPPL(): WorkoutPlan {
-  const iso = new Date().toISOString().slice(0, 10);
+  const iso = getDateKey(new Date());
   return {
     name: 'Push-Pull-Legs',
     startDate: iso,
@@ -186,7 +186,7 @@ function getDefaultPPL(): WorkoutPlan {
 }
 
 function getDefaultBCAL(): WorkoutPlan {
-  const iso = new Date().toISOString().slice(0, 10);
+  const iso = getDateKey(new Date());
   return {
     name: 'Back-Chest-Arms-Legs',
     startDate: iso,
@@ -263,25 +263,35 @@ function getNext7Days() {
   return out;
 }
 
-function getDateKey(date: Date) {
-  return date.toISOString().slice(0, 10);
-}
-
 function getCurrentDayIndex(plan: WorkoutPlan): number | null {
-  const today = new Date();
-  today.setHours(9, 0, 0, 0);
-  const iso = today.toISOString().slice(0, 10);
-  const totalDiff = Math.floor(
-    (today.getTime() - new Date(plan.startDate).getTime()) / 86400000,
-  );
+  const todayKey = getDateKey(new Date());
+  const todayDate = parseDateKey(todayKey);
+  const startDate = parseDateKey(plan.startDate);
+  if (!todayDate || !startDate) return null;
+  const totalDiff = Math.floor((todayDate.getTime() - startDate.getTime()) / 86400000);
   const postponed = plan.postponedDates || [];
-  const isPostponed = postponed.includes(iso);
-  const pastSkips = postponed.filter(d => d < iso).length;
+  const isPostponed = postponed.includes(todayKey);
+  const pastSkips = postponed.filter(d => d < todayKey).length;
   const diffIdx = totalDiff - pastSkips;
   if (!isPostponed && diffIdx >= 0) {
     return diffIdx % plan.days.length;
   }
   return null;
+}
+
+async function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const result = await Promise.race([
+      promise,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(message)), ms);
+      }),
+    ]);
+    return result as T;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
 
 // ---------- Lift Categories ----------
@@ -457,6 +467,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const [showPlanDrawer, setShowPlanDrawer] = useState(false);
   const [renderPlanDrawer, setRenderPlanDrawer] = useState(false);
   const [planLoading, setPlanLoading] = useState(false);
+  const [planLoadError, setPlanLoadError] = useState<string | null>(null);
+  const isMountedRef = useRef(true);
+  const initialLoadRequestId = useRef(0);
+  const planLoadRequestId = useRef(0);
 
   // Icon animations for Split actions
   const editScale = useRef(new Animated.Value(1)).current;
@@ -518,6 +532,12 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       useNativeDriver: true,
     }).start();
   }, [dayMenuOpen, chevronRotate]);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const workoutOverlayInsets = useMemo(
     () => ({
@@ -687,41 +707,45 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
   const computeEventsForDate = React.useCallback(
     (date: Date): CalendarEvent[] => {
-      const iso = date.toISOString().slice(0, 10);
+      const dateKey = getDateKey(date);
       const list: CalendarEvent[] = [];
       if (date.getDay() === 0) {
         list.push({
           id: 'coffee',
           title: 'Coffee Hour',
-          date: iso,
+          date: dateKey,
         });
       }
       if (date.getDay() === 3) {
         list.push({
           id: 'orientation',
           title: 'Orientation',
-          date: iso,
+          date: dateKey,
         });
       }
       events.forEach(ev => {
-        if (ev.date === iso) list.push(ev);
+        if (ev.date === dateKey) list.push(ev);
       });
       if (workoutVisible && plan) {
-        const totalDiff = Math.floor(
-          (date.getTime() - new Date(plan.startDate).getTime()) / 86400000,
-        );
-        const postponed = plan.postponedDates || [];
-        const isPostponed = postponed.includes(iso);
-        const pastSkips = postponed.filter(d => d < iso).length;
-        const diff = totalDiff - pastSkips;
-        if (!isPostponed && diff >= 0) {
-          const workoutDay = plan.days[diff % plan.days.length];
-          list.push({
-            id: 'workout-' + diff,
-            title: workoutDay.title,
-            date: iso,
-            type: 'workout',
-          });
+        const startDate = parseDateKey(plan.startDate);
+        const currentDate = parseDateKey(dateKey);
+        if (startDate && currentDate) {
+          const totalDiff = Math.floor(
+            (currentDate.getTime() - startDate.getTime()) / 86400000,
+          );
+          const postponed = plan.postponedDates || [];
+          const isPostponed = postponed.includes(dateKey);
+          const pastSkips = postponed.filter(d => d < dateKey).length;
+          const diff = totalDiff - pastSkips;
+          if (!isPostponed && diff >= 0) {
+            const workoutDay = plan.days[diff % plan.days.length];
+            list.push({
+              id: 'workout-' + diff,
+              title: workoutDay.title,
+              date: dateKey,
+              type: 'workout',
+            });
+          }
         }
       }
       return list;
@@ -731,47 +755,64 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
 
   useEffect(() => {
+    let active = true;
+    const requestId = ++initialLoadRequestId.current;
+    const safeUpdate = (action: () => void) => {
+      if (!isMountedRef.current || !active || requestId !== initialLoadRequestId.current) {
+        return;
+      }
+      action();
+    };
+
     (async () => {
-      const storedToggle = await AsyncStorage.getItem('showWorkout');
-      if (storedToggle) setShowWorkout(storedToggle === 'true');
-
-      const storedPlan = await AsyncStorage.getItem('workoutPlan');
-      if (storedPlan) {
-        try {
-          setPlan(JSON.parse(storedPlan));
-        } catch {
-          await AsyncStorage.removeItem('workoutPlan');
-        }
-      }
-
-      const storedCustom = await AsyncStorage.getItem(customSplitKey);
-      let custom = null;
-      if (storedCustom) {
-        try {
-          custom = normalizeWorkoutPlan(JSON.parse(storedCustom));
-          if (!custom) await AsyncStorage.removeItem(customSplitKey);
-        } catch {
-          await AsyncStorage.removeItem(customSplitKey);
-        }
-      }
-
-      const storedShared = await AsyncStorage.getItem('sharedSplits');
+      let custom: WorkoutPlan | null = null;
       let shared: any[] = [];
-      if (storedShared) {
-        try {
-          shared = normalizeSharedSplitList(JSON.parse(storedShared));
-          if (!shared.length) await AsyncStorage.removeItem('sharedSplits');
-        } catch {
-          await AsyncStorage.removeItem('sharedSplits');
-        }
-      }
+
       try {
+        const storedToggle = await AsyncStorage.getItem('showWorkout');
+        if (storedToggle) {
+          safeUpdate(() => setShowWorkout(storedToggle === 'true'));
+        }
+
+        const storedPlan = await AsyncStorage.getItem('workoutPlan');
+        if (storedPlan) {
+          try {
+            safeUpdate(() => setPlan(JSON.parse(storedPlan)));
+          } catch {
+            await AsyncStorage.removeItem('workoutPlan');
+          }
+        }
+
+        const storedCustom = await AsyncStorage.getItem(customSplitKey);
+        if (storedCustom) {
+          try {
+            custom = normalizeWorkoutPlan(JSON.parse(storedCustom));
+            if (!custom) await AsyncStorage.removeItem(customSplitKey);
+          } catch {
+            await AsyncStorage.removeItem(customSplitKey);
+          }
+        }
+
+        const storedShared = await AsyncStorage.getItem('sharedSplits');
+        if (storedShared) {
+          try {
+            shared = normalizeSharedSplitList(JSON.parse(storedShared));
+            if (!shared.length) await AsyncStorage.removeItem('sharedSplits');
+          } catch {
+            await AsyncStorage.removeItem('sharedSplits');
+          }
+        }
+
         const uid = auth().currentUser?.uid;
         if (uid) {
-          const doc = await firestore().collection('users').doc(uid).get();
+          const doc = await withTimeout(
+            firestore().collection('users').doc(uid).get(),
+            15000,
+            'Profile request timed out',
+          );
           const remoteToggle = doc.data()?.showWorkout;
           if (typeof remoteToggle === 'boolean') {
-            setShowWorkout(remoteToggle);
+            safeUpdate(() => setShowWorkout(remoteToggle));
             await AsyncStorage.setItem('showWorkout', remoteToggle ? 'true' : 'false');
           }
           const remote = normalizeWorkoutPlan(doc.data()?.customSplit);
@@ -780,25 +821,42 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             await AsyncStorage.setItem(customSplitKey, JSON.stringify(remote));
           }
           try {
-            const remoteShared = await fetchSharedSplits();
+            const remoteShared = await withTimeout(
+              fetchSharedSplits(),
+              15000,
+              'Shared splits request timed out',
+            );
             if (remoteShared && Array.isArray(remoteShared)) {
               shared = normalizeSharedSplitList(remoteShared);
               await AsyncStorage.setItem('sharedSplits', JSON.stringify(shared));
             }
           } catch (err) {
             console.error('Failed to fetch shared splits', err);
+            safeUpdate(() =>
+              setPlanLoadError('Unable to sync shared splits. Using cached data.'),
+            );
           }
         }
       } catch (e) {
         console.error('Failed to load profile data from Firestore', e);
+        safeUpdate(() =>
+          setPlanLoadError('Unable to sync workout data. Using cached data.'),
+        );
       }
-      if (custom) setCustomSplit(custom);
-      if (Array.isArray(shared)) setSharedSplits(shared);
-      setSharedLoaded(true);
-      setCustomSplitLoaded(true);
-      setShowWorkoutLoaded(true);
+
+      safeUpdate(() => {
+        if (custom) setCustomSplit(custom);
+        if (Array.isArray(shared)) setSharedSplits(shared);
+        setSharedLoaded(true);
+        setCustomSplitLoaded(true);
+        setShowWorkoutLoaded(true);
+      });
     })();
-  }, []);
+
+    return () => {
+      active = false;
+    };
+  }, [customSplitKey]);
 
   useEffect(() => {
     if (!showWorkoutLoaded) return;
@@ -865,29 +923,33 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     });
   
     if (workoutVisible && plan) {
-      const today = new Date();
-      today.setHours(9, 0, 0, 0);
-      const iso = today.toISOString().slice(0, 10);
-      const totalDiff = Math.floor(
-        (today.getTime() - new Date(plan.startDate).getTime()) / 86400000,
-      );
-      const postponed = plan.postponedDates || [];
-      const isPostponed = postponed.includes(iso);
-      const pastSkips = postponed.filter(d => d < iso).length;
-      const diffIdx = totalDiff - pastSkips;
-      if (!isPostponed && diffIdx >= 0) {
-        const workoutDay = plan.days[diffIdx % plan.days.length];
-        base.unshift({
-          id: 'workout-today',
-          name: workoutDay.title,
-          icon: 'barbell-outline',
-          weekday: today.getDay(),
-          location: '',
-          link: '',
-          next: today,
-          diff: today.getTime() - Date.now(),
-          isWorkout: true,
-        });
+      const todayKey = getDateKey(new Date());
+      const todayDate = parseDateKey(todayKey);
+      const startDate = parseDateKey(plan.startDate);
+      if (todayDate && startDate) {
+        const totalDiff = Math.floor(
+          (todayDate.getTime() - startDate.getTime()) / 86400000,
+        );
+        const postponed = plan.postponedDates || [];
+        const isPostponed = postponed.includes(todayKey);
+        const pastSkips = postponed.filter(d => d < todayKey).length;
+        const diffIdx = totalDiff - pastSkips;
+        if (!isPostponed && diffIdx >= 0) {
+          const workoutDay = plan.days[diffIdx % plan.days.length];
+          const todayAtNine = new Date(todayDate);
+          todayAtNine.setHours(9, 0, 0, 0);
+          base.unshift({
+            id: 'workout-today',
+            name: workoutDay.title,
+            icon: 'barbell-outline',
+            weekday: todayAtNine.getDay(),
+            location: '',
+            link: '',
+            next: todayAtNine,
+            diff: todayAtNine.getTime() - Date.now(),
+            isWorkout: true,
+          });
+        }
       }
     }
 
@@ -898,15 +960,16 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
   const todayWorkout = useMemo(() => {
     if (!workoutVisible || !plan) return null;
-    const today = new Date();
-    today.setHours(9, 0, 0, 0);
-    const iso = today.toISOString().slice(0, 10);
+    const todayKey = getDateKey(new Date());
+    const todayDate = parseDateKey(todayKey);
+    const startDate = parseDateKey(plan.startDate);
+    if (!todayDate || !startDate) return null;
     const totalDiff = Math.floor(
-      (today.getTime() - new Date(plan.startDate).getTime()) / 86400000,
+      (todayDate.getTime() - startDate.getTime()) / 86400000,
     );
     const postponed = plan.postponedDates || [];
-    const isPostponed = postponed.includes(iso);
-    const pastSkips = postponed.filter(d => d < iso).length;
+    const isPostponed = postponed.includes(todayKey);
+    const pastSkips = postponed.filter(d => d < todayKey).length;
     const diffIdx = totalDiff - pastSkips;
     if (!isPostponed && diffIdx >= 0) {
       return plan.days[diffIdx % plan.days.length];
@@ -1018,9 +1081,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   };
 
   const selectPlan = (p: WorkoutPlan) => {
-    const start = new Date();
-    start.setHours(0, 0, 0, 0);
-    const iso = start.toISOString().slice(0, 10);
+    const iso = getDateKey(new Date());
     setPlan({ ...p, startDate: iso });
   };
 
@@ -1052,26 +1113,50 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     setShowWorkoutDrawer(false);
     setDayMenuOpen(false);
     setShowPlanDrawer(true);
-    setPlanLoading(true);
+    if (planLoading) return;
+    const requestId = ++planLoadRequestId.current;
+    const safeUpdate = (action: () => void) => {
+      if (!isMountedRef.current || requestId !== planLoadRequestId.current) return;
+      action();
+    };
+    safeUpdate(() => {
+      setPlanLoadError(null);
+      setPlanLoading(true);
+    });
     try {
       const uid = auth().currentUser?.uid;
       if (uid) {
-        const doc = await firestore().collection('users').doc(uid).get();
+        const doc = await withTimeout(
+          firestore().collection('users').doc(uid).get(),
+          15000,
+          'Profile request timed out',
+        );
         const remote = normalizeWorkoutPlan(doc.data()?.customSplit);
-        if (remote) setCustomSplit(remote);
+        if (remote) {
+          safeUpdate(() => setCustomSplit(remote));
+        }
         try {
-          const remoteShared = await fetchSharedSplits();
+          const remoteShared = await withTimeout(
+            fetchSharedSplits(),
+            15000,
+            'Shared splits request timed out',
+          );
           if (Array.isArray(remoteShared)) {
-            setSharedSplits(normalizeSharedSplitList(remoteShared));
+            safeUpdate(() => setSharedSplits(normalizeSharedSplitList(remoteShared)));
           }
         } catch (err) {
           console.error('Failed to fetch shared splits', err);
+          safeUpdate(() =>
+            setPlanLoadError('Unable to refresh shared splits. Try again.'),
+          );
         }
       }
     } catch (e) {
       console.error('Failed to fetch customSplit', e);
+      safeUpdate(() => setPlanLoadError('Unable to refresh plans. Try again.'));
+    } finally {
+      safeUpdate(() => setPlanLoading(false));
     }
-    setPlanLoading(false);
   };
 
   const closePlanDrawer = () => {
@@ -1272,7 +1357,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
 
   const addOneOnOne = () => {
-    const iso = scheduleDate.toISOString().slice(0, 10);
+    const iso = getDateKey(scheduleDate);
     const time = scheduleDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     setEvents(evts => [
       ...evts,
@@ -1308,7 +1393,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
   const renderDay = ({ item, index }) => (
     <Pressable
-      key={item.date.toISOString()}
+      key={getDateKey(item.date)}
       onPress={() => {
         setSelectedIndex(index);
         setSelectedDateKey(getDateKey(item.date));
@@ -1474,10 +1559,13 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       return;
     }
     const diff = idx - curIdx;
-    const start = new Date(plan.startDate);
-    start.setDate(start.getDate() - diff);
-    const iso = start.toISOString().slice(0, 10);
-    const updated = { ...plan, startDate: iso };
+    const startDate = parseDateKey(plan.startDate);
+    if (!startDate) {
+      setDayMenuOpen(false);
+      return;
+    }
+    startDate.setDate(startDate.getDate() - diff);
+    const updated = { ...plan, startDate: getDateKey(startDate) };
     setPlan(updated);
     AsyncStorage.setItem('workoutPlan', JSON.stringify(updated)).catch(err =>
       console.error('Failed to save workout plan', err)
@@ -1978,6 +2066,17 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                 />
               ) : (
               <>
+              {planLoadError ? (
+                <View style={styles.planErrorBox}>
+                  <Text style={styles.planErrorText}>{planLoadError}</Text>
+                  <TouchableOpacity
+                    style={styles.planRetryButton}
+                    onPress={openPlanDrawerFromButton}
+                  >
+                    <Text style={styles.planRetryText}>Retry</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
               <Text style={styles.planDivider}>Pre-Built Splits</Text>
                 <Pressable
                   onPress={() => selectPlan(getDefaultPPL())}
@@ -2383,6 +2482,31 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  planErrorBox: {
+    backgroundColor: colors.grayLight,
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginHorizontal: 16,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  planErrorText: {
+    color: colors.error,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  planRetryButton: {
+    backgroundColor: colors.accent,
+    borderRadius: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  planRetryText: {
+    color: colors.background,
+    fontWeight: 'bold',
   },
   planDayBox: { marginBottom: 12 },
   label: {
