@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import {
     ActivityIndicator,
     Animated,
+    Alert,
     Dimensions,
     Linking,
     Pressable,
@@ -20,7 +21,6 @@ import { createShopifyCheckout } from '../hooks/useShopify';
 import { shopifyFetch } from '../src/lib/shopify/storefrontClient';
 import { colors, fonts } from '../theme';
 import { TAB_BAR_HEIGHT } from './SwipeableTabs';
-// Toast implementation removed in favor of JS fallback or Expo-compatible toast
 import { useFocusEffect } from '@react-navigation/native';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(Pressable);
@@ -129,14 +129,14 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
       // Validate all items have variantId and quantity >= 1
       const invalid = items.find(i => !i.variantId || i.quantity < 1);
       if (invalid) {
-        Toast.show('Some items are invalid or missing variant info.');
+        Alert.alert('Checkout unavailable', 'Some items are missing variant info.');
         setCheckoutLoading(false);
         return;
       }
       // Check stock
       const inStock = await checkStock(items);
       if (!inStock) {
-        Toast.show('One or more items are out of stock.');
+        Alert.alert('Out of stock', 'One or more items are out of stock.');
         setCheckoutLoading(false);
         return;
       }
@@ -160,10 +160,10 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
         }
         // Optionally: listen for return/close to refresh cart
       } else {
-        Toast.show('Could not start checkout. Please try again.');
+        Alert.alert('Checkout failed', 'Could not start checkout. Please try again.');
       }
     } catch (err) {
-      Toast.show('Checkout failed. Please try again.');
+      Alert.alert('Checkout failed', 'Please try again.');
       console.error('Failed to start checkout', err);
     }
     setCheckoutLoading(false);

@@ -18,9 +18,10 @@ const baseProduct = {
 
 let mockProducts = [baseProduct];
 let mockCartItems: any[] = [];
+let mockCollections: { id: string; title: string }[] = [];
 
 jest.mock('../../hooks/useShopify', () => ({
-  useShopifyCollections: () => ({ collections: [], loading: false, error: null }),
+  useShopifyCollections: () => ({ collections: mockCollections, loading: false, error: null }),
   useShopifyProducts: () => ({ products: mockProducts, loading: false, error: null }),
 }));
 jest.mock('../../hooks/useCart', () => ({
@@ -43,6 +44,7 @@ jest.mock('../../components/RollingNumber', () => () => null);
 beforeEach(() => {
   mockProducts = [baseProduct];
   mockCartItems = [];
+  mockCollections = [];
   (Image as any).prefetch = jest.fn();
   jest.clearAllMocks();
 });
@@ -87,6 +89,7 @@ describe('StoreScreen product images', () => {
 
 describe('StoreScreen featured section', () => {
   it('renders Bestsellers label when featured products are available', () => {
+    mockCollections = [{ id: 'featured', title: 'Featured' }];
     const navigation = { navigate: jest.fn() } as any;
     const { getByText } = render(<StoreScreen navigation={navigation} />);
     expect(getByText('Bestsellers')).toBeTruthy();

@@ -55,6 +55,22 @@ const CARD_ROW_HEIGHT = 260;
 const FADE_DISTANCE = CARD_ROW_HEIGHT;
 const CATEGORY_TOOLTIP_TIMEOUT = 1800;
 
+const getProductTitle = (item: any) => item?.title ?? 'Untitled product';
+
+const getPriceValue = (item: any) => {
+  const amount = item?.priceRange?.minVariantPrice?.amount;
+  const value = typeof amount === 'number' ? amount : Number(amount);
+  return Number.isFinite(value) ? value : null;
+};
+
+const isPurchasableItem = (item: any) => {
+  const priceValue = getPriceValue(item);
+  if (priceValue === null) return false;
+  if (!item?.variantId) return false;
+  if (item?.variantAvailable === false) return false;
+  return true;
+};
+
 const CategoryIconRow = React.memo(({ ratings }: { ratings: CategoryRatings }) => {
   const [activeCategory, setActiveCategory] = useState<CategoryLabel | null>(null);
   const tooltipAnim = useRef(new Animated.Value(0)).current;
@@ -279,7 +295,7 @@ function StoreScreen({ navigation }) {
   const {
     products: featuredProducts,
     loading: loadingFeatured,
-  } = useShopifyProducts(featuredCollectionId);
+  } = useShopifyProducts(featuredCollectionId, { enabled: Boolean(featuredCollectionId) });
 
   useEffect(() => {
     featuredProducts?.forEach(p => {
@@ -315,6 +331,16 @@ function StoreScreen({ navigation }) {
       ),
     [cartItems],
   );
+  const modalPriceValue = getPriceValue(modalItem);
+  const modalPurchasable = isPurchasableItem(modalItem);
+  const modalTitle = getProductTitle(modalItem);
+  const modalPriceLabel = modalPurchasable
+    ? `$${modalPriceValue?.toFixed(2) ?? '0.00'}`
+    : modalItem?.variantAvailable === false
+    ? 'Sold out'
+    : modalPriceValue !== null
+    ? `$${modalPriceValue.toFixed(2)}`
+    : 'Price unavailable';
 
   useEffect(() => {
     Animated.parallel([
@@ -346,11 +372,15 @@ function StoreScreen({ navigation }) {
   }, [cartQuantity, cartAnim, dotAnim]);
 
   const addToCart = async (item: any) => {
+    if (!isPurchasableItem(item)) {
+      Alert.alert('Unavailable', 'This item is currently unavailable.');
+      return;
+    }
     try {
       await addCartItem({
         id: item.id,
-        title: item.title,
-        price: parseFloat(item.priceRange?.minVariantPrice.amount || '0'),
+        title: getProductTitle(item),
+        price: getPriceValue(item) ?? 0,
         image: item.images?.[0],
         quantity: 1,
         variantId: item.variantId, // <-- add this
@@ -386,7 +416,10 @@ function StoreScreen({ navigation }) {
   );
 
   const showFeatured =
-    selected === 'all' && !loadingFeatured && featuredProducts.length > 0;
+    selected === 'all' &&
+    Boolean(featuredCollectionId) &&
+    !loadingFeatured &&
+    featuredProducts.length > 0;
 
   const listData = useMemo(
     () =>
@@ -472,7 +505,18 @@ function StoreScreen({ navigation }) {
     }
 
     const imageUrl = item.images?.[0];
+    const priceValue = getPriceValue(item);
+    const isPriceValid = priceValue !== null;
+    const isPurchasable = isPurchasableItem(item);
+    const priceLabel = isPurchasable
+      ? `$${priceValue.toFixed(2)}`
+      : item?.variantAvailable === false
+      ? 'Sold out'
+      : isPriceValid
+      ? `$${priceValue.toFixed(2)}`
+      : 'Price unavailable';
     const ratings = parseCategoryRatings(item.description);
+    const itemTitle = getProductTitle(item);
     if (!imageUrl) {
       console.warn('No image URL for product', item.id);
     }
@@ -511,23 +555,29 @@ function StoreScreen({ navigation }) {
               />
             )}
             <Text style={styles.cardTitle} numberOfLines={2}>
-              {item.title}
+              {itemTitle}
             </Text>
-            <Text style={styles.cardPrice}>
-              ${parseFloat(item.priceRange?.minVariantPrice.amount || '0').toFixed(2)}
+            <Text
+              style={[
+                styles.cardPrice,
+                !isPurchasable && styles.cardPriceUnavailable,
+              ]}
+            >
+              {priceLabel}
             </Text>
             <CategoryIconRow ratings={ratings} />
             <AddToCartControl
               item={{
                 id: item.id,
-                title: item.title,
-                price: parseFloat(item.priceRange?.minVariantPrice.amount || '0'),
+                title: itemTitle,
+                price: priceValue ?? 0,
                 image: item.images?.[0],
                 quantity: 1,
                 variantId: item.variantId, // <-- add this
                 variantTitle: item.variantTitle, // optional
               }}
               style={styles.addControl}
+              disabled={!isPurchasable}
             />
           </View>
         </Pressable>
@@ -731,7 +781,15 @@ function StoreScreen({ navigation }) {
                   <Ionicons name="chevron-forward" size={28} color={colors.black} />
                 </Pressable>
               </View>
-              <Text style={styles.modalTitle}>{modalItem.title}</Text>
+              <Text style={styles.modalTitle}>{modalTitle}</Text>
+              <Text
+                style={[
+                  styles.modalPrice,
+                  !modalPurchasable && styles.modalPriceUnavailable,
+                ]}
+              >
+                {modalPriceLabel}
+              </Text>
               <ScrollView
                 style={styles.modalDescScroll}
                 showsVerticalScrollIndicator={false}
@@ -746,11 +804,15 @@ function StoreScreen({ navigation }) {
                     })}
                   </View>
                 )}
-                <ProductDescriptionTabs description={modalItem.description} />
+                <ProductDescriptionTabs description={modalItem.description ?? ''} />
               </ScrollView>
               <Pressable
-                style={styles.modalAdd}
+                style={[
+                  styles.modalAdd,
+                  !modalPurchasable && styles.modalAddDisabled,
+                ]}
                 onPress={() => {
+                  if (!modalPurchasable) return;
                   addToCart({
                     ...modalItem,
                     variantId: modalItem.variantId,
@@ -758,8 +820,11 @@ function StoreScreen({ navigation }) {
                   });
                   closeModal();
                 }}
+                disabled={!modalPurchasable}
               >
-                <Text style={styles.modalAddText}>Add to Cart</Text>
+                <Text style={styles.modalAddText}>
+                  {modalPurchasable ? 'Add to Cart' : 'Unavailable'}
+                </Text>
               </Pressable>
             </Animated.View>
           )}
@@ -905,6 +970,9 @@ const styles = StyleSheet.create({
     color: colors.gold,
     marginBottom: 2,
   },
+  cardPriceUnavailable: {
+    color: colors.gray,
+  },
   // Provide extra space below ratings so the quantity control doesn't overlap
   cardRatings: {
     flexDirection: 'row',
@@ -1033,6 +1101,16 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     borderColor: colors.accent,
   },
+  modalPrice: {
+    marginHorizontal: 12,
+    fontWeight: 'bold',
+    fontSize: 20,
+    color: colors.gold,
+    marginBottom: 6,
+  },
+  modalPriceUnavailable: {
+    color: colors.gray,
+  },
   // Allow more room for longer product descriptions
   modalDescScroll: { maxHeight: 260, marginHorizontal: 12, marginBottom: 0 },
   modalRatings: { marginBottom: 8 },
@@ -1043,6 +1121,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingVertical: 12,
     alignItems: 'center',
+  },
+  modalAddDisabled: {
+    backgroundColor: colors.grayLight,
   },
   modalAddText: {
     fontWeight: 'bold',

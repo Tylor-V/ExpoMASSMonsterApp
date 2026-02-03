@@ -72,14 +72,26 @@ export function useShopifyCollections() {
   return { collections, loading, error };
 }
 
-export function useShopifyProducts(collectionId?: string) {
+export function useShopifyProducts(
+  collectionId?: string,
+  options: { enabled?: boolean } = {},
+) {
   const [products, setProducts] = useState<ShopifyProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const enabled = options.enabled ?? true;
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
+      if (!enabled) {
+        if (!cancelled) {
+          setProducts([]);
+          setLoading(false);
+          setError(null);
+        }
+        return;
+      }
       setLoading(true);
       try {
         let nodes: StorefrontProduct[] = [];
@@ -109,7 +121,7 @@ export function useShopifyProducts(collectionId?: string) {
     return () => {
       cancelled = true;
     };
-  }, [collectionId]);
+  }, [collectionId, enabled]);
 
   return { products, loading, error };
 }

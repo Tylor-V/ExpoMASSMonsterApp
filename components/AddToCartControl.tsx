@@ -8,10 +8,11 @@ import { ANIM_BUTTON_POP, ANIM_MEDIUM } from '../utils/animations';
 
 type AddToCartControlProps = {
   item: CartItem;
+  disabled?: boolean;
   style?: ViewStyle;
 };
 
-function AddToCartControl({ item, style }: AddToCartControlProps) {
+function AddToCartControl({ item, disabled = false, style }: AddToCartControlProps) {
   const { items, setItems } = useCart();
   const sanitizedId = useMemo(() => sanitizeId(item.id), [item.id]);
   const quantity = items.find(i => i.id === sanitizedId)?.quantity || 0;
@@ -51,6 +52,7 @@ function AddToCartControl({ item, style }: AddToCartControlProps) {
 
   const handleAdd = async (e?: any) => {
     if (e?.stopPropagation) e.stopPropagation();
+    if (disabled) return;
     bounce(rightScale);
     const newQty = localQty + 1;
     setLocalQty(newQty);
@@ -92,6 +94,7 @@ function AddToCartControl({ item, style }: AddToCartControlProps) {
 
   const handleInitialAdd = async (e?: any) => {
     if (e?.stopPropagation) e.stopPropagation();
+    if (disabled) return;
     setLocalQty(1);
     setItems(prev => [...prev, { ...item, id: sanitizedId, quantity: 1 }]);
     try {
@@ -105,13 +108,20 @@ function AddToCartControl({ item, style }: AddToCartControlProps) {
   const containerWidth = circleWidth + 56;
 
   const inCart = localQty > 0;
+  const disableIncrement = disabled;
+  const disableInitialAdd = disabled && !inCart;
 
   return (
     <View
-      style={[styles.container, { width: containerWidth, height: 30 }, style]}
+      style={[
+        styles.container,
+        { width: containerWidth, height: 30 },
+        disabled && styles.disabled,
+        style,
+      ]}
     >
       <Animated.View
-      pointerEvents={inCart ? 'auto' : 'none'}
+        pointerEvents={inCart ? 'auto' : 'none'}
         style={{ transform: [{ scale: leftScale }], opacity: fadeAnim }}
       >
         <Pressable onPress={handleRemove} hitSlop={6} style={styles.btn}>
@@ -133,7 +143,7 @@ function AddToCartControl({ item, style }: AddToCartControlProps) {
       >
         <Pressable
           accessibilityRole="button"
-          onPress={inCart ? undefined : handleInitialAdd}
+          onPress={inCart || disableInitialAdd ? undefined : handleInitialAdd}
           style={({ pressed }) => [
             StyleSheet.absoluteFill,
             {
@@ -151,7 +161,7 @@ function AddToCartControl({ item, style }: AddToCartControlProps) {
         </Pressable>
       </View>
       <Animated.View
-        pointerEvents={inCart ? 'auto' : 'none'}
+        pointerEvents={inCart && !disableIncrement ? 'auto' : 'none'}
         style={{ transform: [{ scale: rightScale }], opacity: fadeAnim }}
       >
         <Pressable onPress={handleAdd} hitSlop={6} style={styles.btn}>
@@ -164,6 +174,7 @@ function AddToCartControl({ item, style }: AddToCartControlProps) {
 
 const styles = StyleSheet.create({
   container: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  disabled: { opacity: 0.5 },
   circle: {
     height: 30,
     borderRadius: 15,
