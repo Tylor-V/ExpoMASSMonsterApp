@@ -505,6 +505,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const [dayArrowPos, setDayArrowPos] = useState({ x: 0, y: 0 });
   const [dayDropdownWidth, setDayDropdownWidth] = useState(0);
   const dayMenuOpenedAt = useRef(0);
+  const ignoreNextDayMenuPress = useRef(false);
   const chevronScale = useRef(new Animated.Value(1)).current;
   const chevronRotate = useRef(new Animated.Value(0)).current;
 
@@ -1555,7 +1556,11 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     dayArrowRef.current.measureInWindow((x, y, width, height) => {
       setDayArrowPos({ x: x + width / 2, y: y + height });
       dayMenuOpenedAt.current = Date.now();
+      ignoreNextDayMenuPress.current = true;
       setDayMenuOpen(true);
+      setTimeout(() => {
+        ignoreNextDayMenuPress.current = false;
+      }, 250);
     });
   };
 
@@ -1720,7 +1725,11 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           <Pressable
             style={StyleSheet.absoluteFill}
             onPress={() => {
-              if (Date.now() - dayMenuOpenedAt.current < 150) return;
+              if (ignoreNextDayMenuPress.current) {
+                ignoreNextDayMenuPress.current = false;
+                return;
+              }
+              if (Date.now() - dayMenuOpenedAt.current < 250) return;
               closeDayMenu();
             }}
           >
