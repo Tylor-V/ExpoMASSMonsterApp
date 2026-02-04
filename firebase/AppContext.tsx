@@ -43,6 +43,9 @@ const userDefaults = {
   badges: [],
   selectedBadges: [],
   workoutHistory: [],
+  acceptedAt: null,
+  acceptedTermsVersion: '',
+  acceptedGuidelinesVersion: '',
 };
 
 export function AppContextProvider({children}) {

@@ -74,7 +74,7 @@ const LoginScreen: React.FC = () => {
         await initializeUser(user.uid);
       }
       // ← Now replace the entire AuthStack with AppStack
-      navigation.getParent()?.dispatch(StackActions.replace('AppStack'));
+      navigation.getParent()?.dispatch(StackActions.replace('AcceptanceGate'));
     } catch (error: any) {
       if (error.code === 'auth/user-not-found') {
         Alert.alert(

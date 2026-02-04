@@ -69,7 +69,7 @@ export default function SplashScreen({navigation}) {
       useNativeDriver: true,
     }).start(() => {
       if (isLoggedIn) {
-        navigation.replace('AppStack');
+        navigation.replace('AcceptanceGate');
       } else {
         navigation.replace('AuthStack');
       }

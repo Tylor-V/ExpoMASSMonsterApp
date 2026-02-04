@@ -36,6 +36,9 @@ export const getDefaultUserProfile = ({
   badges: [],
   selectedBadges: [],
   workoutHistory: [],
+  acceptedAt: null,
+  acceptedTermsVersion: '',
+  acceptedGuidelinesVersion: '',
   createdAt: firestore.FieldValue.serverTimestamp(),
 });
 

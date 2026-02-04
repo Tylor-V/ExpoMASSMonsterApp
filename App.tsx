@@ -28,6 +28,8 @@ import RewardsScreen from './screens/RewardsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import SplashScreen from './screens/SplashScreen';
 import SplitEditorScreen from './screens/SplitEditorScreen';
+import AcceptanceGateScreen from './screens/AcceptanceGateScreen';
+import InAppWebViewScreen from './screens/InAppWebViewScreen';
 import TermsPrivacyScreen from './screens/TermsPrivacyScreen';
 import WorkoutHistoryScreen from './screens/WorkoutHistoryScreen';
 import { preloadGlobals } from './utils/preloadTools';
@@ -118,6 +120,14 @@ export default function App() {
             <RootStack.Navigator screenOptions={{ headerShown: false }}>
               <RootStack.Screen name="Splash" component={SplashScreen} />
               <RootStack.Screen name="AuthStack" component={AuthStackScreen} />
+              <RootStack.Screen
+                name="AcceptanceGate"
+                component={AcceptanceGateScreen}
+              />
+              <RootStack.Screen
+                name="AcceptanceWebView"
+                component={InAppWebViewScreen}
+              />
               <RootStack.Screen name="AppStack">
                 {() => (
                   <AppStackScreen

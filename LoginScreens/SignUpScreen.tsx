@@ -66,7 +66,7 @@ const SignUpScreen: React.FC = () => {
       await initializeUser(userCredential.user.uid);
       Alert.alert('Success', 'Account created! Logging you in...');
       // Replace the AuthStack with the main application stack
-      navigation.getParent()?.dispatch(StackActions.replace('AppStack'));
+      navigation.getParent()?.dispatch(StackActions.replace('AcceptanceGate'));
     } catch (error: any) {
       if (error.code === 'auth/email-already-in-use') {
         Alert.alert('Email in use', 'That email address is already in use!');
