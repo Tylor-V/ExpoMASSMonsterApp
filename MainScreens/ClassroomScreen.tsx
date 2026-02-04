@@ -60,7 +60,7 @@ const COURSES = [
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
-function ClassroomScreen({ onRequestTabChange, onCourseOpenChange }) {
+function ClassroomScreen({ isActive = true, onRequestTabChange, onCourseOpenChange }) {
   const [openCourseId, setOpenCourseId] = useState(null);
   const [currentCourse, setCurrentCourse] = useState(null);
   const [restartCourse, setRestartCourse] = useState(false);
@@ -74,6 +74,14 @@ function ClassroomScreen({ onRequestTabChange, onCourseOpenChange }) {
     }).start();
   }, [currentCourse]);
 
+  useEffect(() => {
+    if (!onCourseOpenChange) return;
+    if (isActive && currentCourse) {
+      onCourseOpenChange(true);
+    } else if (!isActive) {
+      onCourseOpenChange(false);
+    }
+  }, [currentCourse, isActive, onCourseOpenChange]);
 
   const listTranslate = anim.interpolate({
     inputRange: [0, 1],
@@ -205,13 +213,13 @@ function ClassroomScreen({ onRequestTabChange, onCourseOpenChange }) {
       {CourseComponent && (
         <Animated.View style={[StyleSheet.absoluteFillObject, { transform: [{ translateX: courseTranslate }] }]}>
           <CourseComponent
-            onBack={() => {
+            onBack={isActive ? () => {
               setCurrentCourse(null);
               setOpenCourseId(null);
               setRestartCourse(false);
               if (onCourseOpenChange) onCourseOpenChange(false);
               if (onRequestTabChange) onRequestTabChange(2);
-            }}
+            } : undefined}
             restart={restartCourse}
           />
         </Animated.View>

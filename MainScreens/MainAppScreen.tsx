@@ -51,14 +51,22 @@ const MainAppScreen = ({ navigation, news, newsLoaded, newsOpen, setNewsOpen }) 
     [tabIndex, navigation]
   );
 
+  const handleTabChange = useCallback((index: number) => {
+    setTabIndex(index);
+    if (index !== 2) {
+      setIsCourseOpen(false);
+    }
+  }, []);
+
   const ClassroomScene = useCallback(
     () => (
       <ClassroomScreen
-        onRequestTabChange={setTabIndex}
-        onCourseOpenChange={handleCourseOpenChange} // <-- ADD THIS PROP
+        isActive={tabIndex === 2}
+        onRequestTabChange={handleTabChange}
+        onCourseOpenChange={handleCourseOpenChange}
       />
     ),
-    [handleCourseOpenChange]
+    [handleCourseOpenChange, handleTabChange, tabIndex]
   );
 
   const ProfileScene = useCallback(() => <ProfileScreen />, []);
@@ -96,7 +104,7 @@ const MainAppScreen = ({ navigation, news, newsLoaded, newsOpen, setNewsOpen }) 
           routes={routes}
           scenes={scenes}
           tabIndex={tabIndex}
-          onTabChange={setTabIndex}
+          onTabChange={handleTabChange}
           activeTintColor="#FFCC00"
           inactiveTintColor="#aaa"
           tabBarVisible={!isCourseOpen}
