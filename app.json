@@ -16,7 +16,8 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.expomassmonster.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "We use your location to show nearby gyms and verify workout check-ins (e.g., confirming you are within range of your selected gym when you log a session)."
       }
     },
     "android": {
