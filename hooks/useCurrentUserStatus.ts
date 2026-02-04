@@ -1,10 +1,10 @@
 import { useAppContext } from '../firebase/AppContext';
 
 export function useCurrentUserStatus() {
-  const { appReady, user, userError, refreshUserData } = useAppContext();
+  const { appReady, user, userError, userLoading, refreshUserData } = useAppContext();
   return {
     user,
-    loading: !appReady,
+    loading: !appReady || userLoading,
     error: userError,
     refreshUserData,
   };

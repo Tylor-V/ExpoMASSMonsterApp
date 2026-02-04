@@ -13,6 +13,7 @@ const defaultState = {
   appReady: false,
   user: null,
   userError: null,
+  userLoading: false,
   points: 0,
   workoutHistory: [],
   calendarCarouselIndex: 0,
@@ -49,6 +50,7 @@ export function AppContextProvider({children}) {
   const [authUser, setAuthUser] = useState<any | null>(null);
   const [user, setUser] = useState<any | null>(null);
   const [userError, setUserError] = useState<Error | null>(null);
+  const [userLoading, setUserLoading] = useState(false);
   const [points, setPoints] = useState(0);
   const [workoutHistory, setWorkoutHistory] = useState([]); // Always an array
   const [calendarCarouselIndex, setCalendarCarouselIndex] = useState(0);
@@ -88,9 +90,11 @@ export function AppContextProvider({children}) {
       setPoints(0);
       setWorkoutHistory([]);
       setUserError(null);
+      setUserLoading(false);
       setAppReady(true);
       return;
     }
+    setUserLoading(true);
     setUserError(null);
     try {
       const snap = await firestore()
@@ -98,11 +102,12 @@ export function AppContextProvider({children}) {
         .doc(currentUser.uid)
         .get();
       applyUserData(currentUser, snap.data());
-      setAppReady(true);
     } catch (error) {
       setUserError(
         error instanceof Error ? error : new Error('Failed to load user data.'),
       );
+    } finally {
+      setUserLoading(false);
       setAppReady(true);
     }
   }, []);
@@ -180,6 +185,7 @@ export function AppContextProvider({children}) {
         appReady,
         user,
         userError,
+        userLoading,
         points,
         workoutHistory,
         calendarCarouselIndex,

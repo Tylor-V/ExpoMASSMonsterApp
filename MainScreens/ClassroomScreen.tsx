@@ -102,6 +102,14 @@ function ClassroomScreen({ isActive = true, onRequestTabChange, onCourseOpenChan
         contentContainerStyle={{ padding: 20, paddingTop: 2, paddingBottom: 36 }}
         data={COURSES}
         keyExtractor={item => item.id}
+        ListEmptyComponent={() => (
+          <View style={styles.inlineStateContainer}>
+            <StateMessage
+              title="No courses available"
+              message="Check back soon for new classroom content."
+            />
+          </View>
+        )}
         renderItem={({ item }) => {
           const expanded = openCourseId === item.id;
           const progress = clamp01(user?.coursesProgress?.[item.id] || 0);
@@ -173,6 +181,21 @@ function ClassroomScreen({ isActive = true, onRequestTabChange, onCourseOpenChan
     if (loading) {
       return <LoadingOverlay />;
     }
+    if (error && user) {
+      return (
+        <View style={{ flex: 1 }}>
+          <View style={styles.inlineStateContainer}>
+            <StateMessage
+              title="Courses may be out of date"
+              message={error.message || 'We could not refresh your progress.'}
+              actionLabel="Retry"
+              onAction={refreshUserData}
+            />
+          </View>
+          {renderCourses()}
+        </View>
+      );
+    }
     if (error) {
       return (
         <View style={styles.stateContainer}>
@@ -242,6 +265,11 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
+  },
+  inlineStateContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 6,
   },
   classCard: {
     marginVertical: 12,
