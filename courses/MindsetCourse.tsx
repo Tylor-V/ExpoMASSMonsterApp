@@ -17,7 +17,7 @@ import StateMessage from '../components/StateMessage';
 import CoursePager, {CoursePagerHandle} from '../components/CoursePager';
 import CourseNav from '../components/CourseNav';
 import CourseOutlineSidebar from '../components/CourseOutlineSidebar';
-import {WebView} from 'react-native-webview';
+import CourseVideoPlayer from '../components/CourseVideoPlayer';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -872,14 +872,12 @@ export default function MindsetCourse({ onBack, restart = false }) {
         ? styles.heroVideoLandscape
         : styles.heroVideo;
       return (
-        <View style={videoStyle}>
-          <WebView
-            source={{uri: p.video}}
-            style={StyleSheet.absoluteFillObject}
-            allowsFullscreenVideo={false}
-            mediaPlaybackRequiresUserAction={false}
-          />
-        </View>
+        <CourseVideoPlayer
+          uri={p.video}
+          containerStyle={videoStyle}
+          webViewStyle={styles.heroVideoWebView}
+          active={page === idx}
+        />
       );
     }
     if (p.reveal) {
@@ -1198,6 +1196,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 2,
     borderBottomWidth: 2,
     borderColor: '#000',
+    overflow: 'hidden',
+  },
+  heroVideoWebView: {
+    ...StyleSheet.absoluteFillObject,
   },
   heroImg: {
     width: '99%',

@@ -13,12 +13,13 @@ import {
   View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
 import CourseNav from '../components/CourseNav';
 import CoursePager, { CoursePagerHandle } from '../components/CoursePager';
+import CourseVideoPlayer from '../components/CourseVideoPlayer';
 import LoadingOverlay from '../components/LoadingOverlay';
 import StateMessage from '../components/StateMessage';
 import ThemedImage from '../components/ThemedImage';
+import { WebView } from 'react-native-webview';
 import { LIFT_RATINGS, type RatingMap } from '../constants/liftRatings';
 import { updateCourseProgress } from '../firebase/userProfileHelpers';
 import useCourseTopPad from "../hooks/useCourseTopPad";
@@ -392,14 +393,13 @@ export default function PushPullLegsCourse({ onBack, restart = false }) {
             )}
             {/* VIDEO: autoplay on intro page only */}
             {p.videoUrl && idx === 0 && page === 0 && (
-              <WebView
-                source={{uri: p.videoUrl}}
-                style={styles.heroVideo}
-                allowsFullscreenVideo={false}
-                mediaPlaybackRequiresUserAction={false}
-                startInLoadingState
+              <CourseVideoPlayer
+                uri={p.videoUrl}
+                containerStyle={styles.heroVideo}
+                webViewStyle={styles.heroVideoWebView}
+                active={page === 0}
                 renderLoading={() => (
-                  <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#222'}}>
+                  <View style={styles.videoLoading}>
                     <ActivityIndicator color={colors.accent} />
                   </View>
                 )}
@@ -552,6 +552,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     backgroundColor: '#222',
     alignSelf: 'center',
+    overflow: 'hidden',
+  },
+  heroVideoWebView: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  videoLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#222',
   },
   programOverview: {
     alignItems: 'center',
