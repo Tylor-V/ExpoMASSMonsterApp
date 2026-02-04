@@ -261,6 +261,7 @@ const PAGES = [
 export default function PushPullLegsCourse({ onBack, restart = false }) {
   const [page, setPage] = useState(0);
   const pagerRef = useRef<CoursePagerHandle>(null);
+  const maxPageRef = useRef(0);
   const topPad = useCourseTopPad();
   const insets = useSafeAreaInsets();
   const [fullscreenMedia, setFullscreenMedia] = useState(null);
@@ -276,6 +277,7 @@ export default function PushPullLegsCourse({ onBack, restart = false }) {
 
   useEffect(() => {
     if (ready) {
+      maxPageRef.current = startPage;
       setPage(startPage);
       pagerRef.current?.goToPageWithoutAnimation(startPage);
     }
@@ -290,7 +292,8 @@ export default function PushPullLegsCourse({ onBack, restart = false }) {
 
   const handlePageChange = (idx: number) => {
     setPage(idx);
-    if (hasUser) {
+    if (hasUser && idx >= maxPageRef.current) {
+      maxPageRef.current = idx;
       updateCourseProgress('push-pull-legs', (idx + 1) / pageCount);
     }
   };

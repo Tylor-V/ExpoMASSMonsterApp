@@ -52,24 +52,35 @@ export async function updateCourseProgress(courseId: string, progress: number) {
   if (!uid) throw new Error('No user logged in');
   
   const ref = firestore().collection('users').doc(uid);
-  const doc = await ref.get();
-  const current = doc.data()?.coursesProgress?.[courseId] || 0;
   const normalized = clamp01(progress);
-  const currentNormalized = clamp01(current);
-  if (normalized <= currentNormalized && current === currentNormalized) return;
-  const nextProgress = Math.max(normalized, currentNormalized);
+  let nextProgress = normalized;
+  let progressSnapshot: Record<string, number> = {};
 
-  await ref.set(
-    { coursesProgress: { [courseId]: nextProgress } },
-    { merge: true },
-  );
+  await firestore().runTransaction(async transaction => {
+    const doc = await transaction.get(ref);
+    const data = doc.data() || {};
+    progressSnapshot = { ...(data.coursesProgress || {}) };
+    const current = progressSnapshot[courseId] || 0;
+    const currentNormalized = clamp01(current);
+    if (normalized <= currentNormalized && current === currentNormalized) {
+      nextProgress = currentNormalized;
+      return;
+    }
+    nextProgress = Math.max(normalized, currentNormalized);
+    progressSnapshot[courseId] = nextProgress;
+    transaction.set(
+      ref,
+      { coursesProgress: { [courseId]: nextProgress } },
+      { merge: true },
+    );
+  });
 
   if (courseId === 'mindset' && nextProgress >= 1) {
     await unlockBadge('MINDSET');
   }
 
   await checkScholarBadge({
-    ...(doc.data()?.coursesProgress || {}),
+    ...progressSnapshot,
     [courseId]: nextProgress,
   });
 }

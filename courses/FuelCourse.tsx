@@ -61,6 +61,7 @@ const PAGES = [
 export default function FuelCourse({ onBack, restart = false }) {
   const [page, setPage] = useState(0);
   const pagerRef = useRef<CoursePagerHandle>(null);
+  const maxPageRef = useRef(0);
   const [calories, setCalories] = useState(2500);
   const [showBolt, setShowBolt] = useState(false);
   const [mealStep, setMealStep] = useState(0);
@@ -80,6 +81,7 @@ export default function FuelCourse({ onBack, restart = false }) {
 
   useEffect(() => {
     if (ready) {
+      maxPageRef.current = startPage;
       setPage(startPage);
       pagerRef.current?.goToPageWithoutAnimation(startPage);
     }
@@ -87,7 +89,8 @@ export default function FuelCourse({ onBack, restart = false }) {
 
   const handlePageChange = (idx: number) => {
     setPage(idx);
-    if (hasUser) {
+    if (hasUser && idx >= maxPageRef.current) {
+      maxPageRef.current = idx;
       updateCourseProgress('fuel', (idx + 1) / pageCount);
     }
   };

@@ -634,6 +634,7 @@ const PROBLEM_PAGE_INDEX = PAGES.findIndex(p => p.problemBlock);
 export default function MindsetCourse({ onBack, restart = false }) {
   const [page, setPage] = useState(0);
   const pagerRef = useRef<CoursePagerHandle>(null);
+  const maxPageRef = useRef(0);
   const scrollRefs = useRef<Array<ScrollView | null>>([]);
   const { user, loading, error, refreshUserData } = useCurrentUserStatus();
   const hasUser = !!user;
@@ -671,11 +672,13 @@ export default function MindsetCourse({ onBack, restart = false }) {
   useEffect(() => {
     if (loading || initialSet) return;
     if (restart) {
+      maxPageRef.current = 0;
       setPage(0);
       setInitialSet(true);
       return;
     }
     if (!user) {
+      maxPageRef.current = 0;
       setPage(0);
       setInitialSet(true);
       return;
@@ -687,6 +690,7 @@ export default function MindsetCourse({ onBack, restart = false }) {
         .map((_, i) => i < last),
     );
     const start = CHAPTER_PAGES[last - 1][0];
+    maxPageRef.current = start;
     setPage(start);
     if (last < 1 && hasUser) updateMindsetChapter(1);
     setInitialSet(true);
@@ -745,7 +749,8 @@ export default function MindsetCourse({ onBack, restart = false }) {
     }
     setPage(idx);
     scrollRefs.current[idx]?.scrollTo({y: 0, animated: false});
-    if (hasUser) {
+    if (hasUser && idx >= maxPageRef.current) {
+      maxPageRef.current = idx;
       updateCourseProgress('mindset', (idx + 1) / pageCount);
     }
   };
