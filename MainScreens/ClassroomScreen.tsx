@@ -20,7 +20,9 @@ import FuelCourse from '../courses/FuelCourse';
 import MindsetCourse from '../courses/MindsetCourse';
 import PushPullLegsCourse from '../courses/PushPullLegsCourse';
 import WelcomeCourse from '../courses/WelcomeCourse';
-import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
+import LoadingOverlay from '../components/LoadingOverlay';
+import StateMessage from '../components/StateMessage';
+import { useCurrentUserStatus } from '../hooks/useCurrentUserStatus';
 import { colors } from '../theme';
 
 const { width } = Dimensions.get('window');
@@ -62,7 +64,7 @@ function ClassroomScreen({ onRequestTabChange, onCourseOpenChange }) {
   const [openCourseId, setOpenCourseId] = useState(null);
   const [currentCourse, setCurrentCourse] = useState(null);
   const [restartCourse, setRestartCourse] = useState(false);
-  const user = useCurrentUserDoc();
+  const { user, loading, error, refreshUserData } = useCurrentUserStatus();
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -85,24 +87,14 @@ function ClassroomScreen({ onRequestTabChange, onCourseOpenChange }) {
 
   const CourseComponent = currentCourse?.component;
 
-  return (
-    <WhiteBackgroundWrapper style={{ flex: 1 }} padBottom={!currentCourse}>
-      {!currentCourse && (
-        <View style={styles.headerContainer}>
-          <Image
-            source={MassUniversityLogo}
-            style={styles.headerImage}
-            contentFit="contain"
-          />
-        </View>
-      )}
-      <Animated.View style={{ flex: 1, transform: [{ translateX: listTranslate }] }}>
-        <FlatList
-          style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 20, paddingTop: 2, paddingBottom: 36 }}
-          data={COURSES}
-          keyExtractor={item => item.id}
-          renderItem={({ item }) => {
+  const renderCourses = () => (
+    <Animated.View style={{ flex: 1, transform: [{ translateX: listTranslate }] }}>
+      <FlatList
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 20, paddingTop: 2, paddingBottom: 36 }}
+        data={COURSES}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => {
           const expanded = openCourseId === item.id;
           const progress = clamp01(user?.coursesProgress?.[item.id] || 0);
           const percent = Math.round(progress * 100);
@@ -165,8 +157,51 @@ function ClassroomScreen({ onRequestTabChange, onCourseOpenChange }) {
             </View>
           );
         }}
-        />
-      </Animated.View>
+      />
+    </Animated.View>
+  );
+
+  const renderStatus = () => {
+    if (loading) {
+      return <LoadingOverlay />;
+    }
+    if (error) {
+      return (
+        <View style={styles.stateContainer}>
+          <StateMessage
+            title="Courses unavailable"
+            message={error.message || 'We ran into a problem loading your courses.'}
+            actionLabel="Retry"
+            onAction={refreshUserData}
+          />
+        </View>
+      );
+    }
+    if (!user) {
+      return (
+        <View style={styles.stateContainer}>
+          <StateMessage
+            title="No courses yet"
+            message="Sign in to track course progress and pick up where you left off."
+          />
+        </View>
+      );
+    }
+    return renderCourses();
+  };
+
+  return (
+    <WhiteBackgroundWrapper style={{ flex: 1 }} padBottom={!currentCourse}>
+      {!currentCourse && (
+        <View style={styles.headerContainer}>
+          <Image
+            source={MassUniversityLogo}
+            style={styles.headerImage}
+            contentFit="contain"
+          />
+        </View>
+      )}
+      {!currentCourse && renderStatus()}
       {CourseComponent && (
         <Animated.View style={[StyleSheet.absoluteFillObject, { transform: [{ translateX: courseTranslate }] }]}>
           <CourseComponent
@@ -194,6 +229,11 @@ const styles = StyleSheet.create({
   headerImage: {
     width: width - 20,
     height: (width -20)/2.6,
+  },
+  stateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
   },
   classCard: {
     marginVertical: 12,

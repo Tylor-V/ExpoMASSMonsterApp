@@ -17,6 +17,7 @@ import { WebView } from 'react-native-webview';
 import CourseNav from '../components/CourseNav';
 import CoursePager, { CoursePagerHandle } from '../components/CoursePager';
 import LoadingOverlay from '../components/LoadingOverlay';
+import StateMessage from '../components/StateMessage';
 import ThemedImage from '../components/ThemedImage';
 import { LIFT_RATINGS, type RatingMap } from '../constants/liftRatings';
 import { updateCourseProgress } from '../firebase/userProfileHelpers';
@@ -264,7 +265,14 @@ export default function PushPullLegsCourse({ onBack, restart = false }) {
   const insets = useSafeAreaInsets();
   const [fullscreenMedia, setFullscreenMedia] = useState(null);
   const pageCount = PAGES.length;
-  const { startPage, ready } = useSavedCoursePage('push-pull-legs', pageCount, restart);
+  const {
+    startPage,
+    ready,
+    loading,
+    error,
+    hasUser,
+    retry,
+  } = useSavedCoursePage('push-pull-legs', pageCount, restart);
 
   useEffect(() => {
     if (ready) {
@@ -274,17 +282,33 @@ export default function PushPullLegsCourse({ onBack, restart = false }) {
   }, [ready, startPage]);
 
   const finish = () => {
-    updateCourseProgress('push-pull-legs', 1);
+    if (hasUser) {
+      updateCourseProgress('push-pull-legs', 1);
+    }
     onBack && onBack();
   };
 
   const handlePageChange = (idx: number) => {
     setPage(idx);
-    updateCourseProgress('push-pull-legs', (idx + 1) / pageCount);
+    if (hasUser) {
+      updateCourseProgress('push-pull-legs', (idx + 1) / pageCount);
+    }
   };
 
-  if (!ready) {
+  if (loading || !ready) {
     return <LoadingOverlay />;
+  }
+  if (error) {
+    return (
+      <View style={styles.stateWrapper}>
+        <StateMessage
+          title="Course unavailable"
+          message={error.message || 'Unable to load your course progress.'}
+          actionLabel="Retry"
+          onAction={retry}
+        />
+      </View>
+    );
   }
   
   const RoutineCards = routines =>
@@ -691,5 +715,11 @@ const styles = StyleSheet.create({
     aspectRatio: 9 / 16,
     alignSelf: 'center',
     backgroundColor: '#000',
+  },
+  stateWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    backgroundColor: colors.background,
   },
 });

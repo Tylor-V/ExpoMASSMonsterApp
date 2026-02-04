@@ -12,6 +12,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import ThemedImage from '../components/ThemedImage';
+import LoadingOverlay from '../components/LoadingOverlay';
+import StateMessage from '../components/StateMessage';
 import CoursePager, {CoursePagerHandle} from '../components/CoursePager';
 import CourseNav from '../components/CourseNav';
 import CourseOutlineSidebar from '../components/CourseOutlineSidebar';
@@ -26,7 +28,7 @@ import {
   updateMindsetChapter,
   grantMindsetBadge,
 } from '../firebase/userProfileHelpers';
-import {useCurrentUserDoc} from '../hooks/useCurrentUserDoc';
+import {useCurrentUserStatus} from '../hooks/useCurrentUserStatus';
 import {colors} from '../theme';
 import { ANIM_FAST, ANIM_SLOW, ANIM_SHORT, ANIM_INSTANT, ANIM_EXTRA_SLOW } from '../utils/animations';
 import AccordionList from '../components/AccordionList';
@@ -633,7 +635,8 @@ export default function MindsetCourse({ onBack, restart = false }) {
   const [page, setPage] = useState(0);
   const pagerRef = useRef<CoursePagerHandle>(null);
   const scrollRefs = useRef<Array<ScrollView | null>>([]);
-  const user = useCurrentUserDoc();
+  const { user, loading, error, refreshUserData } = useCurrentUserStatus();
+  const hasUser = !!user;
   const [initialSet, setInitialSet] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [reveal, setReveal] = useState(false);
@@ -666,8 +669,13 @@ export default function MindsetCourse({ onBack, restart = false }) {
 
   // Initialize from saved progress
   useEffect(() => {
-    if (!user || initialSet) return;
+    if (loading || initialSet) return;
     if (restart) {
+      setPage(0);
+      setInitialSet(true);
+      return;
+    }
+    if (!user) {
       setPage(0);
       setInitialSet(true);
       return;
@@ -680,9 +688,9 @@ export default function MindsetCourse({ onBack, restart = false }) {
     );
     const start = CHAPTER_PAGES[last - 1][0];
     setPage(start);
-    if (last < 1) updateMindsetChapter(1);
+    if (last < 1 && hasUser) updateMindsetChapter(1);
     setInitialSet(true);
-  }, [user, initialSet, restart]);
+  }, [user, initialSet, restart, loading, hasUser]);
 
   useEffect(() => {
     if (initialSet) {
@@ -702,11 +710,13 @@ export default function MindsetCourse({ onBack, restart = false }) {
         if (prev[p.chapter - 1]) return prev;
         const arr = [...prev];
         arr[p.chapter - 1] = true;
-        updateMindsetChapter(p.chapter);
+        if (hasUser) {
+          updateMindsetChapter(p.chapter);
+        }
         return arr;
       });
     }
-  }, [page]);
+  }, [page, hasUser]);
 
   useEffect(() => {
     const shouldShow = page !== PROBLEM_PAGE_INDEX || problemComplete;
@@ -735,7 +745,9 @@ export default function MindsetCourse({ onBack, restart = false }) {
     }
     setPage(idx);
     scrollRefs.current[idx]?.scrollTo({y: 0, animated: false});
-    updateCourseProgress('mindset', (idx + 1) / pageCount);
+    if (hasUser) {
+      updateCourseProgress('mindset', (idx + 1) / pageCount);
+    }
   };
 
   const handleInvite = async () => {
@@ -749,10 +761,29 @@ export default function MindsetCourse({ onBack, restart = false }) {
   };
 
   const handleFinish = () => {
-    updateCourseProgress('mindset', 1);
-    updateMindsetChapter(CHAPTER_COUNT);
+    if (hasUser) {
+      updateCourseProgress('mindset', 1);
+      updateMindsetChapter(CHAPTER_COUNT);
+    }
     if (onBack) onBack();
   };
+
+  if (loading || !initialSet) {
+    return <LoadingOverlay />;
+  }
+
+  if (error) {
+    return (
+      <View style={styles.stateWrapper}>
+        <StateMessage
+          title="Mindset course unavailable"
+          message={error.message || 'Unable to load your progress.'}
+          actionLabel="Retry"
+          onAction={refreshUserData}
+        />
+      </View>
+    );
+  }
 
   const openSidebar = () => {
     if (isFullImagePage) return;
@@ -1298,5 +1329,11 @@ const styles = StyleSheet.create({
     right: 12,
     padding: 12,
     zIndex: 30,
+  },
+  stateWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    backgroundColor: colors.background,
   },
 });

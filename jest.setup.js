@@ -94,6 +94,26 @@ jest.mock('./hooks/useCurrentUserDoc', () => ({
   }),
 }));
 
+jest.mock('./hooks/useCurrentUserStatus', () => ({
+  useCurrentUserStatus: () => ({
+    user: {
+      id: 'mock-user',
+      firstName: 'Mock',
+      lastName: 'User',
+      profilePicUrl: '',
+      bio: '',
+      badges: [],
+      coursesProgress: {},
+      mindsetChapterCompleted: 1,
+      chatLevel: 1,
+      chatXP: 0,
+    },
+    loading: false,
+    error: null,
+    refreshUserData: jest.fn(),
+  }),
+}));
+
 jest.mock('./components/NewsModal', () => 'NewsModal');
 jest.mock('./components/ProfileModal', () => 'ProfileModal');
 jest.mock('./screens/StoriesViewer', () => 'StoriesViewer');

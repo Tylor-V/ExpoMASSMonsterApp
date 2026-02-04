@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import ThemedImage from '../components/ThemedImage';
 import LoadingOverlay from '../components/LoadingOverlay';
+import StateMessage from '../components/StateMessage';
 import useCourseTopPad from "../hooks/useCourseTopPad";
 import useSavedCoursePage from '../hooks/useSavedCoursePage';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -155,7 +156,14 @@ export default function WelcomeCourse({ onBack, restart = false }) {
   const pagerRef = useRef<CoursePagerHandle>(null);
   const topPad = useCourseTopPad();
   const pageCount = PAGES.length;
-  const { startPage, ready } = useSavedCoursePage('welcome', pageCount, restart);
+  const {
+    startPage,
+    ready,
+    loading,
+    error,
+    hasUser,
+    retry,
+  } = useSavedCoursePage('welcome', pageCount, restart);
 
   useEffect(() => {
     if (ready) {
@@ -166,16 +174,32 @@ export default function WelcomeCourse({ onBack, restart = false }) {
 
   const handlePageChange = (idx: number) => {
     setPage(idx);
-    updateCourseProgress('welcome', (idx + 1) / pageCount);
+    if (hasUser) {
+      updateCourseProgress('welcome', (idx + 1) / pageCount);
+    }
   };
 
   const handleFinish = () => {
-    updateCourseProgress('welcome', 1);
+    if (hasUser) {
+      updateCourseProgress('welcome', 1);
+    }
     if (onBack) onBack();
   };
 
-  if (!ready) {
+  if (loading || !ready) {
     return <LoadingOverlay />;
+  }
+  if (error) {
+    return (
+      <View style={styles.stateWrapper}>
+        <StateMessage
+          title="We hit a snag"
+          message={error.message || 'Unable to load your course progress.'}
+          actionLabel="Retry"
+          onAction={retry}
+        />
+      </View>
+    );
   }
 
   const pages = PAGES.map((p, idx) => {
@@ -293,5 +317,12 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     zIndex: 10,
+  },
+  stateWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    backgroundColor: colors.background,
   },
 });

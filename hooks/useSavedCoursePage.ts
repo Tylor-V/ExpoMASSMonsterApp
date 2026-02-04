@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useCurrentUserDoc } from './useCurrentUserDoc';
+import { useCurrentUserStatus } from './useCurrentUserStatus';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
@@ -8,7 +8,7 @@ export default function useSavedCoursePage(
   pageCount: number,
   restart = false,
 ) {
-  const user = useCurrentUserDoc();
+  const { user, loading, error, refreshUserData } = useCurrentUserStatus();
   const [ready, setReady] = useState(false);
   const [startPage, setStartPage] = useState(0);
 
@@ -18,7 +18,12 @@ export default function useSavedCoursePage(
       setReady(true);
       return;
     }
-    if (!user) return;
+    if (loading) return;
+    if (!user) {
+      setStartPage(0);
+      setReady(true);
+      return;
+    }
     const progress = clamp01(user.coursesProgress?.[courseId] || 0);
     const idx = Math.max(
       0,
@@ -26,7 +31,14 @@ export default function useSavedCoursePage(
     );
     setStartPage(idx);
     setReady(true);
-  }, [user, courseId, pageCount, restart]);
+  }, [user, courseId, pageCount, restart, loading]);
 
-  return { startPage, ready };
+  return {
+    startPage,
+    ready,
+    loading,
+    error,
+    hasUser: !!user,
+    retry: refreshUserData,
+  };
 }

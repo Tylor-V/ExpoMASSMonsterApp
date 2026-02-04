@@ -2,8 +2,13 @@ import { fireEvent, render } from '@testing-library/react-native';
 import React from 'react';
 import ClassroomScreen from '../ClassroomScreen';
 
-jest.mock('../../hooks/useCurrentUserDoc', () => ({
-  useCurrentUserDoc: () => ({ coursesProgress: { welcome: 0.5 } }),
+jest.mock('../../hooks/useCurrentUserStatus', () => ({
+  useCurrentUserStatus: () => ({
+    user: { coursesProgress: { welcome: 0.5 } },
+    loading: false,
+    error: null,
+    refreshUserData: jest.fn(),
+  }),
 }));
 
 jest.mock('../../courses/WelcomeCourse', () => {
