@@ -29,6 +29,7 @@ import { auth, firestore } from "../firebase/firebase";
 import { useLastRead } from "../firebase/userChatReadHelpers";
 import { useCurrentUserDoc } from "../hooks/useCurrentUserDoc";
 import { useKeyboardAnimation } from "../hooks/useKeyboardAnimation";
+import { useBlockedUserIds } from "../hooks/useBlockedUserIds";
 import { colors, fonts, gradients } from "../theme";
 import { ANIM_BUTTON_POP, ANIM_SHORT, ANIM_WIGGLE } from "../utils/animations";
 import { getChatLevelColor } from "../utils/chatLevel";
@@ -597,6 +598,8 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   const [reactionTargetId, setReactionTargetId] = useState<string | null>(null);
   const [pinnedMessages, setPinnedMessages] = useState<any[]>([]);
   const [previewUserId, setPreviewUserId] = useState<string | null>(null);
+  const { blockedSet } = useBlockedUserIds();
+  const [localBlockedIds, setLocalBlockedIds] = useState<string[]>([]);
   const [actionTargetId, setActionTargetId] = useState<string | null>(null);
   const [limitCaption, setLimitCaption] = useState(false);
   const wiggleAnim = useRef(new Animated.Value(0)).current;
@@ -624,10 +627,10 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
   const scrollToLatest = useCallback(
     (animated = true) => {
-      if (flatListRef.current && messages.length > 0) {
+      if (flatListRef.current && visibleMessages.length > 0) {
         try {
           flatListRef.current.scrollToIndex({
-            index: messages.length - 1,
+            index: visibleMessages.length - 1,
             animated,
           });
         } catch (err) {
@@ -636,13 +639,13 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       }
       isAtBottomRef.current = true;
     },
-    [messages.length],
+    [visibleMessages.length],
   );
 
   const scrollToMessage = useCallback(
     (msgId: string | number) => {
       const targetId = String(msgId);
-      const index = messages.findIndex((m) => String(m.id) === targetId);
+      const index = visibleMessages.findIndex((m) => String(m.id) === targetId);
       if (index !== -1 && flatListRef.current) {
         try {
           flatListRef.current.scrollToIndex({
@@ -654,18 +657,28 @@ const AllChannels: React.FC<ChatScreenProps> = ({
         }
       }
     },
-    [messages],
+    [visibleMessages],
   );
 
   useEffect(() => {
     onRegisterScrollToMessage?.(scrollToMessage);
   }, [scrollToMessage, onRegisterScrollToMessage]);
 
-  const latestMessageId = messages.length
-    ? messages[messages.length - 1]?.id
+  const visibleMessages = React.useMemo(
+    () =>
+      messages.filter(
+        (m) =>
+          !blockedSet.has(String(m.userId || "")) &&
+          !localBlockedIds.includes(String(m.userId || "")),
+      ),
+    [messages, blockedSet, localBlockedIds],
+  );
+
+  const latestMessageId = visibleMessages.length
+    ? visibleMessages[visibleMessages.length - 1]?.id
     : null;
-  const latestMessageUserId = messages.length
-    ? messages[messages.length - 1]?.userId
+  const latestMessageUserId = visibleMessages.length
+    ? visibleMessages[visibleMessages.length - 1]?.userId
     : null;
 
   // Fetch pinned messages
@@ -782,8 +795,8 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
   // Fetch user info for every message sender and listen for updates
   useEffect(() => {
-    if (!messages.length) return;
-    const uniqueUids = [...new Set(messages.map((m) => m.userId))].filter(
+    if (!visibleMessages.length) return;
+    const uniqueUids = [...new Set(visibleMessages.map((m) => m.userId))].filter(
       (uid): uid is string => typeof uid === "string" && uid.length > 0,
     );
 
@@ -855,7 +868,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
   // Re-scroll to bottom when additional data changes height of messages
   useEffect(() => {
-    if (isActive && messages.length > 0 && isAtBottomRef.current) {
+    if (isActive && visibleMessages.length > 0 && isAtBottomRef.current) {
       scrollToLatest(false);
     }
   }, [userMap, pinnedMessages]);
@@ -894,14 +907,14 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
   // Scroll to latest once messages load initially
   useEffect(() => {
-    if (!messages.length || !isActive || initialScrollDone.current) return;
+    if (!visibleMessages.length || !isActive || initialScrollDone.current) return;
     scrollToLatest(false);
     initialScrollDone.current = true;
-  }, [messages, isActive]);
+  }, [visibleMessages, isActive]);
 
   // Auto-scroll to bottom on initial load, channel change, or when tab becomes active
   useEffect(() => {
-    if (isActive && messages.length > 0) {
+    if (isActive && visibleMessages.length > 0) {
       scrollToLatest(true);
       setShowJump(false);
       setShowNewMarker(false);
@@ -943,7 +956,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
     const prevLastMessage =
       prevMessages.length > 0 ? prevMessages[prevMessages.length - 1] : null;
     const currentLastMessage =
-      messages.length > 0 ? messages[messages.length - 1] : null;
+      visibleMessages.length > 0 ? visibleMessages[visibleMessages.length - 1] : null;
 
     const hasNewMessage =
       (!!currentLastMessage && !prevLastMessage) ||
@@ -953,7 +966,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
     if (
       hasNewMessage &&
-      messages.length > 0 &&
+      visibleMessages.length > 0 &&
       lastReadMessageId &&
       latestMessageId !== lastReadMessageId &&
       latestMessageUserId !== currentUserId
@@ -969,9 +982,9 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       }
     }
 
-    prevMessagesRef.current = messages;
+    prevMessagesRef.current = visibleMessages;
   }, [
-    messages,
+    visibleMessages,
     currentUserId,
     latestMessageUserId,
     lastReadMessageId,
@@ -1217,13 +1230,13 @@ const AllChannels: React.FC<ChatScreenProps> = ({
     [currentUserId],
   );
 
-  const firstUnreadIndex = messages.findIndex(
+  const firstUnreadIndex = visibleMessages.findIndex(
     (m) => m.id === lastReadMessageId,
   );
   const hasUnreadMarker =
     showNewMarker &&
     firstUnreadIndex !== -1 &&
-    firstUnreadIndex < messages.length - 1;
+    firstUnreadIndex < visibleMessages.length - 1;
 
   // --- UI COLOR SCHEME ---
   const renderMessage = useCallback(
@@ -1260,7 +1273,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
         <ChatMessageRow
           item={item}
           index={index}
-          isLast={index === messages.length - 1}
+          isLast={index === visibleMessages.length - 1}
           showUnreadHere={showUnreadHere}
           user={userMap[item.userId]}
           currentUserId={currentUserId}
@@ -1289,7 +1302,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       handleLongPress,
       handleUserPreview,
       hasUnreadMarker,
-      messages.length,
+      visibleMessages.length,
       pinMessage,
       reactionOpacityMap,
       renderCustomMessage,
@@ -1311,7 +1324,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
           <View style={{ flex: 1 }}>
             <FlatList
               ref={flatListRef}
-              data={messages}
+              data={visibleMessages}
               keyExtractor={(item) => item.id}
               renderItem={renderMessage}
               extraData={userMap}
@@ -1439,6 +1452,11 @@ const AllChannels: React.FC<ChatScreenProps> = ({
         visible={!!previewUserId}
         userId={previewUserId || ""}
         onClose={() => setPreviewUserId(null)}
+        onUserBlocked={(blockedUserId: string) => {
+          setLocalBlockedIds((prev) =>
+            prev.includes(blockedUserId) ? prev : [...prev, blockedUserId],
+          );
+        }}
       />
     </ChannelWrapper>
   );

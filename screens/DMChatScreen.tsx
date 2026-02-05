@@ -30,6 +30,7 @@ import { auth, firestore } from '../firebase/firebase';
 import { useLastReadDM } from '../firebase/userChatReadHelpers';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import { useKeyboardAnimation } from '../hooks/useKeyboardAnimation';
+import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
 import { colors } from '../theme';
 import { dedupeById } from '../utils/dedupeById';
 import { formatDisplayName } from '../utils/displayName';
@@ -77,11 +78,13 @@ const DMChatScreen = ({ navigation, route }) => {
   const isAtBottomRef = useRef(true);
   const [reactionTargetId, setReactionTargetId] = useState<string | null>(null);
   const [actionTargetId, setActionTargetId] = useState<string | null>(null);
+  const { blockedSet } = useBlockedUserIds();
+  const [localBlockedIds, setLocalBlockedIds] = useState<string[]>([]);
   const scrollToLatest = (animated: boolean = true) => {
-    if (flatListRef.current && messages.length > 0) {
+    if (flatListRef.current && visibleMessages.length > 0) {
       try {
         flatListRef.current.scrollToIndex({
-          index: messages.length - 1,
+          index: visibleMessages.length - 1,
           animated,
         });
       } catch (err) {
@@ -90,9 +93,10 @@ const DMChatScreen = ({ navigation, route }) => {
     }
     isAtBottomRef.current = true;
   };
-  const latestMessageId = messages.length ? messages[messages.length - 1]?.id : null;
-  const latestMessageUserId = messages.length
-    ? messages[messages.length - 1]?.userId
+  const visibleMessages = React.useMemo(() => messages.filter((m: any) => !blockedSet.has(String(m.userId || '')) && !localBlockedIds.includes(String(m.userId || ''))), [messages, blockedSet, localBlockedIds]);
+  const latestMessageId = visibleMessages.length ? visibleMessages[visibleMessages.length - 1]?.id : null;
+  const latestMessageUserId = visibleMessages.length
+    ? visibleMessages[visibleMessages.length - 1]?.userId
     : null;
   const [showNewMarker, setShowNewMarker] = useState(false);
   const [lastReadMessageId, setLastReadMessageId] = useState<string | null>(null);
@@ -157,11 +161,11 @@ const DMChatScreen = ({ navigation, route }) => {
   }, [threadId, latestMessageId]);
   
   useEffect(() => {
-    if (!messages.length) return;
+    if (!visibleMessages.length) return;
     if (!initialScrollDone.current) {
       scrollToLatest(false);
       initialScrollDone.current = true;
-      prevMessagesRef.current = messages;
+      prevMessagesRef.current = visibleMessages;
       return;
     }
 
@@ -169,9 +173,9 @@ const DMChatScreen = ({ navigation, route }) => {
     const prevLastMessage =
       prevMessages.length > 0 ? prevMessages[prevMessages.length - 1] : null;
     const currentLastMessage =
-      messages.length > 0 ? messages[messages.length - 1] : null;
+      visibleMessages.length > 0 ? visibleMessages[visibleMessages.length - 1] : null;
     const hasNewMessage =
-      messages.length > prevMessages.length ||
+      visibleMessages.length > prevMessages.length ||
       (!!currentLastMessage && !prevLastMessage) ||
       (!!currentLastMessage &&
         !!prevLastMessage &&
@@ -179,7 +183,7 @@ const DMChatScreen = ({ navigation, route }) => {
 
     if (
       hasNewMessage &&
-      messages.length > 0 &&
+      visibleMessages.length > 0 &&
       lastReadMessageId &&
       latestMessageId !== lastReadMessageId &&
       latestMessageUserId !== currentUserId &&
@@ -196,8 +200,8 @@ const DMChatScreen = ({ navigation, route }) => {
       }
     }
 
-    prevMessagesRef.current = messages;
-  }, [messages, currentUserId, latestMessageUserId, lastReadMessageId, latestMessageId]);
+    prevMessagesRef.current = visibleMessages;
+  }, [visibleMessages, currentUserId, latestMessageUserId, lastReadMessageId, latestMessageId]);
 
   const handleScroll = (e: any) => {
     const yOffset = e.nativeEvent.contentOffset.y;
@@ -225,8 +229,8 @@ const DMChatScreen = ({ navigation, route }) => {
     }
   };
 
-  const firstUnreadIndex = messages.findIndex(m => m.id === lastReadMessageId);
-  const hasUnreadMarker = showNewMarker && firstUnreadIndex !== -1 && firstUnreadIndex < messages.length - 1;
+  const firstUnreadIndex = visibleMessages.findIndex(m => m.id === lastReadMessageId);
+  const hasUnreadMarker = showNewMarker && firstUnreadIndex !== -1 && firstUnreadIndex < visibleMessages.length - 1;
 
   const handleSend = async () => {
     if (isTimedOut) {
@@ -336,7 +340,7 @@ const DMChatScreen = ({ navigation, route }) => {
             ) : (
               <FlatList
                 ref={flatListRef}
-                data={messages}
+                data={visibleMessages}
                 keyExtractor={item => item.id}
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
@@ -593,6 +597,9 @@ const DMChatScreen = ({ navigation, route }) => {
       visible={!!previewUserId}
       userId={previewUserId || ''}
       onClose={() => setPreviewUserId(null)}
+      onUserBlocked={(blockedUserId: string) => {
+        setLocalBlockedIds(prev => (prev.includes(blockedUserId) ? prev : [...prev, blockedUserId]));
+      }}
     />
     </>
   );

@@ -15,6 +15,7 @@ import { enforceSelectedBadges } from '../badges/UnlockableBadges';
 import { ROLE_COLORS, ROLE_TAGS } from '../constants/roles';
 import { auth, firestore } from '../firebase/firebase';
 import { useChatInputBarHeight } from '../MainScreens/ChatScreen';
+import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
 import { colors } from '../theme';
 import { ANIM_MEDIUM } from '../utils/animations';
 import BadgeImage from './BadgeImage';
@@ -33,6 +34,8 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
   const [render, setRender] = useState(visible);
   const [previewUserId, setPreviewUserId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
+  const { blockedSet } = useBlockedUserIds();
+  const [localBlockedIds, setLocalBlockedIds] = useState<string[]>([]);
   const searchRef = useRef<TextInput>(null);
   const slideAnim = useRef(new Animated.Value(SIDEBAR_WIDTH)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
@@ -104,8 +107,9 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
   const isOnlineForDisplay = (user: any) =>
     isUserOnline(user) && user.showOnlineStatus !== false;
 
-  const online = React.useMemo(() => users.filter(isOnlineForDisplay), [users]);
-  const offline = React.useMemo(() => users.filter(u => !isOnlineForDisplay(u)), [users]);
+  const visibleUsers = React.useMemo(() => users.filter((u: any) => !blockedSet.has(String(u.id)) && !localBlockedIds.includes(String(u.id))), [users, blockedSet, localBlockedIds]);
+  const online = React.useMemo(() => visibleUsers.filter(isOnlineForDisplay), [visibleUsers]);
+  const offline = React.useMemo(() => visibleUsers.filter(u => !isOnlineForDisplay(u)), [visibleUsers]);
   const term = search.trim().toLowerCase();
   const nameMatches = React.useCallback(
     (name: string) =>
@@ -125,7 +129,7 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
   const filteredOnline = React.useMemo(() => online.filter(filterUser), [online, filterUser]);
   const filteredOffline = React.useMemo(() => offline.filter(filterUser), [offline, filterUser]);
   // Find current user for display
-  const currentUser = users.find(u => u.id === uid);
+  const currentUser = visibleUsers.find(u => u.id === uid);
 
   const renderUser = React.useCallback((user) => {
     const isCurrent = user.id === uid;
@@ -296,6 +300,9 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
         visible={!!previewUserId}
         userId={previewUserId || ''}
         onClose={() => setPreviewUserId(null)}
+        onUserBlocked={(blockedUserId: string) => {
+          setLocalBlockedIds(prev => (prev.includes(blockedUserId) ? prev : [...prev, blockedUserId]));
+        }}
       />
     </>
   );

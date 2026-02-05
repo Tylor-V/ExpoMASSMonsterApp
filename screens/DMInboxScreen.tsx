@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import WhiteBackgroundWrapper from '../components/WhiteBackgroundWrapper';
 import { formatDisplayName } from '../utils/displayName';
+import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
 
 const DMsInboxScreen = ({ navigation }) => {
   const currentUserId = auth().currentUser?.uid;
@@ -27,6 +28,7 @@ const DMsInboxScreen = ({ navigation }) => {
   const searchRef = useRef<TextInput>(null);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
+  const { blockedSet } = useBlockedUserIds();
 
   const searchTerm = search.trim();
   const term = searchTerm.toLowerCase();
@@ -152,6 +154,7 @@ const DMsInboxScreen = ({ navigation }) => {
   );
 
   const filteredThreads = threads.filter(t => {
+    if (blockedSet.has(String(t.otherUser.uid || ''))) return false;
     const name = `${t.otherUser.firstName} ${t.otherUser.lastName}`.toLowerCase();
     return name.includes(search.toLowerCase());
   });
@@ -165,6 +168,7 @@ const DMsInboxScreen = ({ navigation }) => {
   );
 
   const filteredUsers = users.filter(u => {
+    if (blockedSet.has(String(u.id || ''))) return false;
     const matches =
       nameMatches(u.firstName || '') || nameMatches(u.lastName || '');
     return term && u.id !== currentUserId ? matches : false;

@@ -61,7 +61,7 @@ function buildSocialUrl(platform: string, handle: string) {
 
 const ONLINE_THRESHOLD = 10 * 60 * 1000;
 
-export default function UserPreviewModal({ visible, userId, onClose }) {
+export default function UserPreviewModal({ visible, userId, onClose, onUserBlocked }) {
   const [user, setUser] = useState<any>(null);
   const navigation = useNavigation<any>();
   const currentUserId = auth().currentUser?.uid;
@@ -221,6 +221,38 @@ export default function UserPreviewModal({ visible, userId, onClose }) {
     }
   };
 
+
+  const handleBlock = () => {
+    if (!currentUserId || currentUserId === user.id) return;
+    Alert.alert(
+      'Block User',
+      `Block @${name}? You won’t see each other’s content.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block User',
+          style: 'destructive',
+          onPress: async () => {
+            const blockId = `${currentUserId}_${user.id}`;
+            await firestore().collection('blocks').doc(blockId).set({
+              blockerUid: currentUserId,
+              blockedUid: user.id,
+              createdAt: firestore.FieldValue.serverTimestamp(),
+            });
+            await firestore().collection('reports').add({
+              type: 'block',
+              reportedBy: currentUserId,
+              targetId: user.id,
+              timestamp: Date.now(),
+            });
+            onUserBlocked?.(user.id);
+            onClose?.();
+          },
+        },
+      ],
+    );
+  };
+
   const handleReport = async () => {
     if (!currentUserId) return;
     await firestore().collection('reports').add({
@@ -354,13 +386,24 @@ export default function UserPreviewModal({ visible, userId, onClose }) {
                 </Text>
               </Pressable>
             ) : (
-              <Pressable
-                onPress={handleReport}
-                style={({ pressed }) => [styles.reportBtn, { transform: [{ scale: pressed ? 0.95 : 1 }] }]}
-              >
-                <Icon name="alert-circle" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-                <Text style={styles.reportBtnTxt}>Report</Text>
-              </Pressable>
+              <>
+                <Pressable
+                  onPress={handleReport}
+                  style={({ pressed }) => [styles.reportBtn, { transform: [{ scale: pressed ? 0.95 : 1 }] }]}
+                >
+                  <Icon name="alert-circle" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <Text style={styles.reportBtnTxt}>Report</Text>
+                </Pressable>
+                {currentUserId !== user.id ? (
+                  <Pressable
+                    onPress={handleBlock}
+                    style={({ pressed }) => [styles.reportBtn, { transform: [{ scale: pressed ? 0.95 : 1 }] }]}
+                  >
+                    <Icon name="ban-outline" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.reportBtnTxt}>Block User</Text>
+                  </Pressable>
+                ) : null}
+              </>
             )}
           </View>
         </Animated.View>
