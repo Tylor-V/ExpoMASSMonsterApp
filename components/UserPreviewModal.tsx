@@ -240,10 +240,13 @@ export default function UserPreviewModal({ visible, userId, onClose, onUserBlock
               createdAt: firestore.FieldValue.serverTimestamp(),
             });
             await firestore().collection('reports').add({
-              type: 'block',
+              targetType: 'user',
               reportedBy: currentUserId,
               targetId: user.id,
-              timestamp: Date.now(),
+              status: 'open',
+              createdAt: firestore.FieldValue.serverTimestamp(),
+              source: 'UserPreviewModal',
+              action: 'block',
             });
             onUserBlocked?.(user.id);
             onClose?.();
@@ -256,10 +259,13 @@ export default function UserPreviewModal({ visible, userId, onClose, onUserBlock
   const handleReport = async () => {
     if (!currentUserId) return;
     await firestore().collection('reports').add({
-      type: 'user',
+      targetType: 'user',
       reportedBy: currentUserId,
       targetId: user.id,
-      timestamp: Date.now(),
+      status: 'open',
+      createdAt: firestore.FieldValue.serverTimestamp(),
+      source: 'UserPreviewModal',
+      action: 'report',
     });
     Alert.alert('Reported', 'User reported to admins.');
     onClose?.();
@@ -394,15 +400,13 @@ export default function UserPreviewModal({ visible, userId, onClose, onUserBlock
                   <Icon name="alert-circle" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
                   <Text style={styles.reportBtnTxt}>Report</Text>
                 </Pressable>
-                {currentUserId !== user.id ? (
-                  <Pressable
-                    onPress={handleBlock}
-                    style={({ pressed }) => [styles.reportBtn, { transform: [{ scale: pressed ? 0.95 : 1 }] }]}
-                  >
-                    <Icon name="ban-outline" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
-                    <Text style={styles.reportBtnTxt}>Block User</Text>
-                  </Pressable>
-                ) : null}
+                <Pressable
+                  onPress={handleBlock}
+                  style={({ pressed }) => [styles.reportBtn, { transform: [{ scale: pressed ? 0.95 : 1 }] }]}
+                >
+                  <Icon name="ban-outline" size={16} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <Text style={styles.reportBtnTxt}>Block User</Text>
+                </Pressable>
               </>
             )}
           </View>
