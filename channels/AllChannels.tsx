@@ -26,6 +26,11 @@ import UserPreviewModal from "../components/UserPreviewModal";
 import { ROLE_COLORS, ROLE_TAGS } from "../constants/roles";
 import { awardStreakXP, awardXP } from "../firebase/chatXPHelpers";
 import { auth, firestore } from "../firebase/firebase";
+import {
+  MESSAGE_REPORT_REASONS,
+  submitMessageReport,
+  type MessageReportReason,
+} from "../firebase/reportHelpers";
 import { useLastRead } from "../firebase/userChatReadHelpers";
 import { useCurrentUserDoc } from "../hooks/useCurrentUserDoc";
 import { useKeyboardAnimation } from "../hooks/useKeyboardAnimation";
@@ -154,6 +159,7 @@ type ChatMessageProps = {
   onLongPress: (messageId: string, item: any) => void;
   onPinMessage: (messageId: string, pinned: boolean) => void;
   onConfirmDelete: (messageId: string) => void;
+  onReportMessage: (item: any) => void;
   onStopActions: () => void;
 };
 
@@ -175,6 +181,7 @@ const ChatMessageRow = memo(function ChatMessageRow({
   onLongPress,
   onPinMessage,
   onConfirmDelete,
+  onReportMessage,
   onStopActions,
 }: ChatMessageProps) {
   const isOwnMessage = item.userId === currentUserId;
@@ -200,6 +207,9 @@ const ChatMessageRow = memo(function ChatMessageRow({
     !reactions.some((r: any) => r.userId === currentUserId);
   const showReactionsRow =
     actionTargetId !== item.id && (reactions.length > 0 || canAddReaction);
+  const canDelete =
+    currentUserRole === "moderator" || item.userId === currentUserId;
+  const canReport = item.userId !== currentUserId;
 
   if (!reactionOpacityMap[item.id]) {
     reactionOpacityMap[item.id] = new Animated.Value(1);
@@ -544,16 +554,26 @@ const ChatMessageRow = memo(function ChatMessageRow({
                   />
                 </Pressable>
               )}
-              <Pressable
-                onPress={() => onConfirmDelete(item.id)}
-                style={chatStyles.actionBtn}
-              >
-                <Ionicons
-                  name="trash-outline"
-                  size={22}
-                  color={colors.delete}
-                />
-              </Pressable>
+              {canDelete && (
+                <Pressable
+                  onPress={() => onConfirmDelete(item.id)}
+                  style={chatStyles.actionBtn}
+                >
+                  <Ionicons
+                    name="trash-outline"
+                    size={22}
+                    color={colors.delete}
+                  />
+                </Pressable>
+              )}
+              {canReport && (
+                <Pressable
+                  onPress={() => onReportMessage(item)}
+                  style={chatStyles.reportMessageBtn}
+                >
+                  <Text style={chatStyles.reportMessageBtnText}>Report Message</Text>
+                </Pressable>
+              )}
             </View>
           </>
         )}
@@ -604,6 +624,10 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   const [localBlockedIds, setLocalBlockedIds] = useState<string[]>([]);
   const [actionTargetId, setActionTargetId] = useState<string | null>(null);
   const [limitCaption, setLimitCaption] = useState(false);
+  const [reportTargetMessage, setReportTargetMessage] = useState<any | null>(null);
+  const [reportReason, setReportReason] =
+    useState<MessageReportReason>(MESSAGE_REPORT_REASONS[0]);
+  const [reportDetails, setReportDetails] = useState("");
   const wiggleAnim = useRef(new Animated.Value(0)).current;
   const reactionOpacityMap = useRef<Record<string, Animated.Value>>({}).current;
   const prevActionIdRef = useRef<string | null>(null);
@@ -1129,7 +1153,10 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   // --- PIN / DELETE LOGIC ---
   const handleLongPress = useCallback(
     (msgId: string, item: any) => {
-      if (currentUserRole !== "moderator" && item.userId !== currentUserId) {
+      const canDelete =
+        currentUserRole === "moderator" || item.userId === currentUserId;
+      const canReport = item.userId !== currentUserId;
+      if (!canDelete && !canReport) {
         return;
       }
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -1225,6 +1252,41 @@ const AllChannels: React.FC<ChatScreenProps> = ({
     [channelId, stopActions],
   );
 
+  const openReportMessage = useCallback(
+    (item: any) => {
+      setReportReason(MESSAGE_REPORT_REASONS[0]);
+      setReportDetails("");
+      setReportTargetMessage(item);
+      stopActions();
+    },
+    [stopActions],
+  );
+
+  const submitReportMessage = useCallback(async () => {
+    if (!currentUserId || !reportTargetMessage?.id) {
+      return;
+    }
+    await submitMessageReport({
+      channelId,
+      messageId: reportTargetMessage.id,
+      messageText: reportTargetMessage.text,
+      reportedBy: currentUserId,
+      targetUserId: reportTargetMessage.userId,
+      reason: reportReason,
+      details: reportDetails,
+    });
+    setReportTargetMessage(null);
+    setReportDetails("");
+    setReportReason(MESSAGE_REPORT_REASONS[0]);
+    Alert.alert("Reported", "Thanks — reviewed within 24 hours.");
+  }, [
+    channelId,
+    currentUserId,
+    reportDetails,
+    reportReason,
+    reportTargetMessage,
+  ]);
+
   // --- USERNAME HOLD: PROFILE / REPORT / INFO ---
   const handleUserPreview = useCallback(
     (userId: string) => {
@@ -1293,6 +1355,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
           onLongPress={handleLongPress}
           onPinMessage={pinMessage}
           onConfirmDelete={confirmDelete}
+          onReportMessage={openReportMessage}
           onStopActions={stopActions}
         />
       );
@@ -1309,6 +1372,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       hasUnreadMarker,
       visibleMessages.length,
       pinMessage,
+      openReportMessage,
       reactionOpacityMap,
       renderCustomMessage,
       setReactionTargetId,
@@ -1407,6 +1471,75 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                       <Text style={chatStyles.cancelText}>Cancel</Text>
                     </TouchableOpacity>
                   </View>
+                </TouchableOpacity>
+              </Modal>
+            )}
+            {reportTargetMessage && (
+              <Modal
+                transparent
+                animationType="fade"
+                visible={!!reportTargetMessage}
+                onRequestClose={() => setReportTargetMessage(null)}
+              >
+                <TouchableOpacity
+                  style={chatStyles.modalOverlay}
+                  activeOpacity={1}
+                  onPress={() => setReportTargetMessage(null)}
+                >
+                  <TouchableOpacity
+                    activeOpacity={1}
+                    style={chatStyles.reportModal}
+                    onPress={() => {}}
+                  >
+                    <Text style={chatStyles.reportModalTitle}>Report Message</Text>
+                    <View style={chatStyles.reasonList}>
+                      {MESSAGE_REPORT_REASONS.map((reasonOption) => {
+                        const selected = reasonOption === reportReason;
+                        return (
+                          <Pressable
+                            key={reasonOption}
+                            onPress={() => setReportReason(reasonOption)}
+                            style={[
+                              chatStyles.reasonOption,
+                              selected && chatStyles.reasonOptionSelected,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                chatStyles.reasonOptionText,
+                                selected && chatStyles.reasonOptionTextSelected,
+                              ]}
+                            >
+                              {reasonOption}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    <TextInput
+                      style={chatStyles.reportDetailsInput}
+                      placeholder="Optional details"
+                      placeholderTextColor={colors.gray}
+                      value={reportDetails}
+                      onChangeText={setReportDetails}
+                      multiline
+                      maxLength={300}
+                    />
+                    <View style={chatStyles.reportActionsRow}>
+                      <Pressable
+                        onPress={() => setReportTargetMessage(null)}
+                        style={chatStyles.reportCancelBtn}
+                      >
+                        <Text style={chatStyles.reportCancelBtnText}>Cancel</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={submitReportMessage}
+                        style={chatStyles.reportSubmitBtn}
+                      >
+                        <Text style={chatStyles.reportSubmitBtnText}>Submit</Text>
+                      </Pressable>
+                    </View>
+                  </TouchableOpacity>
                 </TouchableOpacity>
               </Modal>
             )}
@@ -1771,6 +1904,77 @@ export const chatStyles = StyleSheet.create({
     fontWeight: "bold",
     color: "#333",
   },
+  reportModal: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 16,
+    width: "86%",
+    maxWidth: 360,
+  },
+  reportModalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.black,
+    marginBottom: 12,
+  },
+  reasonList: {
+    marginBottom: 10,
+  },
+  reasonOption: {
+    borderWidth: 1,
+    borderColor: colors.grayLight,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+  },
+  reasonOptionSelected: {
+    borderColor: colors.accent,
+    backgroundColor: "#fff6d6",
+  },
+  reasonOptionText: {
+    color: colors.textDark,
+    fontSize: 14,
+  },
+  reasonOptionTextSelected: {
+    color: colors.black,
+    fontWeight: "700",
+  },
+  reportDetailsInput: {
+    borderWidth: 1,
+    borderColor: colors.grayLight,
+    borderRadius: 8,
+    minHeight: 80,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    color: colors.textDark,
+    textAlignVertical: "top",
+    marginBottom: 12,
+  },
+  reportActionsRow: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center",
+  },
+  reportCancelBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginRight: 8,
+  },
+  reportCancelBtnText: {
+    color: colors.gray,
+    fontWeight: "600",
+  },
+  reportSubmitBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  reportSubmitBtnText: {
+    color: colors.black,
+    fontWeight: "700",
+  },
   pinnedBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -1867,6 +2071,22 @@ export const chatStyles = StyleSheet.create({
     height: 44,
     alignItems: "center",
     justifyContent: "center",
+  },
+  reportMessageBtn: {
+    minWidth: 128,
+    height: 32,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.delete,
+  },
+  reportMessageBtnText: {
+    color: colors.delete,
+    fontSize: 12,
+    fontWeight: "700",
   },
   profilePic: {
     width: 30,
