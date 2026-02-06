@@ -337,7 +337,7 @@ const DMChatScreen = ({ navigation, route }) => {
     setReportTargetMessage(null);
     setReportDetails('');
     setReportReason(MESSAGE_REPORT_REASONS[0]);
-    Alert.alert('Reported', 'Thanks — reviewed within 24 hours.');
+    Alert.alert('Reported', 'Thanks — reports are reviewed as soon as possible.');
   }, [currentUserId, reportDetails, reportReason, reportTargetMessage, threadId]);
 
   const confirmDelete = (msgId: string) => {

@@ -1289,7 +1289,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
     setReportTargetMessage(null);
     setReportDetails("");
     setReportReason(MESSAGE_REPORT_REASONS[0]);
-    Alert.alert("Reported", "Thanks — reviewed within 24 hours.");
+    Alert.alert("Reported", "Thanks — reports are reviewed as soon as possible.");
   }, [
     channelId,
     currentUserId,

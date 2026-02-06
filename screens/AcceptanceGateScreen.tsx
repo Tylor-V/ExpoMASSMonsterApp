@@ -20,7 +20,7 @@ import { hasAcceptedLatest } from '../utils/acceptance';
 const SUMMARY_TEXT =
   'MASS Monster has zero tolerance for abusive or objectionable content.\n' +
   'You can report or block users at any time.\n' +
-  'Reports are reviewed and actioned within 24 hours.';
+  'Reports are reviewed as soon as possible.';
 
 const linkRows = [
   {
