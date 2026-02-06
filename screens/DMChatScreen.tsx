@@ -27,6 +27,7 @@ import ProfileImage from '../components/ProfileImage';
 import UserPreviewModal from '../components/UserPreviewModal';
 import WhiteBackgroundWrapper from '../components/WhiteBackgroundWrapper';
 import { auth, firestore } from '../firebase/firebase';
+import { MESSAGE_REPORT_REASONS, submitMessageReport } from '../firebase/reportHelpers';
 import { useLastReadDM } from '../firebase/userChatReadHelpers';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import { useKeyboardAnimation } from '../hooks/useKeyboardAnimation';
@@ -79,6 +80,9 @@ const DMChatScreen = ({ navigation, route }) => {
   const isAtBottomRef = useRef(true);
   const [reactionTargetId, setReactionTargetId] = useState<string | null>(null);
   const [actionTargetId, setActionTargetId] = useState<string | null>(null);
+  const [reportTargetMessage, setReportTargetMessage] = useState<any | null>(null);
+  const [reportReason, setReportReason] = useState<(typeof MESSAGE_REPORT_REASONS)[number]>(MESSAGE_REPORT_REASONS[0]);
+  const [reportDetails, setReportDetails] = useState('');
   const { blockedSet } = useBlockedUserIds();
   const { reportedUserSet } = useReportedUserIds();
   const [localBlockedIds, setLocalBlockedIds] = useState<string[]>([]);
@@ -299,6 +303,31 @@ const DMChatScreen = ({ navigation, route }) => {
     setActionTargetId(null);
   }, []);
 
+  const openReportMessage = useCallback((item: any) => {
+    setReportReason(MESSAGE_REPORT_REASONS[0]);
+    setReportDetails('');
+    setReportTargetMessage(item);
+    stopActions();
+  }, [stopActions]);
+
+  const submitReport = useCallback(async () => {
+    if (!currentUserId || !reportTargetMessage?.id || !reportTargetMessage?.userId) return;
+    await submitMessageReport({
+      dmThreadId: threadId,
+      messageId: reportTargetMessage.id,
+      messageText: reportTargetMessage.text,
+      reportedBy: currentUserId,
+      targetUserId: reportTargetMessage.userId,
+      reason: reportReason,
+      details: reportDetails,
+      source: 'DMChat',
+    });
+    setReportTargetMessage(null);
+    setReportDetails('');
+    setReportReason(MESSAGE_REPORT_REASONS[0]);
+    Alert.alert('Reported', 'Thanks — reviewed within 24 hours.');
+  }, [currentUserId, reportDetails, reportReason, reportTargetMessage, threadId]);
+
   const confirmDelete = (msgId: string) => {
     Alert.alert('Delete Message?', 'Do you want to delete this message?', [
       { text: 'Cancel', style: 'cancel', onPress: stopActions },
@@ -379,10 +408,8 @@ const DMChatScreen = ({ navigation, route }) => {
                 >
                   <Pressable
                     onLongPress={() => {
-                      if (isMe) {
-                        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                        setActionTargetId(item.id);
-                      }
+                      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                      setActionTargetId(item.id);
                     }}
                   >
                     <View
@@ -504,9 +531,15 @@ const DMChatScreen = ({ navigation, route }) => {
                         onPress={stopActions}
                       />
                       <View style={styles.actionButtons}>
-                        <Pressable onPress={() => confirmDelete(item.id)} style={styles.actionBtn}>
-                          <Icon name="trash-outline" size={22} color={colors.delete} />
-                        </Pressable>
+                        {item.userId === currentUserId ? (
+                          <Pressable onPress={() => confirmDelete(item.id)} style={styles.actionBtn}>
+                            <Icon name="trash-outline" size={22} color={colors.delete} />
+                          </Pressable>
+                        ) : (
+                          <Pressable onPress={() => openReportMessage(item)} style={styles.actionBtn}>
+                            <Icon name="flag-outline" size={22} color={colors.warn} />
+                          </Pressable>
+                        )}
                       </View>
                     </>
                   )}
@@ -567,6 +600,66 @@ const DMChatScreen = ({ navigation, route }) => {
                       <Text style={styles.cancelText}>Cancel</Text>
                     </TouchableOpacity>
                   </View>
+                </TouchableOpacity>
+              </Modal>
+            )}
+
+            {reportTargetMessage && (
+              <Modal
+                transparent
+                animationType="fade"
+                visible={!!reportTargetMessage}
+                onRequestClose={() => setReportTargetMessage(null)}
+              >
+                <TouchableOpacity
+                  style={styles.modalOverlay}
+                  activeOpacity={1}
+                  onPress={() => setReportTargetMessage(null)}
+                >
+                  <TouchableOpacity activeOpacity={1} style={styles.reportModal} onPress={() => {}}>
+                    <Text style={styles.reportModalTitle}>Report Message</Text>
+                    <View style={styles.reasonList}>
+                      {MESSAGE_REPORT_REASONS.map(reasonOption => {
+                        const selected = reasonOption === reportReason;
+                        return (
+                          <Pressable
+                            key={reasonOption}
+                            onPress={() => setReportReason(reasonOption)}
+                            style={[styles.reasonOption, selected && styles.reasonOptionSelected]}
+                          >
+                            <Text
+                              style={[
+                                styles.reasonOptionText,
+                                selected && styles.reasonOptionTextSelected,
+                              ]}
+                            >
+                              {reasonOption}
+                            </Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    <TextInput
+                      style={styles.reportDetailsInput}
+                      placeholder="Optional details"
+                      placeholderTextColor={colors.gray}
+                      value={reportDetails}
+                      onChangeText={setReportDetails}
+                      multiline
+                      maxLength={300}
+                    />
+                    <View style={styles.reportActionsRow}>
+                      <Pressable
+                        onPress={() => setReportTargetMessage(null)}
+                        style={styles.reportCancelBtn}
+                      >
+                        <Text style={styles.reportCancelBtnText}>Cancel</Text>
+                      </Pressable>
+                      <Pressable onPress={submitReport} style={styles.reportSubmitBtn}>
+                        <Text style={styles.reportSubmitBtnText}>Submit</Text>
+                      </Pressable>
+                    </View>
+                  </TouchableOpacity>
                 </TouchableOpacity>
               </Modal>
             )}

@@ -13,36 +13,41 @@ export const MESSAGE_REPORT_REASONS = [
 export type MessageReportReason = (typeof MESSAGE_REPORT_REASONS)[number];
 
 type SubmitMessageReportParams = {
-  channelId: string;
+  channelId?: string;
+  dmThreadId?: string;
   messageId: string;
   messageText?: string;
   reportedBy: string;
   targetUserId: string;
   reason: MessageReportReason;
   details?: string;
+  source?: string;
 };
 
 export async function submitMessageReport({
   channelId,
+  dmThreadId,
   messageId,
   messageText = '',
   reportedBy,
   targetUserId,
   reason,
   details = '',
+  source = 'AllChannels',
 }: SubmitMessageReportParams) {
   await firestore().collection('reports').add({
     targetType: 'message',
     reportedBy,
     targetId: messageId,
     targetUserId,
-    channelId,
+    channelId: channelId || null,
+    dmThreadId: dmThreadId || null,
     messageText: messageText.slice(0, 500),
     reason,
     details: details.trim(),
     status: 'open',
     createdAt: firestore.FieldValue.serverTimestamp(),
-    source: 'AllChannels',
+    source,
     action: 'report',
   });
 }
