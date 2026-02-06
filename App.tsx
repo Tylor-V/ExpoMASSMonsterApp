@@ -34,6 +34,8 @@ import TermsPrivacyScreen from './screens/TermsPrivacyScreen';
 import WorkoutHistoryScreen from './screens/WorkoutHistoryScreen';
 import { preloadGlobals } from './utils/preloadTools';
 import { useNews } from './hooks/useNews';
+import { useAppContext } from './firebase/AppContext';
+import { hasAcceptedLatest } from './utils/acceptance';
 
 // Keep the native splash screen visible until the first render
 NativeSplashScreen.preventAutoHideAsync().catch(err =>
@@ -86,6 +88,27 @@ function AppStackScreen({ news, newsLoaded, newsOpen, setNewsOpen }) {
   );
 }
 
+function GuardedAppStackScreen({ news, newsLoaded, newsOpen, setNewsOpen }) {
+  const { appReady, user } = useAppContext();
+
+  if (!appReady) {
+    return null;
+  }
+
+  if (!user || !hasAcceptedLatest(user)) {
+    return <AcceptanceGateScreen />;
+  }
+
+  return (
+    <AppStackScreen
+      news={news}
+      newsLoaded={newsLoaded}
+      newsOpen={newsOpen}
+      setNewsOpen={setNewsOpen}
+    />
+  );
+}
+
 export default function App() {
   const [fontsLoaded] = useFonts({
     Inter: Inter_400Regular,
@@ -130,7 +153,7 @@ export default function App() {
               />
               <RootStack.Screen name="AppStack">
                 {() => (
-                  <AppStackScreen
+                  <GuardedAppStackScreen
                     news={news}
                     newsLoaded={!loading}
                     newsOpen={newsOpen}
