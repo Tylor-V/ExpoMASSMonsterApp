@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useState,
 } from 'react';
+import { Alert } from 'react-native';
 import { firestore } from './firebase';
 import { auth } from './firebase';
 import {createOrUpdateUserProfile} from './firebaseUserProfile';
@@ -81,6 +82,11 @@ export function AppContextProvider({children}) {
 
   const applyUserData = (authUser: any, data: any) => {
     const built = buildUserData(authUser, data);
+    if (built?.isBanned) {
+      Alert.alert('Account Disabled', 'Your account has been disabled.');
+      auth().signOut().catch(() => {});
+      return;
+    }
     setUser(built);
     setPoints(built.accountabilityPoints ?? 0);
     const history = built.workoutHistory;
@@ -154,7 +160,13 @@ export function AppContextProvider({children}) {
           .onSnapshot(
             doc => {
               setUserError(null);
-              applyUserData(user, doc.data());
+              const data = doc.data();
+              if (data?.isBanned) {
+                Alert.alert('Account Disabled', 'Your account has been disabled.');
+                auth().signOut().catch(() => {});
+                return;
+              }
+              applyUserData(user, data);
               setAppReady(true);
             },
             error => {

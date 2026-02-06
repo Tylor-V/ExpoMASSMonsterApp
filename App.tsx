@@ -24,6 +24,7 @@ import GymVideoFeed from './screens/GymVideoFeed';
 import HelpFaqScreen from './screens/HelpFaqScreen';
 import NotificationsScreen from './screens/NotificationsScreen';
 import OnlineStatusScreen from './screens/OnlineStatusScreen';
+import ModerationQueueScreen from './screens/ModerationQueueScreen';
 import RewardsScreen from './screens/RewardsScreen';
 import SettingsScreen from './screens/SettingsScreen';
 import SplashScreen from './screens/SplashScreen';
@@ -84,6 +85,7 @@ function AppStackScreen({ news, newsLoaded, newsOpen, setNewsOpen }) {
       <AppStack.Screen name="DonateSupport" component={DonateSupportScreen} />
       <AppStack.Screen name="SplitEditor" component={SplitEditorScreen} />
       <AppStack.Screen name="AccountabilityForm" component={AccountabilityFormScreen} />
+      <AppStack.Screen name="ModerationQueue" component={ModerationQueueScreen} />
     </AppStack.Navigator>
   );
 }

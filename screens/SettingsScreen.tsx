@@ -5,11 +5,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import SettingsRow from '../components/SettingsRow';
 import { settingsGroups } from '../constants/settingsOptions';
+import { useAppContext } from '../firebase/AppContext';
 import { useSettingsNavigation } from '../hooks/useSettingsNavigation';
 
 const SettingsScreen = () => {
   const { goBack, handleNavigate } = useSettingsNavigation();
   const insets = useSafeAreaInsets();
+  const { user } = useAppContext();
+  const isModerator = user?.role === 'moderator';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -36,6 +39,15 @@ const SettingsScreen = () => {
             {groupIndex < settingsGroups.length - 1 && <View style={styles.groupSpacer} />}
           </View>
         ))}
+        {isModerator ? (
+          <View>
+            <SettingsRow
+              icon="shield-checkmark-outline"
+              label="Moderation Queue"
+              onPress={handleNavigate('ModerationQueue')}
+            />
+          </View>
+        ) : null}
       </ScrollView>
     </View>
   );
