@@ -87,6 +87,9 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
         const filtered: Story[] = [];
         snap.docs.forEach((doc: any) => {
           const s = doc.data() as any;
+          if (s?.status === 'removed' || s?.isRemoved) {
+            return;
+          }
           if (now - s.timestamp > 24 * 60 * 60 * 1000) {
             // Delete expired
             firestore()

@@ -36,7 +36,7 @@ export async function submitMessageReport({
   source = 'AllChannels',
 }: SubmitMessageReportParams) {
   await firestore().collection('reports').add({
-    targetType: 'message',
+    targetType: dmThreadId ? 'dmMessage' : 'message',
     targetOwnerUid: targetUserId || null,
     reportedBy,
     targetId: messageId,

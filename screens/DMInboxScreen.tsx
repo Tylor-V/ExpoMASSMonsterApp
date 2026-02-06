@@ -49,7 +49,7 @@ const DMsInboxScreen = ({ navigation }) => {
         .doc(threadId)
         .collection('messages')
         .orderBy('timestamp', 'desc')
-        .limit(1)
+        .limit(10)
         .get();
       const lastReadPromise = firestore()
         .collection('users')
@@ -63,7 +63,11 @@ const DMsInboxScreen = ({ navigation }) => {
         lastMsgPromise,
         lastReadPromise,
       ]);
-      const lastMsg = lastMsgSnap.docs[0]?.data() || {};
+      const lastMsgDoc = lastMsgSnap.docs.find(doc => {
+        const data = doc.data();
+        return !(data?.status === 'removed' || data?.isRemoved);
+      });
+      const lastMsg = lastMsgDoc?.data() || {};
       const lastMsgTs = lastMsg.timestamp?.toMillis
         ? lastMsg.timestamp.toMillis()
         : lastMsg.timestamp || 0;
@@ -71,7 +75,8 @@ const DMsInboxScreen = ({ navigation }) => {
       const lastReadTs = lastReadTsRaw?.toMillis
         ? lastReadTsRaw.toMillis()
         : lastReadTsRaw || 0;
-      const isUnread = lastMsg.userId !== currentUserId && lastMsgTs > lastReadTs;
+      const isUnread =
+        !!lastMsg.userId && lastMsg.userId !== currentUserId && lastMsgTs > lastReadTs;
       return {
         threadId,
         updatedAt,

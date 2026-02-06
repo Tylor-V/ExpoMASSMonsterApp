@@ -100,6 +100,9 @@ const DMChatScreen = ({ navigation, route }) => {
     isAtBottomRef.current = true;
   };
   const visibleMessages = React.useMemo(() => messages.filter((m: any) => {
+    if (m?.status === 'removed' || m?.isRemoved) {
+      return false;
+    }
     const userId = String(m.userId || '');
     return !blockedSet.has(userId) && !reportedUserSet.has(userId) && !localBlockedIds.includes(userId);
   }), [messages, blockedSet, reportedUserSet, localBlockedIds]);

@@ -693,6 +693,9 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   const visibleMessages = React.useMemo(
     () =>
       messages.filter((m) => {
+        if (m?.status === "removed" || m?.isRemoved) {
+          return false;
+        }
         const userId = String(m.userId || "");
         return (
           !blockedSet.has(userId) &&
@@ -735,6 +738,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
                     : data.pinnedAt,
                 };
               })
+              .filter((pin) => !(pin?.status === "removed" || pin?.isRemoved))
               .sort((a, b) => {
                 const getMillis = (v: any) =>
                   typeof v === "number"

@@ -22,6 +22,9 @@ type ReportItem = {
   type?: string;
   targetId?: string;
   reportedBy?: string;
+  channelId?: string | null;
+  dmThreadId?: string | null;
+  targetOwnerUid?: string | null;
   createdAt?: any;
   timestamp?: any;
   reason?: string;
@@ -180,12 +183,13 @@ const ModerationQueueScreen = () => {
       return;
     }
 
-    if (targetType !== 'video') {
+    const removableTargets = ['video', 'message', 'dmMessage', 'story'];
+    if (!removableTargets.includes(targetType)) {
       Alert.alert('Unsupported Target', `Remove Content is not configured for ${targetType} yet.`);
       return;
     }
 
-    Alert.alert('Remove Content', 'Remove this content from the feed for all users?', [
+    Alert.alert('Remove Content', 'Remove this content from the app for all users?', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove',
@@ -193,17 +197,67 @@ const ModerationQueueScreen = () => {
         onPress: async () => {
           setProcessing(true);
           try {
-            await firestore()
-              .collection('videos')
-              .doc('gym-feed')
-              .collection('gym-feed')
-              .doc(targetId)
-              .update({
-                status: 'removed',
-                isRemoved: true,
-                removedAt: firestore.FieldValue.serverTimestamp(),
-                removedBy: currentUserId,
-              });
+            if (targetType === 'video') {
+              await firestore()
+                .collection('videos')
+                .doc('gym-feed')
+                .collection('gym-feed')
+                .doc(targetId)
+                .update({
+                  status: 'removed',
+                  isRemoved: true,
+                  removedAt: firestore.FieldValue.serverTimestamp(),
+                  removedBy: currentUserId,
+                });
+            } else if (targetType === 'story') {
+              const ownerId = selectedReport.targetOwnerUid;
+              if (!ownerId) {
+                Alert.alert('Missing Target', 'No story owner was found for this report.');
+                return;
+              }
+              await firestore()
+                .collection('stories')
+                .doc(ownerId)
+                .collection('storyMedia')
+                .doc(targetId)
+                .update({
+                  status: 'removed',
+                  isRemoved: true,
+                  removedAt: firestore.FieldValue.serverTimestamp(),
+                  removedBy: currentUserId,
+                });
+            } else {
+              const channelId = selectedReport.channelId;
+              const dmThreadId = selectedReport.dmThreadId;
+              if (channelId) {
+                await firestore()
+                  .collection('channels')
+                  .doc(channelId)
+                  .collection('messages')
+                  .doc(targetId)
+                  .update({
+                    status: 'removed',
+                    isRemoved: true,
+                    removedAt: firestore.FieldValue.serverTimestamp(),
+                    removedBy: currentUserId,
+                  });
+              } else if (dmThreadId) {
+                await firestore()
+                  .collection('dms')
+                  .doc(dmThreadId)
+                  .collection('messages')
+                  .doc(targetId)
+                  .update({
+                    status: 'removed',
+                    isRemoved: true,
+                    removedAt: firestore.FieldValue.serverTimestamp(),
+                    removedBy: currentUserId,
+                  });
+              } else {
+                Alert.alert('Missing Target', 'No channel or DM thread was found for this report.');
+                return;
+              }
+            }
             await updateReport(selectedReport.id, { status: 'actioned', action: 'remove_content' });
             await logModerationAction(selectedReport, 'remove_content');
           } finally {
@@ -262,7 +316,9 @@ const ModerationQueueScreen = () => {
                 <TouchableOpacity style={styles.actionBtn} onPress={handleResolve} disabled={processing}>
                   <Text style={styles.actionBtnText}>Resolve (No Action)</Text>
                 </TouchableOpacity>
-                {(selectedReport.targetType || selectedReport.type) !== 'user' ? (
+                {['video', 'message', 'dmMessage', 'story'].includes(
+                  selectedReport.targetType || selectedReport.type || '',
+                ) ? (
                   <TouchableOpacity
                     style={[styles.actionBtn, styles.destructive]}
                     onPress={handleRemoveContent}

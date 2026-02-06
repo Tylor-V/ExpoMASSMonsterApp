@@ -66,6 +66,8 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
       stories.filter(
         story =>
           story.userId !== currentUserId &&
+          !story?.isRemoved &&
+          story?.status !== 'removed' &&
           !blockedSet.has(story.userId) &&
           !reportedUserSet.has(story.userId),
       ),
@@ -88,6 +90,9 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
           return null;
         }
         const s = storySnap.docs[0].data();
+        if (s?.status === 'removed' || s?.isRemoved) {
+          return null;
+        }
         const storyId = storySnap.docs[0].id;
         if (now - s.timestamp < 24 * 60 * 60 * 1000) {
           return {
