@@ -2,10 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Video } from 'expo-video';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, firestore, storage } from '../firebase/firebase';
+import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
+import { useReportedUserIds } from '../hooks/useReportedUserIds';
 import { colors } from '../theme';
 
 const { height, width } = Dimensions.get('window');
@@ -51,6 +53,8 @@ export default function GymVideoFeed({ navigation }) {
   const flatListRef = useRef(null);
   const [currentUserRole, setCurrentUserRole] = useState('member');
   const currentUserId = auth().currentUser?.uid;
+  const { blockedSet } = useBlockedUserIds();
+  const { reportedUserSet } = useReportedUserIds();
   const insets = useSafeAreaInsets();
   // Return to the previous screen (typically the chat tab) preserving the user's
   // last visited channel. If there is no screen to go back to, fall back to
@@ -73,15 +77,23 @@ export default function GymVideoFeed({ navigation }) {
   if (snap && snap.docs) {
     snap.docs.forEach(doc => {
       const data = doc.data();
-      if (!data.hiddenBy || !data.hiddenBy.includes(currentUserId)) {
-        arr.push({ id: doc.id, ...data });
-      }
+      arr.push({ id: doc.id, ...data });
     });
   }
         setVideos(arr);
         setLoading(false);
       });
   }, [currentUserId]);
+
+  const visibleVideos = useMemo(() => videos.filter((video: any) => {
+    const ownerId = String(video?.userId || '');
+    if (!ownerId) return false;
+    if (blockedSet.has(ownerId) || reportedUserSet.has(ownerId)) {
+      return false;
+    }
+    const hiddenBy = Array.isArray(video?.hiddenBy) ? video.hiddenBy : [];
+    return !hiddenBy.includes(currentUserId);
+  }), [videos, blockedSet, reportedUserSet, currentUserId]);
 
   useEffect(() => {
     if (!currentUserId) return;
@@ -244,7 +256,7 @@ export default function GymVideoFeed({ navigation }) {
     </View>
   );
 
-  if (!videos.length) return (
+  if (!visibleVideos.length) return (
     <View style={[styles.container, styles.emptyContainer]}>
       <Text style={styles.emptyText}>No videos yet—be the first to upload!</Text>
       <TouchableOpacity style={styles.emptyBtn} onPress={handleUpload} disabled={uploading}>
@@ -267,7 +279,7 @@ export default function GymVideoFeed({ navigation }) {
     <View style={styles.container}>
       <FlatList
         ref={flatListRef}
-        data={videos}
+        data={visibleVideos}
         pagingEnabled
         keyExtractor={keyExtractor}
         renderItem={renderItem}

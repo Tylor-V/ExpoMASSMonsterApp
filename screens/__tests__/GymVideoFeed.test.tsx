@@ -7,6 +7,18 @@ jest.mock('../../firebase/firebase', () => ({
   auth: () => ({ currentUser: { uid: 'user1' } }),
   firestore: () => ({
     collection: () => ({
+      where: () => ({
+        where: () => ({
+          onSnapshot: (cb: any) => {
+            cb({ docs: [] });
+            return jest.fn();
+          },
+        }),
+        onSnapshot: (cb: any) => {
+          cb({ docs: [] });
+          return jest.fn();
+        },
+      }),
       doc: () => ({
         collection: () => ({
           orderBy: () => ({
