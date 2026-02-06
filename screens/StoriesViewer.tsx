@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Alert,
   Dimensions,
   Modal,
   StyleSheet,
@@ -12,6 +13,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, firestore, storage } from '../firebase/firebase';
+import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
+import { useReportedUserIds } from '../hooks/useReportedUserIds';
 import { ANIM_FAST } from '../utils/animations';
 
 type Story = {
@@ -47,9 +50,12 @@ function StoryVideo({ uri }: { uri: string }) {
 export default function StoriesViewer({ visible, userId, onClose, initialIndex = 0 }: StoriesViewerProps) {
   const [stories, setStories] = useState<Story[]>([]);
   const [idx, setIdx] = useState<number>(initialIndex);
+  const [ownerName, setOwnerName] = useState('');
   const currentUserId = auth().currentUser?.uid;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const insets = useSafeAreaInsets();
+  const { blockedSet } = useBlockedUserIds();
+  const { reportedUserSet } = useReportedUserIds();
 
   useEffect(() => {
     if (visible) {
@@ -65,6 +71,11 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
 
   useEffect(() => {
     if (!userId || !visible) return;
+    if (blockedSet.has(userId) || reportedUserSet.has(userId)) {
+      setStories([]);
+      setIdx(0);
+      return;
+    }
     const now = Date.now();
     firestore()
       .collection('stories')
@@ -99,8 +110,95 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
         setStories(filtered);
         setIdx(0);
       });
+  }, [userId, visible, blockedSet, reportedUserSet]);
+
+  useEffect(() => {
+    if (!userId || !visible) {
+      setOwnerName('');
+      return;
+    }
+    firestore()
+      .collection('users')
+      .doc(userId)
+      .get()
+      .then(doc => {
+        const data = doc.data() || {};
+        const name = String(data.firstName || data.username || data.displayName || '');
+        setOwnerName(name);
+      })
+      .catch(() => setOwnerName(''));
   }, [userId, visible]);
 
+  useEffect(() => {
+    if (!visible || !userId) return;
+    if (blockedSet.has(userId) || reportedUserSet.has(userId)) {
+      onClose();
+    }
+  }, [blockedSet, reportedUserSet, onClose, userId, visible]);
+
+  const handleReportStory = async () => {
+    if (!currentUserId) return;
+    const story = stories[idx];
+    if (!story?.id) return;
+    await firestore().collection('reports').add({
+      targetType: 'story',
+      targetId: story.id,
+      targetOwnerUid: userId,
+      reportedBy: currentUserId,
+      reason: 'Inappropriate story',
+      details: null,
+      status: 'open',
+      createdAt: firestore.FieldValue.serverTimestamp(),
+      source: 'StoriesViewer',
+      action: 'report',
+    });
+    Alert.alert('Reported', 'Story reported to admins.');
+  };
+
+  const handleBlockUser = () => {
+    if (!currentUserId || currentUserId === userId) return;
+    const handle = ownerName ? `@${ownerName}` : 'this user';
+    Alert.alert(
+      'Block User',
+      `Block ${handle}? You won’t see each other’s content.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Block User',
+          style: 'destructive',
+          onPress: async () => {
+            const blockId = `${currentUserId}_${userId}`;
+            await firestore().collection('blocks').doc(blockId).set({
+              blockerUid: currentUserId,
+              blockedUid: userId,
+              createdAt: firestore.FieldValue.serverTimestamp(),
+            });
+            await firestore().collection('reports').add({
+              targetType: 'user',
+              targetId: userId,
+              targetOwnerUid: userId,
+              reportedBy: currentUserId,
+              reason: null,
+              details: null,
+              status: 'open',
+              action: 'block',
+              source: 'StoriesViewer',
+              createdAt: firestore.FieldValue.serverTimestamp(),
+            });
+            onClose();
+          },
+        },
+      ],
+    );
+  };
+
+  const handleMorePress = () => {
+    Alert.alert('Story Options', undefined, [
+      { text: 'Report Story', onPress: handleReportStory },
+      { text: 'Block User', style: 'destructive', onPress: handleBlockUser },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
 
   const handleNext = () => {
     if (idx < stories.length - 1) setIdx(idx + 1);
@@ -192,6 +290,15 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
             <Ionicons name="trash-outline" size={20} color="#fff" />
           </TouchableOpacity>
         )}
+        {currentUserId && currentUserId !== userId && (
+          <TouchableOpacity
+            style={[styles.moreBtn, { top: insets.top + 40 }]}
+            onPress={handleMorePress}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="ellipsis-horizontal" size={20} color="#fff" />
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={[styles.closeBtn, { top: insets.top + 40 }]}
           onPress={onClose}
@@ -241,6 +348,17 @@ const styles = StyleSheet.create({
     top: 40,
     right: 22,
     backgroundColor: '#FF3B30',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moreBtn: {
+    position: 'absolute',
+    top: 40,
+    right: 22,
+    backgroundColor: 'rgba(0,0,0,0.4)',
     width: 32,
     height: 32,
     borderRadius: 16,

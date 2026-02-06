@@ -20,9 +20,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import InboxIcon from '../assets/inbox.png';
 import UsersIcon from '../assets/users.png';
 import { auth, firestore, storage } from '../firebase/firebase';
+import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
 import useAnyDMUnread from '../hooks/useAnyDMUnread';
 import useChannelUnread from '../hooks/useChannelUnread';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
+import { useReportedUserIds } from '../hooks/useReportedUserIds';
 import ChatScreen from '../MainScreens/ChatScreen';
 import StoriesViewer from '../screens/StoriesViewer';
 import { colors, fonts } from '../theme';
@@ -56,6 +58,19 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
   const [uploading, setUploading] = useState(false);
   const [userStory, setUserStory] = useState<any>(null);
   const currentUserId = auth().currentUser?.uid;
+  const { blockedSet } = useBlockedUserIds();
+  const { reportedUserSet } = useReportedUserIds();
+
+  const filteredStories = useMemo(
+    () =>
+      stories.filter(
+        story =>
+          story.userId !== currentUserId &&
+          !blockedSet.has(story.userId) &&
+          !reportedUserSet.has(story.userId),
+      ),
+    [stories, currentUserId, blockedSet, reportedUserSet],
+  );
 
   useEffect(() => {
     const fetchStories = async () => {
@@ -168,23 +183,21 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
           </View>
           <Text style={storyStyles.label}>{userStory ? 'Your Story' : 'Add Story'}</Text>
         </TouchableOpacity>
-        {stories
-          .filter(s => s.userId !== currentUserId)
-          .map(story => (
-            <TouchableOpacity
-              key={story.userId}
-              style={storyStyles.storyCircle}
-              onPress={() => openStoriesViewer(story.userId)}
-              activeOpacity={0.7}
-            >
-              <View style={[storyStyles.avatarCircle, { borderColor: colors.accent, borderWidth: 2.2 }]}>
-                <ProfileImage uri={story.profilePicUrl} style={storyStyles.avatarImg} />
-              </View>
-              <Text numberOfLines={1} style={storyStyles.label}>
-                {story.firstName}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        {filteredStories.map(story => (
+          <TouchableOpacity
+            key={story.userId}
+            style={storyStyles.storyCircle}
+            onPress={() => openStoriesViewer(story.userId)}
+            activeOpacity={0.7}
+          >
+            <View style={[storyStyles.avatarCircle, { borderColor: colors.accent, borderWidth: 2.2 }]}>
+              <ProfileImage uri={story.profilePicUrl} style={storyStyles.avatarImg} />
+            </View>
+            <Text numberOfLines={1} style={storyStyles.label}>
+              {story.firstName}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
     </View>
   );
