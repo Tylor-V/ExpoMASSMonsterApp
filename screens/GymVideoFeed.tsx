@@ -164,17 +164,29 @@ export default function GymVideoFeed({ navigation }) {
   }, [currentUserId]);
 
   const handleHide = useCallback(async (id: string) => {
+    if (!currentUserId) return;
+    setVideos(prev => prev.filter((video: any) => video.id !== id));
     const docRef = firestore()
       .collection('videos')
       .doc('gym-feed')
       .collection('gym-feed')
       .doc(id);
-    const doc = await docRef.get();
-    const hiddenBy = doc.data()?.hiddenBy ?? [];
-    await docRef.update({ hiddenBy: [...hiddenBy, currentUserId] });
+    await docRef.update({
+      hiddenBy: firestore.FieldValue.arrayUnion(currentUserId),
+    });
   }, [currentUserId]);
 
   const handleReport = useCallback(async (id: string, ownerUid?: string) => {
+    if (!currentUserId) return;
+    setVideos(prev => prev.filter((video: any) => video.id !== id));
+    await firestore()
+      .collection('videos')
+      .doc('gym-feed')
+      .collection('gym-feed')
+      .doc(id)
+      .update({
+        hiddenBy: firestore.FieldValue.arrayUnion(currentUserId),
+      });
     await firestore()
       .collection('reports')
       .add({
@@ -191,6 +203,54 @@ export default function GymVideoFeed({ navigation }) {
       });
     Alert.alert('Reported', 'Video reported to admins.');
   }, [currentUserId]);
+
+  const handleBlock = useCallback(async (ownerUid: string) => {
+    if (!currentUserId || !ownerUid || currentUserId === ownerUid) return;
+    setVideos(prev => prev.filter((video: any) => video.userId !== ownerUid));
+    const blockId = `${currentUserId}_${ownerUid}`;
+    await firestore().collection('blocks').doc(blockId).set({
+      blockerUid: currentUserId,
+      blockedUid: ownerUid,
+      createdAt: firestore.FieldValue.serverTimestamp(),
+    });
+    await firestore().collection('reports').add({
+      targetType: 'user',
+      targetId: ownerUid,
+      targetOwnerUid: ownerUid,
+      reportedBy: currentUserId,
+      reason: null,
+      details: null,
+      status: 'open',
+      action: 'block',
+      source: 'GymVideoFeed',
+      createdAt: firestore.FieldValue.serverTimestamp(),
+    });
+  }, [currentUserId]);
+
+  const handleMore = useCallback((item: any) => {
+    const buttons = [
+      { text: 'Report Video', style: 'destructive' as const, onPress: () => handleReport(item.id, item.userId) },
+      { text: 'Hide Video', onPress: () => handleHide(item.id) },
+    ];
+    if (item.userId && item.userId !== currentUserId) {
+      buttons.push({
+        text: 'Block User',
+        style: 'destructive' as const,
+        onPress: () => {
+          Alert.alert(
+            'Block User',
+            "Block this uploader? You won’t see each other’s content.",
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Block User', style: 'destructive', onPress: () => handleBlock(item.userId) },
+            ],
+          );
+        },
+      });
+    }
+    buttons.push({ text: 'Cancel', style: 'cancel' as const });
+    Alert.alert('More Options', 'Choose an action', buttons);
+  }, [currentUserId, handleBlock, handleHide, handleReport]);
 
   const handleDelete = useCallback(
     async (id: string, userId: string) => {
@@ -227,6 +287,9 @@ export default function GymVideoFeed({ navigation }) {
             <Text style={styles.emoji}>💪</Text>
             <Text style={styles.reactCount}>{item.reactions?.length || 0}</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => handleMore(item)}>
+            <Ionicons name="ellipsis-vertical" size={26} color="#232323" />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.actionBtn} onPress={() => handleHide(item.id)}>
             <Ionicons name="eye-off-outline" size={28} color="#232323" />
           </TouchableOpacity>
@@ -244,7 +307,7 @@ export default function GymVideoFeed({ navigation }) {
         </View>
       </View>
     ),
-    [activeIndex, currentUserId, currentUserRole, handleReact, handleHide, handleReport, handleDelete]
+    [activeIndex, currentUserId, currentUserRole, handleReact, handleHide, handleReport, handleDelete, handleMore]
   );
 
   const handleViewableItemsChanged = useRef(({ viewableItems }) => {
