@@ -36,6 +36,7 @@ import { useCurrentUserDoc } from "../hooks/useCurrentUserDoc";
 import { useKeyboardAnimation } from "../hooks/useKeyboardAnimation";
 import { useBlockedUserIds } from "../hooks/useBlockedUserIds";
 import { useReportedUserIds } from "../hooks/useReportedUserIds";
+import { useHiddenContent } from "../hooks/useHiddenContent";
 import { colors, fonts, gradients } from "../theme";
 import { ANIM_BUTTON_POP, ANIM_SHORT, ANIM_WIGGLE } from "../utils/animations";
 import { getChatLevelColor } from "../utils/chatLevel";
@@ -621,6 +622,10 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   const [previewUserId, setPreviewUserId] = useState<string | null>(null);
   const { blockedSet } = useBlockedUserIds();
   const { reportedUserSet } = useReportedUserIds();
+  const { hiddenContentSet, hideContent } = useHiddenContent({
+    containerId: channelId,
+    targetType: "channelMessage",
+  });
   const [localBlockedIds, setLocalBlockedIds] = useState<string[]>([]);
   const [actionTargetId, setActionTargetId] = useState<string | null>(null);
   const [limitCaption, setLimitCaption] = useState(false);
@@ -700,10 +705,11 @@ const AllChannels: React.FC<ChatScreenProps> = ({
         return (
           !blockedSet.has(userId) &&
           !reportedUserSet.has(userId) &&
-          !localBlockedIds.includes(userId)
+          !localBlockedIds.includes(userId) &&
+          !hiddenContentSet.has(String(m.id))
         );
       }),
-    [messages, blockedSet, reportedUserSet, localBlockedIds],
+    [messages, blockedSet, reportedUserSet, localBlockedIds, hiddenContentSet],
   );
 
   const latestMessageId = visibleMessages.length
@@ -1279,6 +1285,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       reason: reportReason,
       details: reportDetails,
     });
+    await hideContent(reportTargetMessage.id);
     setReportTargetMessage(null);
     setReportDetails("");
     setReportReason(MESSAGE_REPORT_REASONS[0]);

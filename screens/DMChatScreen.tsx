@@ -33,6 +33,7 @@ import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import { useKeyboardAnimation } from '../hooks/useKeyboardAnimation';
 import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
 import { useReportedUserIds } from '../hooks/useReportedUserIds';
+import { useHiddenContent } from '../hooks/useHiddenContent';
 import { colors } from '../theme';
 import { dedupeById } from '../utils/dedupeById';
 import { formatDisplayName } from '../utils/displayName';
@@ -85,6 +86,10 @@ const DMChatScreen = ({ navigation, route }) => {
   const [reportDetails, setReportDetails] = useState('');
   const { blockedSet } = useBlockedUserIds();
   const { reportedUserSet } = useReportedUserIds();
+  const { hiddenContentSet, hideContent } = useHiddenContent({
+    containerId: threadId,
+    targetType: 'dmMessage',
+  });
   const [localBlockedIds, setLocalBlockedIds] = useState<string[]>([]);
   const scrollToLatest = (animated: boolean = true) => {
     if (flatListRef.current && visibleMessages.length > 0) {
@@ -104,8 +109,11 @@ const DMChatScreen = ({ navigation, route }) => {
       return false;
     }
     const userId = String(m.userId || '');
-    return !blockedSet.has(userId) && !reportedUserSet.has(userId) && !localBlockedIds.includes(userId);
-  }), [messages, blockedSet, reportedUserSet, localBlockedIds]);
+    return !blockedSet.has(userId)
+      && !reportedUserSet.has(userId)
+      && !localBlockedIds.includes(userId)
+      && !hiddenContentSet.has(String(m.id));
+  }), [messages, blockedSet, reportedUserSet, localBlockedIds, hiddenContentSet]);
   const latestMessageId = visibleMessages.length ? visibleMessages[visibleMessages.length - 1]?.id : null;
   const latestMessageUserId = visibleMessages.length
     ? visibleMessages[visibleMessages.length - 1]?.userId
@@ -325,6 +333,7 @@ const DMChatScreen = ({ navigation, route }) => {
       details: reportDetails,
       source: 'DMChat',
     });
+    await hideContent(reportTargetMessage.id);
     setReportTargetMessage(null);
     setReportDetails('');
     setReportReason(MESSAGE_REPORT_REASONS[0]);
