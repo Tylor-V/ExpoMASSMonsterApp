@@ -20,6 +20,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import WhiteBackgroundWrapper from '../components/WhiteBackgroundWrapper';
 import { formatDisplayName } from '../utils/displayName';
 import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
+import { useReportedUserIds } from '../hooks/useReportedUserIds';
 
 const DMsInboxScreen = ({ navigation }) => {
   const currentUserId = auth().currentUser?.uid;
@@ -29,6 +30,7 @@ const DMsInboxScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
   const { blockedSet } = useBlockedUserIds();
+  const { reportedUserSet } = useReportedUserIds();
 
   const searchTerm = search.trim();
   const term = searchTerm.toLowerCase();
@@ -154,7 +156,8 @@ const DMsInboxScreen = ({ navigation }) => {
   );
 
   const filteredThreads = threads.filter(t => {
-    if (blockedSet.has(String(t.otherUser.uid || ''))) return false;
+    const otherUid = String(t.otherUser.uid || '');
+    if (blockedSet.has(otherUid) || reportedUserSet.has(otherUid)) return false;
     const name = `${t.otherUser.firstName} ${t.otherUser.lastName}`.toLowerCase();
     return name.includes(search.toLowerCase());
   });
@@ -168,7 +171,8 @@ const DMsInboxScreen = ({ navigation }) => {
   );
 
   const filteredUsers = users.filter(u => {
-    if (blockedSet.has(String(u.id || ''))) return false;
+    const userId = String(u.id || '');
+    if (blockedSet.has(userId) || reportedUserSet.has(userId)) return false;
     const matches =
       nameMatches(u.firstName || '') || nameMatches(u.lastName || '');
     return term && u.id !== currentUserId ? matches : false;

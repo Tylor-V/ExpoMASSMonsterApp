@@ -30,6 +30,7 @@ import { useLastRead } from "../firebase/userChatReadHelpers";
 import { useCurrentUserDoc } from "../hooks/useCurrentUserDoc";
 import { useKeyboardAnimation } from "../hooks/useKeyboardAnimation";
 import { useBlockedUserIds } from "../hooks/useBlockedUserIds";
+import { useReportedUserIds } from "../hooks/useReportedUserIds";
 import { colors, fonts, gradients } from "../theme";
 import { ANIM_BUTTON_POP, ANIM_SHORT, ANIM_WIGGLE } from "../utils/animations";
 import { getChatLevelColor } from "../utils/chatLevel";
@@ -599,6 +600,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   const [pinnedMessages, setPinnedMessages] = useState<any[]>([]);
   const [previewUserId, setPreviewUserId] = useState<string | null>(null);
   const { blockedSet } = useBlockedUserIds();
+  const { reportedUserSet } = useReportedUserIds();
   const [localBlockedIds, setLocalBlockedIds] = useState<string[]>([]);
   const [actionTargetId, setActionTargetId] = useState<string | null>(null);
   const [limitCaption, setLimitCaption] = useState(false);
@@ -666,12 +668,15 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
   const visibleMessages = React.useMemo(
     () =>
-      messages.filter(
-        (m) =>
-          !blockedSet.has(String(m.userId || "")) &&
-          !localBlockedIds.includes(String(m.userId || "")),
-      ),
-    [messages, blockedSet, localBlockedIds],
+      messages.filter((m) => {
+        const userId = String(m.userId || "");
+        return (
+          !blockedSet.has(userId) &&
+          !reportedUserSet.has(userId) &&
+          !localBlockedIds.includes(userId)
+        );
+      }),
+    [messages, blockedSet, reportedUserSet, localBlockedIds],
   );
 
   const latestMessageId = visibleMessages.length

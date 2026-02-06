@@ -16,6 +16,7 @@ import { ROLE_COLORS, ROLE_TAGS } from '../constants/roles';
 import { auth, firestore } from '../firebase/firebase';
 import { useChatInputBarHeight } from '../MainScreens/ChatScreen';
 import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
+import { useReportedUserIds } from '../hooks/useReportedUserIds';
 import { colors } from '../theme';
 import { ANIM_MEDIUM } from '../utils/animations';
 import BadgeImage from './BadgeImage';
@@ -35,6 +36,7 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
   const [previewUserId, setPreviewUserId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const { blockedSet } = useBlockedUserIds();
+  const { reportedUserSet } = useReportedUserIds();
   const [localBlockedIds, setLocalBlockedIds] = useState<string[]>([]);
   const searchRef = useRef<TextInput>(null);
   const slideAnim = useRef(new Animated.Value(SIDEBAR_WIDTH)).current;
@@ -107,7 +109,10 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
   const isOnlineForDisplay = (user: any) =>
     isUserOnline(user) && user.showOnlineStatus !== false;
 
-  const visibleUsers = React.useMemo(() => users.filter((u: any) => !blockedSet.has(String(u.id)) && !localBlockedIds.includes(String(u.id))), [users, blockedSet, localBlockedIds]);
+  const visibleUsers = React.useMemo(() => users.filter((u: any) => {
+    const userId = String(u.id);
+    return !blockedSet.has(userId) && !reportedUserSet.has(userId) && !localBlockedIds.includes(userId);
+  }), [users, blockedSet, reportedUserSet, localBlockedIds]);
   const online = React.useMemo(() => visibleUsers.filter(isOnlineForDisplay), [visibleUsers]);
   const offline = React.useMemo(() => visibleUsers.filter(u => !isOnlineForDisplay(u)), [visibleUsers]);
   const term = search.trim().toLowerCase();

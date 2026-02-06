@@ -31,6 +31,7 @@ import { useLastReadDM } from '../firebase/userChatReadHelpers';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import { useKeyboardAnimation } from '../hooks/useKeyboardAnimation';
 import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
+import { useReportedUserIds } from '../hooks/useReportedUserIds';
 import { colors } from '../theme';
 import { dedupeById } from '../utils/dedupeById';
 import { formatDisplayName } from '../utils/displayName';
@@ -79,6 +80,7 @@ const DMChatScreen = ({ navigation, route }) => {
   const [reactionTargetId, setReactionTargetId] = useState<string | null>(null);
   const [actionTargetId, setActionTargetId] = useState<string | null>(null);
   const { blockedSet } = useBlockedUserIds();
+  const { reportedUserSet } = useReportedUserIds();
   const [localBlockedIds, setLocalBlockedIds] = useState<string[]>([]);
   const scrollToLatest = (animated: boolean = true) => {
     if (flatListRef.current && visibleMessages.length > 0) {
@@ -93,7 +95,10 @@ const DMChatScreen = ({ navigation, route }) => {
     }
     isAtBottomRef.current = true;
   };
-  const visibleMessages = React.useMemo(() => messages.filter((m: any) => !blockedSet.has(String(m.userId || '')) && !localBlockedIds.includes(String(m.userId || ''))), [messages, blockedSet, localBlockedIds]);
+  const visibleMessages = React.useMemo(() => messages.filter((m: any) => {
+    const userId = String(m.userId || '');
+    return !blockedSet.has(userId) && !reportedUserSet.has(userId) && !localBlockedIds.includes(userId);
+  }), [messages, blockedSet, reportedUserSet, localBlockedIds]);
   const latestMessageId = visibleMessages.length ? visibleMessages[visibleMessages.length - 1]?.id : null;
   const latestMessageUserId = visibleMessages.length
     ? visibleMessages[visibleMessages.length - 1]?.userId
