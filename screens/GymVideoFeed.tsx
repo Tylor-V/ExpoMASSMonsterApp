@@ -86,6 +86,9 @@ export default function GymVideoFeed({ navigation }) {
   }, [currentUserId]);
 
   const visibleVideos = useMemo(() => videos.filter((video: any) => {
+    if (video?.status === 'removed' || video?.isRemoved) {
+      return false;
+    }
     const ownerId = String(video?.userId || '');
     if (!ownerId) return false;
     if (blockedSet.has(ownerId) || reportedUserSet.has(ownerId)) {

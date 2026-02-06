@@ -166,6 +166,54 @@ const ModerationQueueScreen = () => {
     ]);
   };
 
+  const handleRemoveContent = async () => {
+    if (!selectedReport || processing) return;
+    const targetType = selectedReport.targetType || selectedReport.type;
+    const targetId = selectedReport.targetId;
+
+    if (!targetType || targetType === 'user') {
+      Alert.alert('Unsupported Target', 'Remove Content is only available for non-user reports.');
+      return;
+    }
+    if (!targetId) {
+      Alert.alert('Missing Target', 'No content id was found for this report.');
+      return;
+    }
+
+    if (targetType !== 'video') {
+      Alert.alert('Unsupported Target', `Remove Content is not configured for ${targetType} yet.`);
+      return;
+    }
+
+    Alert.alert('Remove Content', 'Remove this content from the feed for all users?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          setProcessing(true);
+          try {
+            await firestore()
+              .collection('videos')
+              .doc('gym-feed')
+              .collection('gym-feed')
+              .doc(targetId)
+              .update({
+                status: 'removed',
+                isRemoved: true,
+                removedAt: firestore.FieldValue.serverTimestamp(),
+                removedBy: currentUserId,
+              });
+            await updateReport(selectedReport.id, { status: 'actioned', action: 'remove_content' });
+            await logModerationAction(selectedReport, 'remove_content');
+          } finally {
+            setProcessing(false);
+          }
+        },
+      },
+    ]);
+  };
+
   if (!isModerator) {
     return null;
   }
@@ -214,6 +262,15 @@ const ModerationQueueScreen = () => {
                 <TouchableOpacity style={styles.actionBtn} onPress={handleResolve} disabled={processing}>
                   <Text style={styles.actionBtnText}>Resolve (No Action)</Text>
                 </TouchableOpacity>
+                {(selectedReport.targetType || selectedReport.type) !== 'user' ? (
+                  <TouchableOpacity
+                    style={[styles.actionBtn, styles.destructive]}
+                    onPress={handleRemoveContent}
+                    disabled={processing}
+                  >
+                    <Text style={styles.actionBtnText}>Remove Content</Text>
+                  </TouchableOpacity>
+                ) : null}
                 <TouchableOpacity style={styles.actionBtn} onPress={handleTimeout} disabled={processing}>
                   <Text style={styles.actionBtnText}>Timeout User 24h</Text>
                 </TouchableOpacity>
