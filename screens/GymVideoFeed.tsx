@@ -171,15 +171,20 @@ export default function GymVideoFeed({ navigation }) {
     await docRef.update({ hiddenBy: [...hiddenBy, currentUserId] });
   }, [currentUserId]);
 
-  const handleReport = useCallback(async (id: string) => {
+  const handleReport = useCallback(async (id: string, ownerUid?: string) => {
     await firestore()
       .collection('reports')
       .add({
-        type: 'video',
-        reportedBy: currentUserId,
+        targetType: 'video',
         targetId: id,
+        targetOwnerUid: ownerUid || null,
+        reportedBy: currentUserId,
         reason: 'Inappropriate video',
-        timestamp: Date.now(),
+        details: null,
+        status: 'open',
+        action: 'report',
+        source: 'GymVideoFeed',
+        createdAt: firestore.FieldValue.serverTimestamp(),
       });
     Alert.alert('Reported', 'Video reported to admins.');
   }, [currentUserId]);
@@ -222,7 +227,7 @@ export default function GymVideoFeed({ navigation }) {
           <TouchableOpacity style={styles.actionBtn} onPress={() => handleHide(item.id)}>
             <Ionicons name="eye-off-outline" size={28} color="#232323" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionBtn} onPress={() => handleReport(item.id)}>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => handleReport(item.id, item.userId)}>
             <Ionicons name="alert-circle-outline" size={28} color="#232323" />
           </TouchableOpacity>
           {(item.userId === currentUserId || currentUserRole === 'moderator') && (

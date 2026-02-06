@@ -241,12 +241,15 @@ export default function UserPreviewModal({ visible, userId, onClose, onUserBlock
             });
             await firestore().collection('reports').add({
               targetType: 'user',
-              reportedBy: currentUserId,
               targetId: user.id,
+              targetOwnerUid: user.id,
+              reportedBy: currentUserId,
+              reason: null,
+              details: null,
               status: 'open',
-              createdAt: firestore.FieldValue.serverTimestamp(),
-              source: 'UserPreviewModal',
               action: 'block',
+              source: 'UserPreviewModal',
+              createdAt: firestore.FieldValue.serverTimestamp(),
             });
             onUserBlocked?.(user.id);
             onClose?.();
@@ -260,12 +263,15 @@ export default function UserPreviewModal({ visible, userId, onClose, onUserBlock
     if (!currentUserId) return;
     await firestore().collection('reports').add({
       targetType: 'user',
-      reportedBy: currentUserId,
       targetId: user.id,
+      targetOwnerUid: user.id,
+      reportedBy: currentUserId,
+      reason: null,
+      details: null,
       status: 'open',
-      createdAt: firestore.FieldValue.serverTimestamp(),
-      source: 'UserPreviewModal',
       action: 'report',
+      source: 'UserPreviewModal',
+      createdAt: firestore.FieldValue.serverTimestamp(),
     });
     Alert.alert('Reported', 'User reported to admins.');
     onClose?.();

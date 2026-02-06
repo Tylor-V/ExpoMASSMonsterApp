@@ -37,14 +37,14 @@ export async function submitMessageReport({
 }: SubmitMessageReportParams) {
   await firestore().collection('reports').add({
     targetType: 'message',
+    targetOwnerUid: targetUserId || null,
     reportedBy,
     targetId: messageId,
-    targetUserId,
     channelId: channelId || null,
     dmThreadId: dmThreadId || null,
     messageText: messageText.slice(0, 500),
     reason,
-    details: details.trim(),
+    details: details.trim() || null,
     status: 'open',
     createdAt: firestore.FieldValue.serverTimestamp(),
     source,
