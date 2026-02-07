@@ -10,6 +10,8 @@ import {
   Pressable,
   DeviceEventEmitter,
   LayoutAnimation,
+  Modal,
+  TextInput,
 } from 'react-native';
 import type { PropsWithChildren } from 'react';
 import { useWindowDimensions } from 'react-native';
@@ -26,7 +28,12 @@ import { LIFT_CATEGORIES, LIFT_CATEGORY_ORDER } from '../constants/liftCategorie
 import { LIFT_RATINGS } from '../constants/liftRatings';
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { auth, firestore } from '../firebase/firebase';
-import { colors, fonts } from '../theme';
+import {
+  MESSAGE_REPORT_REASONS,
+  submitMessageReport,
+  type MessageReportReason,
+} from '../firebase/reportHelpers';
+import { colors } from '../theme';
 import { ANIM_INSTANT, ANIM_BUTTON_PRESS, ANIM_WIGGLE } from '../utils/animations';
 import {
   normalizeSharedSplitList,
@@ -34,7 +41,8 @@ import {
 } from '../utils/splitSharing';
 import useCarousel from '../hooks/useCarousel';
 import CarouselNavigator from '../components/CarouselNavigator';
-import { Image } from 'expo-image';
+import UserPreviewModal from '../components/UserPreviewModal';
+import { useHiddenContent } from '../hooks/useHiddenContent';
 
 const SplitShareBubble = ({
   item,
@@ -43,6 +51,7 @@ const SplitShareBubble = ({
   anim,
   saved,
   isOwn,
+  onUserPreview,
 }: {
   item: any;
   onSave: () => void;
@@ -50,6 +59,7 @@ const SplitShareBubble = ({
   anim: Animated.Value;
   saved: boolean;
   isOwn?: boolean;
+  onUserPreview?: () => void;
 }) => {
   const user = item.user || {};
   const { width } = useWindowDimensions();
@@ -81,12 +91,16 @@ const SplitShareBubble = ({
         ]}
       >
         {!isOwn && (
-          <>
+          <Pressable
+            onPress={onUserPreview}
+            style={styles.userPreviewRow}
+            hitSlop={6}
+          >
             <ProfileImage uri={user.profilePicUrl} style={styles.profilePic} />
             <Text style={styles.splitUser}>{
               `${user.firstName || 'User'} ${user.lastName?.charAt(0) || ''}.`
             }</Text>
-          </>
+          </Pressable>
         )}
       </View>
       <View
@@ -280,6 +294,15 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
   const [actionTargetId, setActionTargetId] = useState<string | null>(null);
   const wiggleAnim = useRef(new Animated.Value(0)).current;
   const [currentUserRole, setCurrentUserRole] = useState<string>('member');
+  const [previewUserId, setPreviewUserId] = useState<string | null>(null);
+  const [reportTargetMessage, setReportTargetMessage] = useState<any | null>(null);
+  const [reportReason, setReportReason] =
+    useState<MessageReportReason>(MESSAGE_REPORT_REASONS[0]);
+  const [reportDetails, setReportDetails] = useState('');
+  const { hideContent } = useHiddenContent({
+    containerId: props.channelId,
+    targetType: 'channelMessage',
+  });
 
   const loadSavedSplitIds = useCallback(async () => {
     try {
@@ -388,9 +411,10 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
   const handleLongPress = useCallback(
     (msgId: string, userId: string) => {
       const currentUserId = auth().currentUser?.uid;
-      if (currentUserRole !== 'moderator' && userId !== currentUserId) {
-        return;
-      }
+      const canDelete = currentUserRole === 'moderator' || userId === currentUserId;
+      const canReport = userId !== currentUserId;
+      const canPin = currentUserRole === 'moderator';
+      if (!canDelete && !canReport && !canPin) return;
       LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       setActionTargetId(msgId);
       wiggleAnim.setValue(0);
@@ -454,6 +478,37 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
     ]);
   };
 
+  const openReportMessage = useCallback(
+    (item: any) => {
+      setReportReason(MESSAGE_REPORT_REASONS[0]);
+      setReportDetails('');
+      setReportTargetMessage(item);
+      stopActions();
+    },
+    [stopActions],
+  );
+
+  const submitReportMessage = useCallback(async () => {
+    if (!auth().currentUser?.uid || !reportTargetMessage?.id) {
+      return;
+    }
+    await submitMessageReport({
+      channelId: props.channelId,
+      messageId: reportTargetMessage.id,
+      messageText: reportTargetMessage?.split?.name || 'Shared split',
+      reportedBy: auth().currentUser?.uid || '',
+      targetUserId: reportTargetMessage.userId,
+      reason: reportReason,
+      details: reportDetails,
+      source: 'SplitSharingChannel',
+    });
+    await hideContent(reportTargetMessage.id);
+    setReportTargetMessage(null);
+    setReportDetails('');
+    setReportReason(MESSAGE_REPORT_REASONS[0]);
+    Alert.alert('Reported', 'Thanks — reports are reviewed as soon as possible.');
+  }, [props.channelId, reportDetails, reportReason, reportTargetMessage, hideContent]);
+
   const renderCustomMessage = useCallback(
     ({
       item,
@@ -467,6 +522,10 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
     }: CustomRenderParams) => {
       if (!item.split) return null;
       const currentUserId = auth().currentUser?.uid || '';
+      const canDelete =
+        currentUserRole === 'moderator' || item.userId === currentUserId;
+      const canPin = currentUserRole === 'moderator';
+      const canReport = item.userId !== currentUserId;
       return (
         <>
           {showUnreadHere && (
@@ -508,6 +567,9 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
                 anim={splitShakeAnim}
                 saved={savedSplitMsgIds.includes(item.id)}
                 isOwn={isOwnMessage}
+                onUserPreview={
+                  isOwnMessage ? undefined : () => setPreviewUserId(item.userId)
+                }
               />
               {item.pinned && (
                 <Animated.View
@@ -568,14 +630,24 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
                     isOwnMessage && styles.actionButtonsOwn,
                   ]}
                 >
-                  {currentUserRole === 'moderator' && (
+                  {canPin && (
                     <Pressable onPress={() => pinMessage(item.id, item.pinned)} style={styles.actionBtn}>
                       <FontAwesome name="thumb-tack" size={22} color={colors.gold} />
                     </Pressable>
                   )}
-                  <Pressable onPress={() => confirmDelete(item.id)} style={styles.actionBtn}>
-                    <Ionicons name="trash-outline" size={22} color={colors.delete} />
-                  </Pressable>
+                  {canDelete && (
+                    <Pressable onPress={() => confirmDelete(item.id)} style={styles.actionBtn}>
+                      <Ionicons name="trash-outline" size={22} color={colors.delete} />
+                    </Pressable>
+                  )}
+                  {canReport && (
+                    <Pressable
+                      onPress={() => openReportMessage(item)}
+                      style={styles.reportMessageBtn}
+                    >
+                      <Text style={styles.reportMessageBtnText}>Report</Text>
+                    </Pressable>
+                  )}
                 </View>
               </>
             )}
@@ -583,10 +655,99 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
         </>
       );
     },
-    [handleSaveSplit, saveErrorId, savedSplitMsgIds, splitShakeAnim],
+    [
+      actionTargetId,
+      currentUserRole,
+      handleLongPress,
+      handleSaveSplit,
+      openReportMessage,
+      saveErrorId,
+      savedSplitMsgIds,
+      splitShakeAnim,
+      stopActions,
+      wiggleAnim,
+    ],
   );
 
-  return <AllChannels {...props} readOnly={true} renderCustomMessage={renderCustomMessage} />;
+  return (
+    <>
+      <AllChannels {...props} readOnly={true} renderCustomMessage={renderCustomMessage} />
+      <UserPreviewModal
+        visible={!!previewUserId}
+        userId={previewUserId || ''}
+        onClose={() => setPreviewUserId(null)}
+      />
+      {reportTargetMessage && (
+        <Modal
+          transparent
+          animationType="fade"
+          visible={!!reportTargetMessage}
+          onRequestClose={() => setReportTargetMessage(null)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setReportTargetMessage(null)}
+          >
+            <TouchableOpacity
+              activeOpacity={1}
+              style={styles.reportModal}
+              onPress={() => {}}
+            >
+              <Text style={styles.reportModalTitle}>Report Message</Text>
+              <View style={styles.reasonList}>
+                {MESSAGE_REPORT_REASONS.map(reasonOption => {
+                  const selected = reasonOption === reportReason;
+                  return (
+                    <Pressable
+                      key={reasonOption}
+                      onPress={() => setReportReason(reasonOption)}
+                      style={[
+                        styles.reasonOption,
+                        selected && styles.reasonOptionSelected,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.reasonOptionText,
+                          selected && styles.reasonOptionTextSelected,
+                        ]}
+                      >
+                        {reasonOption}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+              <TextInput
+                style={styles.reportDetailsInput}
+                placeholder="Optional details"
+                placeholderTextColor={colors.gray}
+                value={reportDetails}
+                onChangeText={setReportDetails}
+                multiline
+                maxLength={300}
+              />
+              <View style={styles.reportActionsRow}>
+                <Pressable
+                  onPress={() => setReportTargetMessage(null)}
+                  style={styles.reportCancelBtn}
+                >
+                  <Text style={styles.reportCancelBtnText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  onPress={submitReportMessage}
+                  style={styles.reportSubmitBtn}
+                >
+                  <Text style={styles.reportSubmitBtnText}>Submit</Text>
+                </Pressable>
+              </View>
+            </TouchableOpacity>
+          </TouchableOpacity>
+        </Modal>
+      )}
+    </>
+  );
 };
 
 const styles = StyleSheet.create({
@@ -630,6 +791,10 @@ const styles = StyleSheet.create({
   },
   splitMetaRowOther: {
     marginLeft: 8,
+  },
+  userPreviewRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   splitUser: {
     fontWeight: 'bold',
@@ -833,6 +998,22 @@ const styles = StyleSheet.create({
   },
   actionButtonsOwn: { bottom: -22 },
   actionBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  reportMessageBtn: {
+    minWidth: 96,
+    height: 32,
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.delete,
+  },
+  reportMessageBtnText: {
+    color: colors.delete,
+    fontSize: 12,
+    fontWeight: '700',
+  },
   pinnedIconWrap: { position: 'absolute', top: 18, alignSelf: 'center', zIndex: 5 },
   pinnedIconOwn: { top: 0 },
   unreadMarkerRow: {
@@ -861,6 +1042,83 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.gray,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reportModal: {
+    backgroundColor: colors.white,
+    borderRadius: 12,
+    padding: 16,
+    width: '86%',
+    maxWidth: 360,
+  },
+  reportModalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.black,
+    marginBottom: 12,
+  },
+  reasonList: {
+    marginBottom: 10,
+  },
+  reasonOption: {
+    borderWidth: 1,
+    borderColor: colors.grayLight,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+  },
+  reasonOptionSelected: {
+    borderColor: colors.accent,
+    backgroundColor: '#fff6d6',
+  },
+  reasonOptionText: {
+    color: colors.textDark,
+    fontSize: 14,
+  },
+  reasonOptionTextSelected: {
+    color: colors.black,
+    fontWeight: '700',
+  },
+  reportDetailsInput: {
+    borderWidth: 1,
+    borderColor: colors.grayLight,
+    borderRadius: 8,
+    minHeight: 80,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    color: colors.textDark,
+    textAlignVertical: 'top',
+    marginBottom: 12,
+  },
+  reportActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  reportCancelBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginRight: 8,
+  },
+  reportCancelBtnText: {
+    color: colors.gray,
+    fontWeight: '600',
+  },
+  reportSubmitBtn: {
+    backgroundColor: colors.accent,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  reportSubmitBtnText: {
+    color: colors.black,
+    fontWeight: '700',
   },
   /** Extra space below the final message */
   lastMessagePadding: {
