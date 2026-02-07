@@ -21,6 +21,7 @@ import InboxIcon from '../assets/inbox.png';
 import UsersIcon from '../assets/users.png';
 import { auth, firestore, storage } from '../firebase/firebase';
 import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
+import { useHiddenStories } from '../hooks/useHiddenStories';
 import useAnyDMUnread from '../hooks/useAnyDMUnread';
 import useChannelUnread from '../hooks/useChannelUnread';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
@@ -60,6 +61,7 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
   const currentUserId = auth().currentUser?.uid;
   const { blockedSet } = useBlockedUserIds();
   const { reportedUserSet } = useReportedUserIds();
+  const { hiddenStorySet } = useHiddenStories();
 
   const filteredStories = useMemo(
     () =>
@@ -68,10 +70,11 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
           story.userId !== currentUserId &&
           !story?.isRemoved &&
           story?.status !== 'removed' &&
+          !hiddenStorySet.has(String(story.storyId || '')) &&
           !blockedSet.has(story.userId) &&
           !reportedUserSet.has(story.userId),
       ),
-    [stories, currentUserId, blockedSet, reportedUserSet],
+    [stories, currentUserId, blockedSet, reportedUserSet, hiddenStorySet],
   );
 
   useEffect(() => {
@@ -97,6 +100,7 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
         if (now - s.timestamp < 24 * 60 * 60 * 1000) {
           return {
             userId: userDoc.id,
+            storyId,
             firstName: userDoc.data().firstName,
             profilePicUrl: userDoc.data().profilePicUrl,
             ...s,

@@ -14,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, firestore, storage } from '../firebase/firebase';
 import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
+import { useHiddenStories } from '../hooks/useHiddenStories';
 import { useReportedUserIds } from '../hooks/useReportedUserIds';
 import { ANIM_FAST } from '../utils/animations';
 
@@ -56,6 +57,7 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
   const insets = useSafeAreaInsets();
   const { blockedSet } = useBlockedUserIds();
   const { reportedUserSet } = useReportedUserIds();
+  const { hiddenStorySet, hideStory } = useHiddenStories();
 
   useEffect(() => {
     if (visible) {
@@ -90,6 +92,9 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
           if (s?.status === 'removed' || s?.isRemoved) {
             return;
           }
+          if (hiddenStorySet.has(doc.id)) {
+            return;
+          }
           if (now - s.timestamp > 24 * 60 * 60 * 1000) {
             // Delete expired
             firestore()
@@ -113,7 +118,7 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
         setStories(filtered);
         setIdx(0);
       });
-  }, [userId, visible, blockedSet, reportedUserSet]);
+  }, [userId, visible, blockedSet, reportedUserSet, hiddenStorySet]);
 
   useEffect(() => {
     if (!userId || !visible) {
@@ -139,10 +144,40 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
     }
   }, [blockedSet, reportedUserSet, onClose, userId, visible]);
 
+  useEffect(() => {
+    if (!visible || !stories.length || !hiddenStorySet.size) return;
+    const remaining = stories.filter(story => !hiddenStorySet.has(story.id));
+    if (remaining.length === stories.length) return;
+    setStories(remaining);
+    if (!remaining.length) {
+      setIdx(0);
+      onClose();
+      return;
+    }
+    if (idx >= remaining.length) {
+      setIdx(remaining.length - 1);
+    }
+  }, [hiddenStorySet, idx, onClose, stories, visible]);
+
+  const removeStoryFromView = (storyId: string) => {
+    const remaining = stories.filter(storyItem => storyItem.id !== storyId);
+    setStories(remaining);
+    if (!remaining.length) {
+      setIdx(0);
+      onClose();
+      return;
+    }
+    if (idx >= remaining.length) {
+      setIdx(remaining.length - 1);
+    }
+  };
+
   const handleReportStory = async () => {
     if (!currentUserId) return;
     const story = stories[idx];
     if (!story?.id) return;
+    removeStoryFromView(story.id);
+    void hideStory({ storyId: story.id, ownerUid: userId });
     await firestore().collection('reports').add({
       targetType: 'story',
       targetId: story.id,
