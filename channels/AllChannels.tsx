@@ -656,6 +656,23 @@ const AllChannels: React.FC<ChatScreenProps> = ({
     setMessages(combined);
   }, [latestMessages, olderMessages]);
 
+  const visibleMessages = React.useMemo(
+    () =>
+      messages.filter((m) => {
+        if (m?.status === "removed" || m?.isRemoved) {
+          return false;
+        }
+        const userId = String(m.userId || "");
+        return (
+          !blockedSet.has(userId) &&
+          !reportedUserSet.has(userId) &&
+          !localBlockedIds.includes(userId) &&
+          !hiddenContentSet.has(String(m.id))
+        );
+      }),
+    [messages, blockedSet, reportedUserSet, localBlockedIds, hiddenContentSet],
+  );
+
   const scrollToLatest = useCallback(
     (animated = true) => {
       if (flatListRef.current && visibleMessages.length > 0) {
@@ -694,23 +711,6 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   useEffect(() => {
     onRegisterScrollToMessage?.(scrollToMessage);
   }, [scrollToMessage, onRegisterScrollToMessage]);
-
-  const visibleMessages = React.useMemo(
-    () =>
-      messages.filter((m) => {
-        if (m?.status === "removed" || m?.isRemoved) {
-          return false;
-        }
-        const userId = String(m.userId || "");
-        return (
-          !blockedSet.has(userId) &&
-          !reportedUserSet.has(userId) &&
-          !localBlockedIds.includes(userId) &&
-          !hiddenContentSet.has(String(m.id))
-        );
-      }),
-    [messages, blockedSet, reportedUserSet, localBlockedIds, hiddenContentSet],
-  );
 
   const latestMessageId = visibleMessages.length
     ? visibleMessages[visibleMessages.length - 1]?.id
