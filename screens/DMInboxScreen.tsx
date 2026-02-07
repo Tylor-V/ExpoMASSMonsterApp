@@ -7,6 +7,7 @@ import {
   TextInput,
   ActivityIndicator,
   TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import { Image } from 'expo-image';
 import ProfileImage from '../components/ProfileImage';
@@ -21,6 +22,7 @@ import WhiteBackgroundWrapper from '../components/WhiteBackgroundWrapper';
 import { formatDisplayName } from '../utils/displayName';
 import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
 import { useReportedUserIds } from '../hooks/useReportedUserIds';
+import UserPreviewModal from '../components/UserPreviewModal';
 
 const DMsInboxScreen = ({ navigation }) => {
   const currentUserId = auth().currentUser?.uid;
@@ -29,6 +31,8 @@ const DMsInboxScreen = ({ navigation }) => {
   const searchRef = useRef<TextInput>(null);
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
+  const [previewUserId, setPreviewUserId] = useState<string | null>(null);
+  const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const { blockedSet } = useBlockedUserIds();
   const { reportedUserSet } = useReportedUserIds();
 
@@ -230,6 +234,17 @@ const DMsInboxScreen = ({ navigation }) => {
     );
   };
 
+  const openUserPreview = (userId: string) => {
+    if (!userId || userId === currentUserId) return;
+    setPreviewUserId(userId);
+    setIsPreviewVisible(true);
+  };
+
+  const handleUserBlocked = (blockedUserId: string) => {
+    if (!blockedUserId) return;
+    setThreads(prev => prev.filter(thread => thread.otherUser.uid !== blockedUserId));
+  };
+
   return (
     <WhiteBackgroundWrapper padTop={false} style={{ flex: 1 }}>
       <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
@@ -289,12 +304,28 @@ const DMsInboxScreen = ({ navigation }) => {
                   style={styles.dmRow}
                   onPress={() => openThread(item)}
                 >
-                  <ProfileImage uri={item.otherUser.profilePicUrl} style={styles.avatar} />
-                  <View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                      {item.isUnread && <View style={styles.newDot} />}
-                      <Text style={styles.nameText}>{formatDisplayName(item.otherUser.firstName, item.otherUser.lastName)}</Text>
-                    </View>
+                  <Pressable
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      openUserPreview(item.otherUser.uid);
+                    }}
+                    style={styles.avatarPressable}
+                  >
+                    <ProfileImage uri={item.otherUser.profilePicUrl} style={styles.avatar} />
+                  </Pressable>
+                  <View style={styles.threadInfo}>
+                    <Pressable
+                      onPress={(event) => {
+                        event.stopPropagation();
+                        openUserPreview(item.otherUser.uid);
+                      }}
+                      style={styles.namePressable}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        {item.isUnread && <View style={styles.newDot} />}
+                        <Text style={styles.nameText}>{formatDisplayName(item.otherUser.firstName, item.otherUser.lastName)}</Text>
+                      </View>
+                    </Pressable>
                     <Text style={styles.lastMsgText} numberOfLines={1}>{item.lastMsg.text || ''}</Text>
                   </View>
                 </ResponsivePressable>
@@ -308,6 +339,12 @@ const DMsInboxScreen = ({ navigation }) => {
           />
         )}
       </View>
+      <UserPreviewModal
+        visible={isPreviewVisible}
+        userId={previewUserId}
+        onClose={() => setIsPreviewVisible(false)}
+        onUserBlocked={handleUserBlocked}
+      />
     </WhiteBackgroundWrapper>
   );
 };
@@ -381,11 +418,19 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
+  avatarPressable: {
+    marginRight: 11,
+  },
+  threadInfo: {
+    flex: 1,
+  },
+  namePressable: {
+    alignSelf: 'flex-start',
+  },
   avatar: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    marginRight: 11,
     borderWidth: 2,
     borderColor: colors.accent,
     backgroundColor: '#EDE4C6',
