@@ -4,7 +4,6 @@ import GeneralChannel from '../channels/GeneralChannel';
 import MemesChannel from '../channels/MemesChannel';
 import SplitSharingChannel from '../channels/SplitSharingChannel';
 import ModOnlyChannel from '../channels/ModOnlyChannel';
-import CommunityVoiceChannel from '../channels/CommunityVoiceChannel';
 export { useChatInputBarHeight } from '../channels/AllChannels';
 
 type ChatScreenProps = PropsWithChildren<{
@@ -21,7 +20,6 @@ const CHANNEL_COMPONENTS: Record<string, React.ComponentType<ChatScreenProps>> =
   memes: MemesChannel,
   'split-sharing': SplitSharingChannel,
   'mod-only': ModOnlyChannel,
-  'community-voice': CommunityVoiceChannel,
 };
 
 const ChatScreen: React.FC<ChatScreenProps> = props => {

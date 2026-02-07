@@ -41,14 +41,6 @@ const BASE_CHANNELS = [
   { id: 'split-sharing', name: 'SPLIT SHARING' },
 ];
 
-const VOICE_CHANNELS = [
-  {
-    id: 'community-voice',
-    name: 'COMMUNITY VOICE',
-    type: 'voice' as const,
-  },
-];
-
 const MOD_CHANNEL = { id: 'mod-only', name: 'MOD ONLY' };
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -266,13 +258,12 @@ const ChatBar: React.FC<ChatBarProps> = ({ isActive = true, onOpenDMInbox, onOpe
     () => (user?.role === 'moderator' ? [...BASE_CHANNELS, MOD_CHANNEL] : BASE_CHANNELS),
     [user?.role],
   );
-const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
 
   useEffect(() => {
-    if (!allChannels.find(c => c.id === selectedId)) {
-      setSelectedId(allChannels[0].id);
+    if (!channels.find(c => c.id === selectedId)) {
+      setSelectedId(channels[0].id);
     }
-  }, [allChannels, selectedId]);
+  }, [channels, selectedId]);
 
   useEffect(() => {
     const uid = user?.uid;
@@ -325,7 +316,7 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
     if (pinnedMessages.length) loadUsers();
   }, [pinnedMessages]);
 
-  const selectedChannel = allChannels.find(c => c.id === selectedId)!;
+  const selectedChannel = channels.find(c => c.id === selectedId)!;
   const unreadMap = useChannelUnread(channels.map(c => c.id), selectedId);
   const dmUnread = useAnyDMUnread();
 
@@ -594,14 +585,7 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
                 <Text style={headerStyles.headerTitle} numberOfLines={1}>
                   {selectedChannel.name}
                 </Text>
-                {selectedChannel.type === 'voice' ? (
-                  <Icon
-                    name="volume-high"
-                    size={16}
-                    color={colors.accent}
-                    style={{ marginLeft: 4 }}
-                  />
-                ) : selectedChannel.type === 'video' ? (
+                {selectedChannel.type === 'video' ? (
                   <Icon
                     name="videocam"
                     size={16}
@@ -630,7 +614,7 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
           </View>
           {anyUnread && <View testID="channel-unread-dot" style={headerStyles.unreadDot} />}
         </Pressable>
-        {selectedChannel.type !== 'voice' && selectedChannel.type !== 'video' && (
+        {selectedChannel.type !== 'video' && (
           <TouchableOpacity onPress={togglePinnedDropdown} style={{ marginHorizontal: 8 }}>
             <View style={{ position: 'relative' }}>
               <FontAwesome
@@ -667,8 +651,7 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
           </View>
         </TouchableOpacity>
         </View>
-        {selectedChannel.type !== 'voice' &&
-          selectedChannel.type !== 'video' && (
+        {selectedChannel.type !== 'video' && (
             <StoriesBar openStoriesViewer={openStoriesViewer} />
           )}
       </View>
@@ -704,32 +687,10 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
                 </View>
               </TouchableOpacity>
             ))}
-            <View style={headerStyles.dropdownDivider} />
-            <Text style={headerStyles.dropdownSectionHeader}>Voice Channels</Text>
-            {VOICE_CHANNELS.map(channel => (
-              <TouchableOpacity
-                key={channel.id}
-                style={headerStyles.dropdownItem}
-                onPress={() => {
-                  setSelectedId(channel.id);
-                  setMenuOpen(false);
-                }}
-              >
-                <Text
-                  style={[
-                    headerStyles.dropdownItemText,
-                    selectedId === channel.id && headerStyles.dropdownItemTextActive,
-                  ]}
-                >
-                  {channel.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
           </View>
         </TouchableOpacity>
       )}
-      {selectedChannel.type !== 'voice' &&
-        selectedChannel.type !== 'video' && (
+      {selectedChannel.type !== 'video' && (
           <>
             {showPinnedDropdown && (
               <AnimatedPressable
@@ -843,9 +804,7 @@ const allChannels = useMemo(() => [...channels, ...VOICE_CHANNELS], [channels]);
             channelName={selectedChannel.name}
             isActive={isActive}
             onPinnedMessagesChange={
-              selectedChannel.type === 'voice' || selectedChannel.type === 'video'
-                ? undefined
-                : setPinnedMessages
+              selectedChannel.type === 'video' ? undefined : setPinnedMessages
             }
             onRegisterScrollToMessage={fn => setScrollToMessageFn(() => fn)}
           />
