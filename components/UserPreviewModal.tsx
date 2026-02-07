@@ -61,7 +61,7 @@ function buildSocialUrl(platform: string, handle: string) {
 
 const ONLINE_THRESHOLD = 10 * 60 * 1000;
 
-export default function UserPreviewModal({ visible, userId, onClose, onUserBlocked }) {
+export default function UserPreviewModal({ visible, userId, onClose, onUserBlocked, onUserReported }) {
   const [user, setUser] = useState<any>(null);
   const navigation = useNavigation<any>();
   const currentUserId = auth().currentUser?.uid;
@@ -273,6 +273,7 @@ export default function UserPreviewModal({ visible, userId, onClose, onUserBlock
       source: 'UserPreviewModal',
       createdAt: firestore.FieldValue.serverTimestamp(),
     });
+    onUserReported?.(user.id);
     Alert.alert('Reported', 'User reported to admins.');
     onClose?.();
   };

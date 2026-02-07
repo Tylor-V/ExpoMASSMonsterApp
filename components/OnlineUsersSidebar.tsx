@@ -38,6 +38,7 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
   const { blockedSet } = useBlockedUserIds();
   const { reportedUserSet } = useReportedUserIds();
   const [localBlockedIds, setLocalBlockedIds] = useState<string[]>([]);
+  const [localReportedIds, setLocalReportedIds] = useState<string[]>([]);
   const searchRef = useRef<TextInput>(null);
   const slideAnim = useRef(new Animated.Value(SIDEBAR_WIDTH)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
@@ -111,8 +112,11 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
 
   const visibleUsers = React.useMemo(() => users.filter((u: any) => {
     const userId = String(u.id);
-    return !blockedSet.has(userId) && !reportedUserSet.has(userId) && !localBlockedIds.includes(userId);
-  }), [users, blockedSet, reportedUserSet, localBlockedIds]);
+    return !blockedSet.has(userId)
+      && !reportedUserSet.has(userId)
+      && !localBlockedIds.includes(userId)
+      && !localReportedIds.includes(userId);
+  }), [users, blockedSet, reportedUserSet, localBlockedIds, localReportedIds]);
   const online = React.useMemo(() => visibleUsers.filter(isOnlineForDisplay), [visibleUsers]);
   const offline = React.useMemo(() => visibleUsers.filter(u => !isOnlineForDisplay(u)), [visibleUsers]);
   const term = search.trim().toLowerCase();
@@ -307,6 +311,9 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
         onClose={() => setPreviewUserId(null)}
         onUserBlocked={(blockedUserId: string) => {
           setLocalBlockedIds(prev => (prev.includes(blockedUserId) ? prev : [...prev, blockedUserId]));
+        }}
+        onUserReported={(reportedUserId: string) => {
+          setLocalReportedIds(prev => (prev.includes(reportedUserId) ? prev : [...prev, reportedUserId]));
         }}
       />
     </>
