@@ -65,12 +65,13 @@ const SplitShareBubble = ({
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const split = item.split;
+  const days = Array.isArray(split?.days) ? split.days : [];
   const bubbleWidth = (width - insets.left - insets.right) * 0.85;
   const cardWidth = bubbleWidth * 0.93;
   const cardSpacing = 20;
   const sidePadding = (bubbleWidth - cardWidth) / 2;
   const { index: dayIndex, goToIndex, ref: carouselRef } = useCarousel<any>(
-    split.days.length,
+    days.length,
     cardWidth + cardSpacing,
     { animatedScroll: true },
   );
@@ -126,103 +127,107 @@ const SplitShareBubble = ({
           ) : null}
         </View>
         <View style={{ position: 'relative', marginVertical: 4 }}>
-          <FlatList
-            ref={carouselRef}
-            data={split.days.slice(0, 10)}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            snapToInterval={cardWidth + cardSpacing}
-            decelerationRate="fast"
-            snapToAlignment="center"
-            scrollEnabled={false}
-            getItemLayout={(_, index) => ({
-              length: cardWidth + cardSpacing,
-              offset: (cardWidth + cardSpacing) * index,
-              index,
-            })}
-            style={{}}
-            keyExtractor={(_, i) => String(i)}
-            renderItem={({ item: d }) => {
-            const used = new Set<string>();
-            const byCat = LIFT_CATEGORY_ORDER.map(cat => {
-              const lifts = d.lifts.filter((l: string) => {
-                const match = LIFT_CATEGORIES[cat]?.includes(l);
-                if (match) used.add(l);
-                return match;
-              });
-              return lifts.length ? { cat, lifts } : null;
-            }).filter(Boolean) as { cat: string; lifts: string[] }[];
-            const otherLifts = d.lifts.filter((l: string) => !used.has(l));
-            if (otherLifts.length) {
-              byCat.push({ cat: 'Other Lifts', lifts: otherLifts });
-            }
-            const noLifts = byCat.length === 0;
-            return (
-              <View style={[styles.dayCard, { width: cardWidth }]}>
-                <View style={styles.dayTitleRow}>
-                  <Text style={styles.dayTitle} numberOfLines={1} ellipsizeMode="tail">
-                    {d.title}
-                  </Text>
-                  {d.notes ? (
-                    <Text
-                      style={styles.dayNotes}
-                      numberOfLines={1}
-                      ellipsizeMode="tail"
-                    >
-                      {` - ${d.notes}`}
+          {days.length === 0 ? (
+            <Text style={styles.noLiftsText}>No days found</Text>
+          ) : (
+            <FlatList
+              ref={carouselRef}
+              data={days.slice(0, 10)}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              snapToInterval={cardWidth + cardSpacing}
+              decelerationRate="fast"
+              snapToAlignment="center"
+              scrollEnabled={false}
+              getItemLayout={(_, index) => ({
+                length: cardWidth + cardSpacing,
+                offset: (cardWidth + cardSpacing) * index,
+                index,
+              })}
+              style={{}}
+              keyExtractor={(_, i) => String(i)}
+              renderItem={({ item: d }) => {
+              const used = new Set<string>();
+              const byCat = LIFT_CATEGORY_ORDER.map(cat => {
+                const lifts = d.lifts.filter((l: string) => {
+                  const match = LIFT_CATEGORIES[cat]?.includes(l);
+                  if (match) used.add(l);
+                  return match;
+                });
+                return lifts.length ? { cat, lifts } : null;
+              }).filter(Boolean) as { cat: string; lifts: string[] }[];
+              const otherLifts = d.lifts.filter((l: string) => !used.has(l));
+              if (otherLifts.length) {
+                byCat.push({ cat: 'Other Lifts', lifts: otherLifts });
+              }
+              const noLifts = byCat.length === 0;
+              return (
+                <View style={[styles.dayCard, { width: cardWidth }]}>
+                  <View style={styles.dayTitleRow}>
+                    <Text style={styles.dayTitle} numberOfLines={1} ellipsizeMode="tail">
+                      {d.title}
                     </Text>
-                  ) : null}
-                </View>
-                {noLifts ? (
-                  <Text style={styles.noLiftsText}>No lifts added</Text>
-                ) : (
-                  byCat.map(({ cat, lifts }) => {
-                    const headRatings: Record<string, number> = {};
-                    lifts.forEach(l => {
-                      const ratings = LIFT_RATINGS[cat]?.[l];
-                      if (!ratings) return;
-                      Object.entries(ratings).forEach(([head, rating]) => {
-                        if (rating > 0) {
-                          headRatings[head] = Math.max(
-                            headRatings[head] || 0,
-                            rating,
-                          );
-                        }
+                    {d.notes ? (
+                      <Text
+                        style={styles.dayNotes}
+                        numberOfLines={1}
+                        ellipsizeMode="tail"
+                      >
+                        {` - ${d.notes}`}
+                      </Text>
+                    ) : null}
+                  </View>
+                  {noLifts ? (
+                    <Text style={styles.noLiftsText}>No lifts added</Text>
+                  ) : (
+                    byCat.map(({ cat, lifts }) => {
+                      const headRatings: Record<string, number> = {};
+                      lifts.forEach(l => {
+                        const ratings = LIFT_RATINGS[cat]?.[l];
+                        if (!ratings) return;
+                        Object.entries(ratings).forEach(([head, rating]) => {
+                          if (rating > 0) {
+                            headRatings[head] = Math.max(
+                              headRatings[head] || 0,
+                              rating,
+                            );
+                          }
+                        });
                       });
-                    });
-                    return (
-                      <View key={cat} style={{ marginTop: 6 }}>
-                        <Text style={styles.liftCategory}>{`${cat}:`}</Text>
-                        {Object.keys(headRatings).length > 0 && (
-                          <View style={styles.headRatingsRow}>
-                            {Object.entries(headRatings).map(([head, rating]) => (
-                              <View key={head} style={styles.headRatingItem}>
-                                <Text style={styles.headRatingText}>{head} {rating}</Text>
-                                <Ionicons name="star" size={14} color={colors.accent} style={{ marginLeft: 3 }} />
+                      return (
+                        <View key={cat} style={{ marginTop: 6 }}>
+                          <Text style={styles.liftCategory}>{`${cat}:`}</Text>
+                          {Object.keys(headRatings).length > 0 && (
+                            <View style={styles.headRatingsRow}>
+                              {Object.entries(headRatings).map(([head, rating]) => (
+                                <View key={head} style={styles.headRatingItem}>
+                                  <Text style={styles.headRatingText}>{head} {rating}</Text>
+                                  <Ionicons name="star" size={14} color={colors.accent} style={{ marginLeft: 3 }} />
+                                </View>
+                              ))}
+                            </View>
+                          )}
+                          <View style={styles.liftsContainer}>
+                            {lifts.map(lift => (
+                              <View key={lift} style={styles.liftBadge}>
+                                <Text style={styles.liftBadgeText}>{lift}</Text>
                               </View>
                             ))}
                           </View>
-                        )}
-                        <View style={styles.liftsContainer}>
-                          {lifts.map(lift => (
-                            <View key={lift} style={styles.liftBadge}>
-                              <Text style={styles.liftBadgeText}>{lift}</Text>
-                            </View>
-                          ))}
                         </View>
-                      </View>
-                    );
-                  })
-                )}
-              </View>
-            );
-          }}
-          contentContainerStyle={{ paddingHorizontal: sidePadding }}
-        />
-          {split.days.length > 1 && (
+                      );
+                    })
+                  )}
+                </View>
+              );
+            }}
+            contentContainerStyle={{ paddingHorizontal: sidePadding }}
+          />
+          )}
+          {days.length > 1 && (
             <CarouselNavigator
               index={dayIndex}
-              length={split.days.length}
+              length={days.length}
               onIndexChange={goToIndex}
               leftOffset={-18}
               rightOffset={-18}
