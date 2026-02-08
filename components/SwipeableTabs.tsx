@@ -82,12 +82,12 @@ export default function SwipeableTabs({
     scrollRef.current?.scrollToOffset({ offset: width * tabIndex, animated: animationEnabled });
   }, [tabIndex, width, animationEnabled]);
 
-  const handleScroll = useCallback(
+  const handleScrollEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-      const newIndex = Math.round(e.nativeEvent.contentOffset.x / width);
-      if (newIndex !== tabIndexRef.current) {
-        tabIndexRef.current = newIndex;
-        onTabChange?.(newIndex);
+      const settledIndex = Math.round(e.nativeEvent.contentOffset.x / width);
+      if (settledIndex !== tabIndexRef.current) {
+        tabIndexRef.current = settledIndex;
+        onTabChange?.(settledIndex);
       }
     },
     [width, onTabChange],
@@ -96,7 +96,10 @@ export default function SwipeableTabs({
   const jumpTo = (key: string) => {
     const idx = routes.findIndex(r => r.key === key);
     scrollRef.current?.scrollToOffset({ offset: width * idx, animated: animationEnabled });
-    onTabChange?.(idx);
+    if (!animationEnabled) {
+      tabIndexRef.current = idx;
+      onTabChange?.(idx);
+    }
   };
 
   return (
@@ -111,8 +114,12 @@ export default function SwipeableTabs({
           <View style={{ width, flex: 1 }}>{renderScene(item)}</View>
         )}
         keyExtractor={item => item.key}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
+        onMomentumScrollEnd={handleScrollEnd}
+        onScrollEndDrag={e => {
+          if (!e.nativeEvent.velocity?.x) {
+            handleScrollEnd(e);
+          }
+        }}
         getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
         testID="swipeable-tabs-list"
       />
