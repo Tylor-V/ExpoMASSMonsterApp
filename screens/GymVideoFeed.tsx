@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, Dimensions, FlatList, StyleSheet, Text, Touch
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { auth, firestore, storage } from '../firebase/firebase';
 import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
+import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import { useReportedUserIds } from '../hooks/useReportedUserIds';
 import { colors } from '../theme';
 
@@ -53,6 +54,15 @@ export default function GymVideoFeed({ navigation }) {
   const flatListRef = useRef(null);
   const [currentUserRole, setCurrentUserRole] = useState('member');
   const currentUserId = auth().currentUser?.uid;
+  const currentUser = useCurrentUserDoc();
+  const timeoutMs = currentUser?.timeoutUntil
+    ? (typeof currentUser.timeoutUntil.toMillis === 'function'
+        ? currentUser.timeoutUntil.toMillis()
+        : currentUser.timeoutUntil) - Date.now()
+    : 0;
+  const isTimedOut = timeoutMs > 0;
+  const hLeft = Math.floor(timeoutMs / 3600000);
+  const mLeft = Math.floor((timeoutMs % 3600000) / 60000);
   const { blockedSet } = useBlockedUserIds();
   const { reportedUserSet } = useReportedUserIds();
   const insets = useSafeAreaInsets();
@@ -112,6 +122,18 @@ export default function GymVideoFeed({ navigation }) {
   }, [currentUserId]);
 
   const handleUpload = async () => {
+    if (isTimedOut) {
+      Alert.alert('Timed Out', `You cannot post videos for ${hLeft}h ${mLeft}m.`);
+      return;
+    }
+    if (currentUser?.isBanned) {
+      Alert.alert('Account Disabled', 'Your account has been disabled.');
+      return;
+    }
+    if (currentUser?.ugcDisabled) {
+      Alert.alert('Posting Disabled', 'Your account is not allowed to post right now.');
+      return;
+    }
     // Android's system picker does not require explicit media library
     // permissions in Expo Go. By removing the manual permission
     // request we avoid warnings about restricted access while still

@@ -257,6 +257,14 @@ const DMChatScreen = ({ navigation, route }) => {
       Alert.alert('Timed Out', `You cannot send messages for ${hLeft}h ${mLeft}m.`);
       return;
     }
+    if (currentUser?.isBanned) {
+      Alert.alert('Account Disabled', 'Your account has been disabled.');
+      return;
+    }
+    if (currentUser?.ugcDisabled) {
+      Alert.alert('Posting Disabled', 'Your account is not allowed to post right now.');
+      return;
+    }
     const trimmedText = text.trim();
     if (!trimmedText) return;
     const otherUid = otherUser?.uid;

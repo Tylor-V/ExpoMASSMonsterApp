@@ -51,6 +51,15 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
   const [uploading, setUploading] = useState(false);
   const [userStory, setUserStory] = useState<any>(null);
   const currentUserId = auth().currentUser?.uid;
+  const currentUser = useCurrentUserDoc();
+  const timeoutMs = currentUser?.timeoutUntil
+    ? (typeof currentUser.timeoutUntil.toMillis === 'function'
+        ? currentUser.timeoutUntil.toMillis()
+        : currentUser.timeoutUntil) - Date.now()
+    : 0;
+  const isTimedOut = timeoutMs > 0;
+  const hLeft = Math.floor(timeoutMs / 3600000);
+  const mLeft = Math.floor((timeoutMs % 3600000) / 60000);
   const { blockedSet } = useBlockedUserIds();
   const { reportedUserSet } = useReportedUserIds();
   const { hiddenStorySet } = useHiddenStories();
@@ -124,6 +133,18 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
   }, [uploading]);
 
   const handleUploadStory = async () => {
+    if (isTimedOut) {
+      Alert.alert('Timed Out', `You cannot post stories for ${hLeft}h ${mLeft}m.`);
+      return;
+    }
+    if (currentUser?.isBanned) {
+      Alert.alert('Account Disabled', 'Your account has been disabled.');
+      return;
+    }
+    if (currentUser?.ugcDisabled) {
+      Alert.alert('Posting Disabled', 'Your account is not allowed to post right now.');
+      return;
+    }
     const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images', 'videos'] as ImagePicker.MediaType[],
     });
