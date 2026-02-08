@@ -10,6 +10,7 @@ import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import { useReportedUserIds } from '../hooks/useReportedUserIds';
 import { colors } from '../theme';
+import { asArray } from '../utils/asArray';
 
 const { height, width } = Dimensions.get('window');
 
@@ -180,7 +181,7 @@ export default function GymVideoFeed({ navigation }) {
       .doc(id);
     const doc = await docRef.get();
     const data = doc.data();
-    const reactions = data?.reactions ?? [];
+    const reactions = asArray(data?.reactions);
     if (reactions.find(r => r.userId === currentUserId && r.emoji === '💪')) return;
     await docRef.update({ reactions: [...reactions, { emoji: '💪', userId: currentUserId }] });
   }, [currentUserId]);
@@ -307,7 +308,7 @@ export default function GymVideoFeed({ navigation }) {
         <View style={styles.overlay}>
           <TouchableOpacity style={styles.reactBtn} onPress={() => handleReact(item.id)}>
             <Text style={styles.emoji}>💪</Text>
-            <Text style={styles.reactCount}>{item.reactions?.length || 0}</Text>
+            <Text style={styles.reactCount}>{asArray(item.reactions).length}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionBtn} onPress={() => handleMore(item)}>
             <Ionicons name="ellipsis-vertical" size={26} color="#232323" />

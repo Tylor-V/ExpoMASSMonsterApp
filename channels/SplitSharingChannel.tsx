@@ -35,6 +35,7 @@ import {
 } from '../firebase/reportHelpers';
 import { colors } from '../theme';
 import { ANIM_INSTANT, ANIM_BUTTON_PRESS, ANIM_WIGGLE } from '../utils/animations';
+import { asArray } from '../utils/asArray';
 import {
   normalizeSharedSplitList,
   normalizeWorkoutPlan,
@@ -599,9 +600,11 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
                   <Ionicons name="bookmark" size={14} color={colors.accent} />
                   <Text style={styles.saveCountText}>{item.saveCount ?? 0}</Text>
                 </View>
-                  {Array.from(new Set((item.reactions || []).map(r => r.emoji))).map(emoji => {
-                    const count = (item.reactions || []).filter(r => r.emoji === emoji).length;
-                    const userReacted = (item.reactions || []).some(
+                {(() => {
+                  const reactions = asArray(item.reactions);
+                  return Array.from(new Set(reactions.map(r => r.emoji))).map(emoji => {
+                    const count = reactions.filter(r => r.emoji === emoji).length;
+                    const userReacted = reactions.some(
                       r => r.emoji === emoji && r.userId === currentUserId,
                     );
                     return (
@@ -618,8 +621,9 @@ const SplitSharingChannel: React.FC<ChannelProps> = props => {
                         <Text style={{ fontSize: 10, color: '#666', marginLeft: 2 }}>{count}</Text>
                       </TouchableOpacity>
                     );
-                  })}
-                  {!isOwnMessage && !(item.reactions || []).some(r => r.userId === currentUserId) && (
+                  });
+                })()}
+                  {!isOwnMessage && !asArray(item.reactions).some(r => r.userId === currentUserId) && (
                     <TouchableOpacity onPress={openReactionPicker} style={[styles.reactionBubble, styles.reactionAddBtn]}>
                       <Ionicons name="add-circle-outline" size={18} color="#888" />
                     </TouchableOpacity>

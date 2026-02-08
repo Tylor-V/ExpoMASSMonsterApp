@@ -97,8 +97,17 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
         if (s?.status === 'removed' || s?.isRemoved) {
           return null;
         }
+        const timestampMs =
+          typeof s?.timestamp === 'number'
+            ? s.timestamp
+            : typeof s?.timestamp?.toMillis === 'function'
+              ? s.timestamp.toMillis()
+              : null;
+        if (typeof timestampMs !== 'number' || Number.isNaN(timestampMs)) {
+          return null;
+        }
         const storyId = storySnap.docs[0].id;
-        if (now - s.timestamp < 24 * 60 * 60 * 1000) {
+        if (now - timestampMs < 24 * 60 * 60 * 1000) {
           return {
             userId: userDoc.id,
             storyId,

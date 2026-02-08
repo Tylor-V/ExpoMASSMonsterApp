@@ -35,6 +35,7 @@ import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
 import { useReportedUserIds } from '../hooks/useReportedUserIds';
 import { useHiddenContent } from '../hooks/useHiddenContent';
 import { colors } from '../theme';
+import { asArray } from '../utils/asArray';
 import { dedupeById } from '../utils/dedupeById';
 import { formatDisplayName } from '../utils/displayName';
 
@@ -300,7 +301,7 @@ const DMChatScreen = ({ navigation, route }) => {
     if (!doc.exists) return;
     const messageUserId = doc.data().userId;
     if (messageUserId === currentUserId) return;
-    const reactions = doc.data().reactions || [];
+    const reactions = asArray(doc.data().reactions);
     const existing = reactions.find(r => r.userId === currentUserId);
     let newReactions;
     if (existing) {
@@ -402,7 +403,7 @@ const DMChatScreen = ({ navigation, route }) => {
                   renderItem={({ item, index }) => {
                     const isMe = item.userId === currentUserId;
                     const showUnreadHere = hasUnreadMarker && index === firstUnreadIndex + 1;
-                    const reactions = item.reactions || [];
+                    const reactions = asArray(item.reactions);
                     const formattedTime = formatTimestamp(item.timestamp);
                     const canAddReaction = !isMe;
                     const showReactionsRow =

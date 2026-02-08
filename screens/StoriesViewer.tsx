@@ -249,6 +249,7 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
 
   const handleDelete = async () => {
     const story = stories[idx];
+    if (!story?.id) return;
     try {
       await firestore()
         .collection('stories').doc(currentUserId)
@@ -277,6 +278,7 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
 
   if (!visible || !stories.length) return null;
   const story = stories[idx];
+  if (!story) return null;
 
   return (
     <Modal

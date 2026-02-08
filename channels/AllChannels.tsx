@@ -39,6 +39,7 @@ import { useReportedUserIds } from "../hooks/useReportedUserIds";
 import { useHiddenContent } from "../hooks/useHiddenContent";
 import { colors, fonts, gradients } from "../theme";
 import { ANIM_BUTTON_POP, ANIM_SHORT, ANIM_WIGGLE } from "../utils/animations";
+import { asArray } from "../utils/asArray";
 import { getChatLevelColor } from "../utils/chatLevel";
 import { dedupeById } from "../utils/dedupeById";
 
@@ -202,7 +203,7 @@ const ChatMessageRow = memo(function ChatMessageRow({
       ? colors.accent
       : colors.black;
   const formattedTime = formatTimestamp(item.timestamp);
-  const reactions = item.reactions || [];
+  const reactions = asArray(item.reactions);
   const canAddReaction =
     !isOwnMessage &&
     !reactions.some((r: any) => r.userId === currentUserId);
@@ -1142,7 +1143,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       if (!doc.exists) return;
       const messageUserId = doc.data().userId;
       if (messageUserId === currentUserId) return;
-      const reactions = doc.data().reactions || [];
+      const reactions = asArray(doc.data().reactions);
       const existing = reactions.find((r) => r.userId === currentUserId);
       let newReactions;
       if (existing) {
