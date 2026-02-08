@@ -9,6 +9,16 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import Animated, {
+  Extrapolate,
+  interpolate,
+  interpolateColor,
+  useAnimatedProps,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme';
 
@@ -39,6 +49,55 @@ interface SwipeableTabsProps {
   animationEnabled?: boolean;
 }
 
+const AnimatedIcon = Animated.createAnimatedComponent(Icon);
+
+interface TabIconProps {
+  index: number;
+  name: string;
+  scrollX: Animated.SharedValue<number>;
+  width: number;
+  activeTintColor: string;
+  inactiveTintColor: string;
+}
+
+function TabIcon({
+  index,
+  name,
+  scrollX,
+  width,
+  activeTintColor,
+  inactiveTintColor,
+}: TabIconProps) {
+  const progress = useDerivedValue(() => scrollX.value / width);
+  const activeAmount = useDerivedValue(() => {
+    const distance = Math.abs(progress.value - index);
+    return Math.max(0, 1 - distance);
+  });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(activeAmount.value, [0, 1], [0.55, 1], Extrapolate.CLAMP),
+    transform: [
+      {
+        scale: interpolate(activeAmount.value, [0, 1], [0.95, 1.06], Extrapolate.CLAMP),
+      },
+    ],
+  }));
+
+  const animatedProps = useAnimatedProps(() => ({
+    color: interpolateColor(
+      activeAmount.value,
+      [0, 1],
+      [inactiveTintColor, activeTintColor],
+    ),
+  }));
+
+  return (
+    <Animated.View style={animatedStyle}>
+      <AnimatedIcon name={name} size={36} animatedProps={animatedProps} />
+    </Animated.View>
+  );
+}
+
 export default function SwipeableTabs({
   routes,
   scenes,
@@ -53,6 +112,7 @@ export default function SwipeableTabs({
   const { width } = useWindowDimensions();
   const scrollRef = useRef<FlatList<Route>>(null);
   const tabIndexRef = useRef(tabIndex);
+  const scrollX = useSharedValue(0);
 
   useEffect(() => {
     tabIndexRef.current = tabIndex;
@@ -80,7 +140,14 @@ export default function SwipeableTabs({
 
   useEffect(() => {
     scrollRef.current?.scrollToOffset({ offset: width * tabIndex, animated: animationEnabled });
+    scrollX.value = width * tabIndex;
   }, [tabIndex, width, animationEnabled]);
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: event => {
+      scrollX.value = event.contentOffset.x;
+    },
+  });
 
   const handleScrollEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -104,7 +171,7 @@ export default function SwipeableTabs({
 
   return (
     <View style={{ flex: 1 }}>
-      <FlatList
+      <Animated.FlatList
         ref={scrollRef}
         data={routes}
         horizontal
@@ -114,6 +181,8 @@ export default function SwipeableTabs({
           <View style={{ width, flex: 1 }}>{renderScene(item)}</View>
         )}
         keyExtractor={item => item.key}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
         onMomentumScrollEnd={handleScrollEnd}
         onScrollEndDrag={e => {
           if (!e.nativeEvent.velocity?.x) {
@@ -135,10 +204,13 @@ export default function SwipeableTabs({
                 accessibilityRole="button"
                 accessibilityLabel={route.title}
               >
-                <Icon
+                <TabIcon
+                  index={i}
                   name={route.icon}
-                  size={36}
-                  color={i === tabIndex ? activeTintColor : inactiveTintColor}
+                  scrollX={scrollX}
+                  width={width}
+                  activeTintColor={activeTintColor}
+                  inactiveTintColor={inactiveTintColor}
                 />
               </Pressable>
             ))}
