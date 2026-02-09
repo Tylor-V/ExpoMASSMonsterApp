@@ -24,7 +24,9 @@ type Props = {
   showArrows?: boolean;
   showDots?: boolean;
   /** Overlay keeps the legacy absolute-fill behavior */
-  layout?: 'overlay' | 'inline';
+  layout?: 'overlay' | 'inline' | 'gutter';
+  /** When in gutter layout, flip arrow to next direction */
+  invertArrows?: boolean;
 };
 
 export default function CarouselNavigator({
@@ -42,10 +44,32 @@ export default function CarouselNavigator({
   showArrows = true,
   showDots = true,
   layout = 'overlay',
+  invertArrows = false,
 }: Props) {
   const dots = Array.from({ length: maxDots ? Math.min(length, maxDots) : length });
   const arrowOffset = arrowSize / 2 + 4; // center arrow including padding
   const isOverlay = layout === 'overlay';
+  const isGutter = layout === 'gutter';
+  if (isGutter) {
+    if (!showArrows) return null;
+    const isNext = invertArrows;
+    const disabled = isNext ? index === length - 1 : index === 0;
+    return (
+      <TouchableOpacity
+        testID={isNext ? 'next-arrow' : 'prev-arrow'}
+        style={[styles.gutterArrow, disabled && styles.gutterArrowDisabled]}
+        onPress={() => onIndexChange(cur => cur + (isNext ? 1 : -1))}
+        disabled={disabled}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Icon
+          name={isNext ? 'chevron-forward' : 'chevron-back'}
+          size={arrowSize}
+          color={colors.gray}
+        />
+      </TouchableOpacity>
+    );
+  }
   return (
     <View pointerEvents="box-none" style={isOverlay ? styles.container : styles.inlineContainer}>
       {showArrows && (
@@ -154,5 +178,11 @@ const styles = StyleSheet.create({
   },
   inlineArrow: {
     padding: 4,
+  },
+  gutterArrow: {
+    padding: 6,
+  },
+  gutterArrowDisabled: {
+    opacity: 0.3,
   },
 });

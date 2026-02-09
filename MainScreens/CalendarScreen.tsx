@@ -518,9 +518,11 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
   const { width: screenWidth, height: windowHeight } = useWindowDimensions();
   const CAROUSEL_CARD_MARGIN = 12;
+  const CAROUSEL_ARROW_GUTTER = 44;
   const containerWidth = screenWidth;
   const carouselWidth = containerWidth;
-  const carouselCardWidth = carouselWidth - CAROUSEL_CARD_MARGIN * 2;
+  const carouselCardWidth =
+    carouselWidth - CAROUSEL_CARD_MARGIN * 2 - CAROUSEL_ARROW_GUTTER * 2;
   const padBottom = !renderPlanDrawer;
   const cardMinHeight = useMemo(
     () => clampValue(windowHeight * 0.35, 260, 360),
@@ -613,23 +615,18 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const [carouselIndex, setCarouselIndex] = useState(carouselIndexPersist.current);
   const [carouselIndexHydrated, setCarouselIndexHydrated] = useState(false);
   const carouselScrollRef = useRef<ScrollView | null>(null);
-  const carouselDidMountRef = useRef(false);
-  const carouselIndexRef = useRef(carouselIndex);
+  const carouselHasScrolledRef = useRef(false);
+  const carouselUserActionRef = useRef(false);
   const goToIndex = useCallback(
     (next: number | ((cur: number) => number)) => {
+      carouselUserActionRef.current = true;
       setCarouselIndex(cur => {
         const target = typeof next === 'function' ? next(cur) : next;
         const clamped = Math.min(Math.max(target, 0), carouselItems.length - 1);
-        if (carouselIndexHydrated) {
-          carouselScrollRef.current?.scrollTo({
-            x: clamped * carouselCardWidth,
-            animated: true,
-          });
-        }
         return clamped;
       });
     },
-    [carouselCardWidth, carouselItems.length, carouselIndexHydrated],
+    [carouselItems.length],
   );
   const loadedCarouselIndex = useRef(false);
   useEffect(() => {
@@ -673,19 +670,19 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   }, [carouselIndex, carouselIndexHydrated, setCalendarCarouselIndex]);
   useEffect(() => {
     if (!carouselIndexHydrated) return;
-    carouselIndexRef.current = carouselIndex;
-  }, [carouselIndex, carouselIndexHydrated]);
-  useEffect(() => {
-    if (!carouselIndexHydrated) return;
-    if (carouselDidMountRef.current) {
+    const shouldScroll =
+      !carouselHasScrolledRef.current || carouselUserActionRef.current;
+    if (shouldScroll) {
+      const animated =
+        carouselHasScrolledRef.current && carouselUserActionRef.current;
       carouselScrollRef.current?.scrollTo({
-        x: carouselIndexRef.current * carouselCardWidth,
-        animated: false,
+        x: carouselIndex * carouselCardWidth,
+        animated,
       });
-    } else {
-      carouselDidMountRef.current = true;
+      carouselHasScrolledRef.current = true;
+      carouselUserActionRef.current = false;
     }
-  }, [carouselCardWidth, carouselIndexHydrated]);
+  }, [carouselCardWidth, carouselIndex, carouselIndexHydrated]);
   const lastDayDropdownWidthRef = useRef<number>(0);
   const lastWorkoutContainerHeightRef = useRef<number>(0);
 
@@ -2024,50 +2021,71 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
               },
             ]}
           >
-            {carouselItems.length > 1 && carouselIndexHydrated && (
-              <View style={styles.carouselNavRow}>
-                <CarouselNavigator
-                  index={carouselIndex}
-                  length={carouselItems.length}
-                  onIndexChange={goToIndex}
-                  arrowSize={36}
-                  dotSize={16}
-                  showDots={false}
-                  layout="inline"
-                />
-              </View>
-            )}
-            <View style={styles.carouselCardFrame}>
-              {carouselIndexHydrated ? (
-                <View style={[carouselCardStyle, { minHeight: cardMinHeight }]}>
-                  <SectionHeader title={activeHeader.title} logo={activeHeader.logo}>
-                    {activeHeader.trailing}
-                  </SectionHeader>
-                  <View style={styles.carouselBody}>
-                    <ScrollView
-                      ref={carouselScrollRef}
-                      horizontal
-                      pagingEnabled
-                      showsHorizontalScrollIndicator={false}
-                      onMomentumScrollEnd={handleCarouselScrollEnd}
-                      scrollEventThrottle={16}
-                      scrollEnabled={carouselItems.length > 1}
-                      style={styles.carouselScrollView}
-                      contentContainerStyle={styles.carouselScrollContent}
-                      contentOffset={{ x: carouselIndex * carouselCardWidth, y: 0 }}
-                    >
-                      {carouselItems.map(item => (
-                        <View key={item} style={{ width: carouselCardWidth }}>
-                          {renderCarouselItem(item)}
-                        </View>
-                      ))}
-                    </ScrollView>
+            {carouselIndexHydrated ? (
+              <View style={styles.carouselRow} pointerEvents="box-none">
+                <View style={styles.carouselArrowGutter} pointerEvents="box-none">
+                  {carouselItems.length > 1 && (
+                    <CarouselNavigator
+                      index={carouselIndex}
+                      length={carouselItems.length}
+                      onIndexChange={goToIndex}
+                      arrowSize={36}
+                      showDots={false}
+                      showArrows
+                      layout="gutter"
+                    />
+                  )}
+                </View>
+                <View style={styles.carouselCardFrame}>
+                  <View style={[carouselCardStyle, { minHeight: cardMinHeight }]}>
+                    <SectionHeader title={activeHeader.title} logo={activeHeader.logo}>
+                      {activeHeader.trailing}
+                    </SectionHeader>
+                    <View style={styles.carouselBody}>
+                      <ScrollView
+                        ref={carouselScrollRef}
+                        horizontal
+                        pagingEnabled
+                        decelerationRate="fast"
+                        snapToInterval={carouselCardWidth}
+                        snapToAlignment="start"
+                        disableScrollViewPanResponder={false}
+                        showsHorizontalScrollIndicator={false}
+                        onMomentumScrollEnd={handleCarouselScrollEnd}
+                        scrollEventThrottle={16}
+                        scrollEnabled={carouselItems.length > 1}
+                        style={styles.carouselScrollView}
+                        contentContainerStyle={styles.carouselScrollContent}
+                      >
+                        {carouselItems.map(item => (
+                          <View key={item} style={{ width: carouselCardWidth }}>
+                            {renderCarouselItem(item)}
+                          </View>
+                        ))}
+                      </ScrollView>
+                    </View>
                   </View>
                 </View>
-              ) : (
+                <View style={styles.carouselArrowGutter} pointerEvents="box-none">
+                  {carouselItems.length > 1 && (
+                    <CarouselNavigator
+                      index={carouselIndex}
+                      length={carouselItems.length}
+                      onIndexChange={goToIndex}
+                      arrowSize={36}
+                      showDots={false}
+                      showArrows
+                      layout="gutter"
+                      invertArrows
+                    />
+                  )}
+                </View>
+              </View>
+            ) : (
+              <View style={styles.carouselCardFrame}>
                 <View style={[carouselCardStyle, { minHeight: cardMinHeight }]} />
-              )}
-            </View>
+              </View>
+            )}
             {carouselItems.length > 1 && carouselIndexHydrated && (
               <CarouselNavigator
                 index={carouselIndex}
@@ -3124,7 +3142,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 3 },
     elevation: 6,
     backgroundColor: colors.white,
-    paddingHorizontal: 30,
+    paddingHorizontal: 22,
     paddingTop: 24,
     paddingBottom: 24,
     width: '100%',
@@ -3261,15 +3279,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  carouselNavRow: {
-    width: '100%',
-    paddingHorizontal: 8,
-    marginBottom: 4,
-  },
-  carouselCardFrame: {
+  carouselRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     width: '100%',
     flex: 1,
+  },
+  carouselArrowGutter: {
+    width: 44,
+    alignItems: 'center',
     justifyContent: 'center',
+  },
+  carouselCardFrame: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   carouselBody: {
     flex: 1,
@@ -3279,14 +3303,6 @@ const styles = StyleSheet.create({
   },
   carouselScrollView: {
     flex: 1,
-  },
-  carouselArrowsOverlay: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
   },
   carouselDotsRow: {
     flexDirection: 'row',
