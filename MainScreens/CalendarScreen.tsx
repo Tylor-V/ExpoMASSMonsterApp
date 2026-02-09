@@ -657,9 +657,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       console.error('Failed to save carousel index', err)
     );
   }, [carouselIndex, carouselWidth]);
-  const [stableCarouselMinHeight, setStableCarouselMinHeight] = useState<number>(340);
-  const stableCarouselMinHeightRef = useRef<number>(340);
-  const carouselMinHeightFrozenRef = useRef(false);
+  const [stableCarouselMinHeight, setStableCarouselMinHeight] = useState<number>(0);
+  const stableCarouselMinHeightRef = useRef<number>(0);
   const lastRootHeightRef = useRef<number>(0);
   const lastDaysRowHeightRef = useRef<number>(0);
   const lastMassCardTopRef = useRef<number | null>(null);
@@ -1491,15 +1490,16 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   }, []);
 
 
-  const onCarouselItemLayout = useCallback((e: LayoutChangeEvent) => {
-    if (carouselMinHeightFrozenRef.current) return;
-    const next = Math.round(e.nativeEvent.layout.height);
-    if (next >= 340) {
-      stableCarouselMinHeightRef.current = next;
-      setStableCarouselMinHeight(next);
-      carouselMinHeightFrozenRef.current = true;
-    }
-  }, []);
+  const onCarouselItemLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      const next = Math.round(e.nativeEvent.layout.height);
+      if (next > stableCarouselMinHeightRef.current + 2) {
+        stableCarouselMinHeightRef.current = next;
+        setStableCarouselMinHeight(next);
+      }
+    },
+    [],
+  );
 
   const onRootLayout = useCallback((e: LayoutChangeEvent) => {
     const next = Math.round(e.nativeEvent.layout.height);
@@ -2788,13 +2788,10 @@ const styles = StyleSheet.create({
     width: 100,
     height: 80,
     marginRight: 8,
+    marginTop: -20,
+    marginBottom: -20,
   },
-  massHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 80,
-    marginBottom: 14,
-  },
+  massHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
   massHeaderTxt: {
     color: colors.yellow,
     fontSize: 22,
