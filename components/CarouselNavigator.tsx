@@ -45,15 +45,16 @@ export default function CarouselNavigator({
 }: Props) {
   const dots = Array.from({ length: maxDots ? Math.min(length, maxDots) : length });
   const arrowOffset = arrowSize / 2 + 4; // center arrow including padding
+  const isOverlay = layout === 'overlay';
   return (
-    <View pointerEvents="box-none" style={layout === 'overlay' ? styles.container : styles.inlineContainer}>
+    <View pointerEvents="box-none" style={isOverlay ? styles.container : styles.inlineContainer}>
       {showArrows && (
-        <View pointerEvents="box-none" style={layout === 'overlay' ? styles.arrowOverlay : styles.inlineArrowRow}>
+        <View pointerEvents="box-none" style={isOverlay ? styles.arrowOverlay : styles.inlineArrowRow}>
           <TouchableOpacity
             testID="prev-arrow"
             style={[
-              layout === 'overlay' ? styles.arrow : styles.inlineArrow,
-              layout === 'overlay' && { left: leftOffset, transform: [{ translateY: -arrowOffset }] },
+              isOverlay ? styles.arrow : styles.inlineArrow,
+              isOverlay && { left: leftOffset, transform: [{ translateY: -arrowOffset }] },
             ]}
             onPress={() => onIndexChange(cur => cur - 1)}
             disabled={index === 0}
@@ -69,8 +70,8 @@ export default function CarouselNavigator({
           <TouchableOpacity
             testID="next-arrow"
             style={[
-              layout === 'overlay' ? styles.arrow : styles.inlineArrow,
-              layout === 'overlay' && { right: rightOffset, transform: [{ translateY: -arrowOffset }] },
+              isOverlay ? styles.arrow : styles.inlineArrow,
+              isOverlay && { right: rightOffset, transform: [{ translateY: -arrowOffset }] },
             ]}
             onPress={() => onIndexChange(cur => cur + 1)}
             disabled={index === length - 1}
@@ -86,7 +87,7 @@ export default function CarouselNavigator({
         </View>
       )}
       {showDots && (
-        <View style={[layout === 'overlay' ? styles.dotsRow : styles.inlineDotsRow, dotsRowStyle]}>
+        <View style={[isOverlay ? styles.dotsRow : styles.inlineDotsRow, dotsRowStyle]}>
           {dots.map((_, i) => (
             <TouchableOpacity
               key={i}
@@ -116,7 +117,6 @@ const styles = StyleSheet.create({
   inlineContainer: {
     width: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
   },
   arrowOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -148,13 +148,9 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   inlineArrowRow: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: '50%',
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 4,
+    width: '100%',
   },
   inlineArrow: {
     padding: 4,

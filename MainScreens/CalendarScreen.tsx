@@ -520,6 +520,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const CAROUSEL_CARD_MARGIN = 12;
   const containerWidth = screenWidth;
   const carouselWidth = containerWidth;
+  const carouselCardWidth = carouselWidth - CAROUSEL_CARD_MARGIN * 2;
   const padBottom = !renderPlanDrawer;
   const cardMinHeight = useMemo(
     () => clampValue(windowHeight * 0.35, 260, 360),
@@ -533,16 +534,16 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     () => [
       styles.carouselCard,
       {
-        width: carouselWidth - CAROUSEL_CARD_MARGIN * 2,
+        width: carouselCardWidth,
         marginHorizontal: CAROUSEL_CARD_MARGIN,
         flex: 1,
       },
     ],
-    [carouselWidth],
+    [carouselCardWidth],
   );
   const carouselChipStyle = useMemo(
-    () => [styles.carouselChip, { width: carouselWidth - CAROUSEL_CARD_MARGIN * 2 - 60 }],
-    [carouselWidth],
+    () => [styles.carouselChip, { width: carouselCardWidth - 60 }],
+    [carouselCardWidth],
   );
   
   const DRAWER_ANIM_DURATION = ANIM_MEDIUM;
@@ -612,16 +613,23 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const [carouselIndex, setCarouselIndex] = useState(carouselIndexPersist.current);
   const [carouselIndexHydrated, setCarouselIndexHydrated] = useState(false);
   const carouselScrollRef = useRef<ScrollView | null>(null);
-  const carouselHasScrolledRef = useRef(false);
+  const carouselDidMountRef = useRef(false);
+  const carouselIndexRef = useRef(carouselIndex);
   const goToIndex = useCallback(
     (next: number | ((cur: number) => number)) => {
       setCarouselIndex(cur => {
         const target = typeof next === 'function' ? next(cur) : next;
         const clamped = Math.min(Math.max(target, 0), carouselItems.length - 1);
+        if (carouselIndexHydrated) {
+          carouselScrollRef.current?.scrollTo({
+            x: clamped * carouselCardWidth,
+            animated: true,
+          });
+        }
         return clamped;
       });
     },
-    [carouselItems.length],
+    [carouselCardWidth, carouselItems.length, carouselIndexHydrated],
   );
   const loadedCarouselIndex = useRef(false);
   useEffect(() => {
@@ -638,8 +646,12 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           : initialIndex;
         carouselIndexPersist.current = resolvedIndex;
         lastCarouselIndex = resolvedIndex;
-        setCalendarCarouselIndex(resolvedIndex);
-        setCarouselIndex(resolvedIndex);
+        if (resolvedIndex !== calendarCarouselIndex) {
+          setCalendarCarouselIndex(resolvedIndex);
+        }
+        if (resolvedIndex !== carouselIndex) {
+          setCarouselIndex(resolvedIndex);
+        }
         setCarouselIndexHydrated(true);
       })
       .catch(() => {
@@ -649,7 +661,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     return () => {
       mounted = false;
     };
-  }, [carouselItems.length, setCalendarCarouselIndex]);
+  }, [calendarCarouselIndex, carouselIndex, carouselItems.length, setCalendarCarouselIndex]);
   useEffect(() => {
     if (!carouselIndexHydrated) return;
     carouselIndexPersist.current = carouselIndex;
@@ -661,13 +673,19 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   }, [carouselIndex, carouselIndexHydrated, setCalendarCarouselIndex]);
   useEffect(() => {
     if (!carouselIndexHydrated) return;
-    const targetX = carouselIndex * carouselWidth;
-    const animated = carouselHasScrolledRef.current;
-    carouselScrollRef.current?.scrollTo({ x: targetX, animated });
-    if (!carouselHasScrolledRef.current) {
-      carouselHasScrolledRef.current = true;
+    carouselIndexRef.current = carouselIndex;
+  }, [carouselIndex, carouselIndexHydrated]);
+  useEffect(() => {
+    if (!carouselIndexHydrated) return;
+    if (carouselDidMountRef.current) {
+      carouselScrollRef.current?.scrollTo({
+        x: carouselIndexRef.current * carouselCardWidth,
+        animated: false,
+      });
+    } else {
+      carouselDidMountRef.current = true;
     }
-  }, [carouselIndex, carouselIndexHydrated, carouselWidth]);
+  }, [carouselCardWidth, carouselIndexHydrated]);
   const lastDayDropdownWidthRef = useRef<number>(0);
   const lastWorkoutContainerHeightRef = useRef<number>(0);
 
@@ -1751,208 +1769,196 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     </Modal>
   );
 
-  const MassEventsSection = () => (
-    <View style={carouselCardStyle}>
-      <SectionHeader title="MASS" logo={MASS_LOGO} />
-      <View style={styles.sceneBody}>
-        {showSplitPlaceholder && <ChooseSplitButton />}
-        {massEventsPreview.map((ev, idx) => {
-          const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][ev.weekday];
-          const countdown = formatCountdown(ev.diff);
-          return (
-            <View
-              key={ev.id}
-              style={[
-                carouselChipStyle,
-                ev.isWorkout && styles.massWorkoutTile,
-                idx !== 0 && styles.massTileSpacing,
-              ]}
-            >
-              <View style={[styles.massTileHeader, ev.isWorkout && styles.massWorkoutHeader]}>
-                <Ionicons name={ev.icon} size={22} color={colors.yellow} style={{ marginRight: 8 }} />
-                <Text style={styles.massTileTitle}>{ev.name.toUpperCase()}</Text>
-                {ev.isWorkout && (
-                  <AnimatedTouchable
-                    ref={dayArrowRef}
-                    onPress={toggleDayMenu}
-                    onPressIn={handleChevronPressIn}
-                    onPressOut={handleChevronPressOut}
-                    style={styles.dayMenuBtn}
-                  >
-                    <AnimatedIcon
-                      name="chevron-down-outline"
-                      size={20}
-                      color={colors.blue}
-                      style={{ transform: [{ scale: chevronScale }, { rotate: rotation }] }}
-                    />
-                  </AnimatedTouchable>
-                )}
-              </View>
-              {ev.isWorkout ? (
-                <View style={styles.massDetailsRow}>
-                  <View style={{ flex: 1 }}>
-                    {plan && (
-                      <Text style={styles.workoutSplitName}>{plan.name}</Text>
-                    )}
-                  </View>
-                  <TouchableOpacity
-                    onPress={openWorkoutDrawer}
-                    style={styles.zoomBtn}
-                  >
-                    <Ionicons
-                      name="information-circle-outline"
-                      size={26}
-                      color={colors.blue}
-                    />
-                  </TouchableOpacity>
-                </View>
-              ) : (
-                <View style={styles.massDetailsRow}>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1 }}>
-                    <Text style={styles.massTileWhen}>{`Every ${dayName} @ 9 AM`}</Text>
-                    <Text style={styles.massCountdown}>{`Starts in ${countdown}`}</Text>
-                  </View>
-                  {ev.link ? (
-                    <TouchableOpacity
-                      onPress={() => Linking.openURL(ev.link)}
-                      style={styles.zoomBtn}
-                    >
-                      <MaterialIcons name="north-east" size={26} color={colors.blue} />
-                    </TouchableOpacity>
-                  ) : null}
-                </View>
+  const MassEventsBody = () => (
+    <View style={styles.sceneBody}>
+      {showSplitPlaceholder && <ChooseSplitButton />}
+      {massEventsPreview.map((ev, idx) => {
+        const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][ev.weekday];
+        const countdown = formatCountdown(ev.diff);
+        return (
+          <View
+            key={ev.id}
+            style={[
+              carouselChipStyle,
+              ev.isWorkout && styles.massWorkoutTile,
+              idx !== 0 && styles.massTileSpacing,
+            ]}
+          >
+            <View style={[styles.massTileHeader, ev.isWorkout && styles.massWorkoutHeader]}>
+              <Ionicons name={ev.icon} size={22} color={colors.yellow} style={{ marginRight: 8 }} />
+              <Text style={styles.massTileTitle}>{ev.name.toUpperCase()}</Text>
+              {ev.isWorkout && (
+                <AnimatedTouchable
+                  ref={dayArrowRef}
+                  onPress={toggleDayMenu}
+                  onPressIn={handleChevronPressIn}
+                  onPressOut={handleChevronPressOut}
+                  style={styles.dayMenuBtn}
+                >
+                  <AnimatedIcon
+                    name="chevron-down-outline"
+                    size={20}
+                    color={colors.blue}
+                    style={{ transform: [{ scale: chevronScale }, { rotate: rotation }] }}
+                  />
+                </AnimatedTouchable>
               )}
             </View>
-          );
-        })}
-        {hasMoreMassEvents && (
-          <ViewAllButton onPress={() => setShowAllMassEvents(true)} />
-        )}
-      </View>
+            {ev.isWorkout ? (
+              <View style={styles.massDetailsRow}>
+                <View style={{ flex: 1 }}>
+                  {plan && (
+                    <Text style={styles.workoutSplitName}>{plan.name}</Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  onPress={openWorkoutDrawer}
+                  style={styles.zoomBtn}
+                >
+                  <Ionicons
+                    name="information-circle-outline"
+                    size={26}
+                    color={colors.blue}
+                  />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.massDetailsRow}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1 }}>
+                  <Text style={styles.massTileWhen}>{`Every ${dayName} @ 9 AM`}</Text>
+                  <Text style={styles.massCountdown}>{`Starts in ${countdown}`}</Text>
+                </View>
+                {ev.link ? (
+                  <TouchableOpacity
+                    onPress={() => Linking.openURL(ev.link)}
+                    style={styles.zoomBtn}
+                  >
+                    <MaterialIcons name="north-east" size={26} color={colors.blue} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            )}
+          </View>
+        );
+      })}
+      {hasMoreMassEvents && (
+        <ViewAllButton onPress={() => setShowAllMassEvents(true)} />
+      )}
     </View>
   );
 
-  const NewsSection = () => (
-    <View style={carouselCardStyle}>
-      <SectionHeader title="NEWS" logo={MASS_LOGO}>
-        {addNewsButton}
-      </SectionHeader>
-        {newsLoaded ? (
-          mergedNews.length ? (
-            <View style={styles.sceneBody}>
-              {newsPreview.map((item, index) =>
-                item.message ? (
-                  <View
-                    key={item.id || `badge-${index}`}
-                    style={[
-                      carouselChipStyle,
-                      styles.newsTile,
-                      index !== 0 && styles.massTileSpacing,
-                    ]}
-                  >
-                    <Text style={styles.massTileTitle}>{item.message ?? item.title}</Text>
+  const NewsBody = () => (
+    <>
+      {newsLoaded ? (
+        mergedNews.length ? (
+          <View style={styles.sceneBody}>
+            {newsPreview.map((item, index) =>
+              item.message ? (
+                <View
+                  key={item.id || `badge-${index}`}
+                  style={[
+                    carouselChipStyle,
+                    styles.newsTile,
+                    index !== 0 && styles.massTileSpacing,
+                  ]}
+                >
+                  <Text style={styles.massTileTitle}>{item.message ?? item.title}</Text>
+                </View>
+              ) : (
+                <View
+                  key={item.id || `badge-${index}`}
+                  style={[
+                    carouselChipStyle,
+                    styles.newsTile,
+                    index !== 0 && styles.massTileSpacing,
+                  ]}
+                >
+                  <View style={styles.massTileHeader}>
+                    <Image source={item.image} style={styles.badgeImage} />
+                    <Text style={styles.massTileTitle}>{item.id} Badge</Text>
                   </View>
-                ) : (
-                  <View
-                    key={item.id || `badge-${index}`}
-                    style={[
-                      carouselChipStyle,
-                      styles.newsTile,
-                      index !== 0 && styles.massTileSpacing,
-                    ]}
-                  >
-                    <View style={styles.massTileHeader}>
-                      <Image source={item.image} style={styles.badgeImage} />
-                      <Text style={styles.massTileTitle}>{item.id} Badge</Text>
-                    </View>
-                    <View style={styles.badgeRowCarousel}>
-                      <View style={styles.progressTrack}>
+                  <View style={styles.badgeRowCarousel}>
+                    <View style={styles.progressTrack}>
                       <View
                         style={[
                           styles.progressBar,
                           { width: `${Math.round(item.progress * 100)}%` },
                         ]}
                       />
-                      </View>
-                      <Text style={styles.badgePercent}>{Math.round(item.progress * 100)}%</Text>
                     </View>
-                    <Text style={styles.requirements}>{item.requirements}</Text>
+                    <Text style={styles.badgePercent}>{Math.round(item.progress * 100)}%</Text>
                   </View>
-                  )
-              )}
-              {hasMoreNews && (
-                <ViewAllButton onPress={() => setShowAllNews(true)} />
-              )}
-            </View>
-          ) : (
-            <Text style={styles.newsEmptyText}>No New MASS News</Text>
-          )
-        ) : (
-          <ActivityIndicator color={colors.accent} size="large" style={{ marginTop: 30 }} />
-        )}
-      </View>
-    );
-
-  const CompetitionsSection = () => (
-    <View style={carouselCardStyle}>
-      <SectionHeader logo={COMPS_LOGO} />
-      <View style={styles.sceneBody}>
-        {compsPreview.map((c, idx) => (
-          <View key={c.id} style={[
-            carouselChipStyle,
-            styles.compTile,
-            idx !== 0 && styles.compTileSpacing,
-          ]}>
-            <View style={styles.massTileHeader}>
-              <Ionicons name="flame-outline" size={22} color={colors.purple} style={{ marginRight: 8 }} />
-              <Text style={styles.compTileTitle}>{c.name}</Text>
-            </View>
-            <Text style={styles.compComingSoon}>{c.status}</Text>
+                  <Text style={styles.requirements}>{item.requirements}</Text>
+                </View>
+              )
+            )}
+            {hasMoreNews && (
+              <ViewAllButton onPress={() => setShowAllNews(true)} />
+            )}
           </View>
-        ))}
-        {hasMoreComps && (
-          <ViewAllButton onPress={() => setShowAllComps(true)} />
-        )}
-      </View>
+        ) : (
+          <Text style={styles.newsEmptyText}>No New MASS News</Text>
+        )
+      ) : (
+        <ActivityIndicator color={colors.accent} size="large" style={{ marginTop: 30 }} />
+      )}
+    </>
+  );
+
+  const CompetitionsBody = () => (
+    <View style={styles.sceneBody}>
+      {compsPreview.map((c, idx) => (
+        <View key={c.id} style={[
+          carouselChipStyle,
+          styles.compTile,
+          idx !== 0 && styles.compTileSpacing,
+        ]}>
+          <View style={styles.massTileHeader}>
+            <Ionicons name="flame-outline" size={22} color={colors.purple} style={{ marginRight: 8 }} />
+            <Text style={styles.compTileTitle}>{c.name}</Text>
+          </View>
+          <Text style={styles.compComingSoon}>{c.status}</Text>
+        </View>
+      ))}
+      {hasMoreComps && (
+        <ViewAllButton onPress={() => setShowAllComps(true)} />
+      )}
     </View>
   );
 
-  const EventsSection = () => (
-    <View style={carouselCardStyle}>
-      <SectionHeader title="EVENTS" logo={MASS_LOGO} />
-      <View style={styles.sceneBody}>
-        {eventsPreview.length ? (
-          eventsPreview.map(item => (
-            <View key={item.id} style={[styles.eventCard, styles.eventCardCompact, styles.sceneEventCard]}>
-              <Ionicons
-                name="calendar-outline"
-                size={24}
-                color={colors.purple}
-                style={{ marginRight: 10 }}
-              />
-              <View style={{ flex: 1 }}>
-                <Text style={styles.eventTitle}>{item.title}</Text>
-                {item.time && <Text style={styles.eventTime}>{item.time}</Text>}
-              </View>
-              {item.type === 'oneonone' && (
-                <TouchableOpacity
-                  onPress={() => cancelEvent(item.id)}
-                  style={styles.cancelBtn}
-                  accessibilityRole="button"
-                  accessibilityLabel="Cancel one on one"
-                >
-                  <Text style={styles.cancelBtnTxt}>Cancel</Text>
-                </TouchableOpacity>
-              )}
+  const EventsBody = () => (
+    <View style={styles.sceneBody}>
+      {eventsPreview.length ? (
+        eventsPreview.map(item => (
+          <View key={item.id} style={[styles.eventCard, styles.eventCardCompact, styles.sceneEventCard]}>
+            <Ionicons
+              name="calendar-outline"
+              size={24}
+              color={colors.purple}
+              style={{ marginRight: 10 }}
+            />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.eventTitle}>{item.title}</Text>
+              {item.time && <Text style={styles.eventTime}>{item.time}</Text>}
             </View>
-          ))
-        ) : (
-          <Text style={styles.emptyText}>No events</Text>
-        )}
-        {hasMoreEvents && (
-          <ViewAllButton onPress={() => setShowAllEvents(true)} />
-        )}
-      </View>
+            {item.type === 'oneonone' && (
+              <TouchableOpacity
+                onPress={() => cancelEvent(item.id)}
+                style={styles.cancelBtn}
+                accessibilityRole="button"
+                accessibilityLabel="Cancel one on one"
+              >
+                <Text style={styles.cancelBtnTxt}>Cancel</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ))
+      ) : (
+        <Text style={styles.emptyText}>No events</Text>
+      )}
+      {hasMoreEvents && (
+        <ViewAllButton onPress={() => setShowAllEvents(true)} />
+      )}
     </View>
   );
 
@@ -1960,20 +1966,34 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     (event: any) => {
       if (!carouselIndexHydrated) return;
       const offsetX = event.nativeEvent.contentOffset.x;
-      const nextIndex = Math.round(offsetX / carouselWidth);
+      const nextIndex = Math.round(offsetX / carouselCardWidth);
       if (nextIndex !== carouselIndex) {
         setCarouselIndex(nextIndex);
       }
     },
-    [carouselIndex, carouselIndexHydrated, carouselWidth],
+    [carouselCardWidth, carouselIndex, carouselIndexHydrated],
   );
 
   const renderCarouselItem = (sceneKey: string) => {
-    if (sceneKey === 'massEvents') return <MassEventsSection />;
-    if (sceneKey === 'news') return <NewsSection />;
-    if (sceneKey === 'comps') return <CompetitionsSection />;
-    return <EventsSection />;
+    if (sceneKey === 'massEvents') return <MassEventsBody />;
+    if (sceneKey === 'news') return <NewsBody />;
+    if (sceneKey === 'comps') return <CompetitionsBody />;
+    return <EventsBody />;
   };
+
+  const activeSceneKey = carouselItems[carouselIndex] ?? 'massEvents';
+  const activeHeader = useMemo(() => {
+    if (activeSceneKey === 'news') {
+      return { title: 'NEWS', logo: MASS_LOGO, trailing: addNewsButton };
+    }
+    if (activeSceneKey === 'comps') {
+      return { title: undefined, logo: COMPS_LOGO, trailing: null };
+    }
+    if (activeSceneKey === 'events') {
+      return { title: 'EVENTS', logo: MASS_LOGO, trailing: null };
+    }
+    return { title: 'MASS', logo: MASS_LOGO, trailing: null };
+  }, [activeSceneKey, addNewsButton]);
 
   // ---------- UI ----------
   return (
@@ -2004,39 +2024,48 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
               },
             ]}
           >
+            {carouselItems.length > 1 && carouselIndexHydrated && (
+              <View style={styles.carouselNavRow}>
+                <CarouselNavigator
+                  index={carouselIndex}
+                  length={carouselItems.length}
+                  onIndexChange={goToIndex}
+                  arrowSize={36}
+                  dotSize={16}
+                  showDots={false}
+                  layout="inline"
+                />
+              </View>
+            )}
             <View style={styles.carouselCardFrame}>
               {carouselIndexHydrated ? (
-                <ScrollView
-                  ref={carouselScrollRef}
-                  horizontal
-                  pagingEnabled
-                  showsHorizontalScrollIndicator={false}
-                  onMomentumScrollEnd={handleCarouselScrollEnd}
-                  scrollEventThrottle={16}
-                  scrollEnabled={carouselItems.length > 1}
-                  contentContainerStyle={styles.carouselScrollContent}
-                >
-                  {carouselItems.map(item => (
-                    <View key={item} style={{ width: carouselWidth }}>
-                      {renderCarouselItem(item)}
-                    </View>
-                  ))}
-                </ScrollView>
+                <View style={[carouselCardStyle, { minHeight: cardMinHeight }]}>
+                  <SectionHeader title={activeHeader.title} logo={activeHeader.logo}>
+                    {activeHeader.trailing}
+                  </SectionHeader>
+                  <View style={styles.carouselBody}>
+                    <ScrollView
+                      ref={carouselScrollRef}
+                      horizontal
+                      pagingEnabled
+                      showsHorizontalScrollIndicator={false}
+                      onMomentumScrollEnd={handleCarouselScrollEnd}
+                      scrollEventThrottle={16}
+                      scrollEnabled={carouselItems.length > 1}
+                      style={styles.carouselScrollView}
+                      contentContainerStyle={styles.carouselScrollContent}
+                      contentOffset={{ x: carouselIndex * carouselCardWidth, y: 0 }}
+                    >
+                      {carouselItems.map(item => (
+                        <View key={item} style={{ width: carouselCardWidth }}>
+                          {renderCarouselItem(item)}
+                        </View>
+                      ))}
+                    </ScrollView>
+                  </View>
+                </View>
               ) : (
                 <View style={[carouselCardStyle, { minHeight: cardMinHeight }]} />
-              )}
-              {carouselItems.length > 1 && carouselIndexHydrated && (
-                <View style={styles.carouselArrowsOverlay} pointerEvents="box-none">
-                  <CarouselNavigator
-                    index={carouselIndex}
-                    length={carouselItems.length}
-                    onIndexChange={goToIndex}
-                    arrowSize={36}
-                    dotSize={16}
-                    showDots={false}
-                    layout="inline"
-                  />
-                </View>
               )}
             </View>
             {carouselItems.length > 1 && carouselIndexHydrated && (
@@ -3232,13 +3261,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  carouselNavRow: {
+    width: '100%',
+    paddingHorizontal: 8,
+    marginBottom: 4,
+  },
   carouselCardFrame: {
     width: '100%',
     flex: 1,
     justifyContent: 'center',
   },
+  carouselBody: {
+    flex: 1,
+  },
   carouselScrollContent: {
     alignItems: 'stretch',
+  },
+  carouselScrollView: {
+    flex: 1,
   },
   carouselArrowsOverlay: {
     position: 'absolute',
