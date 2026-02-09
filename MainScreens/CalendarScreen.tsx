@@ -653,6 +653,12 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     );
   }, [carouselIndex, carouselWidth]);
   const [carouselHeight, setCarouselHeight] = useState<number | undefined>();
+  const lastCarouselHeightRef = useRef<number>(0);
+  const lastRootHeightRef = useRef<number>(0);
+  const lastDaysRowHeightRef = useRef<number>(0);
+  const lastMassCardTopRef = useRef<number | null>(null);
+  const lastDayDropdownWidthRef = useRef<number>(0);
+  const lastWorkoutContainerHeightRef = useRef<number>(0);
 
   useEffect(() => {
     if (rootHeight && massCardTop !== null) {
@@ -1464,27 +1470,63 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     </View>
   );
 
-  const onMassCardLayout = useCallback((e) => {
-  const layout = e?.nativeEvent?.layout;
-  if (layout) {
-    setMassCardTop(prev => (prev === null ? layout.y : prev));
-  }
-}, []);
+  const onMassCardLayout = useCallback((e: LayoutChangeEvent) => {
+    const layout = e?.nativeEvent?.layout;
+    if (!layout) return;
+    const next = Math.round(layout.y);
+    if (
+      lastMassCardTopRef.current !== null &&
+      Math.abs(next - lastMassCardTopRef.current) < 2
+    ) {
+      return;
+    }
+    lastMassCardTopRef.current = next;
+    setMassCardTop(next);
+  }, []);
 
 
   const onCarouselItemLayout = useCallback(
     (e: LayoutChangeEvent) => {
-      const h = e.nativeEvent.layout.height;
-      if (h && h !== carouselHeight) {
-        setCarouselHeight(h);
-      }
+      const next = Math.round(e.nativeEvent.layout.height);
+      if (Math.abs(next - lastCarouselHeightRef.current) < 2) return;
+      lastCarouselHeightRef.current = next;
+      setCarouselHeight(next);
     },
-    [carouselHeight],
+    [],
   );
 
   useEffect(() => {
+    lastCarouselHeightRef.current = 0;
     setCarouselHeight(undefined);
   }, [carouselWidth]);
+
+  const onRootLayout = useCallback((e: LayoutChangeEvent) => {
+    const next = Math.round(e.nativeEvent.layout.height);
+    if (Math.abs(next - lastRootHeightRef.current) < 2) return;
+    lastRootHeightRef.current = next;
+    setRootHeight(next);
+  }, []);
+
+  const onDaysRowLayout = useCallback((e: LayoutChangeEvent) => {
+    const next = Math.round(e.nativeEvent.layout.height);
+    if (Math.abs(next - lastDaysRowHeightRef.current) < 2) return;
+    lastDaysRowHeightRef.current = next;
+    setDaysRowHeight(next);
+  }, []);
+
+  const onDayDropdownLayout = useCallback((e: LayoutChangeEvent) => {
+    const next = Math.round(e.nativeEvent.layout.width);
+    if (Math.abs(next - lastDayDropdownWidthRef.current) < 2) return;
+    lastDayDropdownWidthRef.current = next;
+    setDayDropdownWidth(next);
+  }, []);
+
+  const onWorkoutContainerLayout = useCallback((e: LayoutChangeEvent) => {
+    const next = Math.round(e.nativeEvent.layout.height);
+    if (Math.abs(next - lastWorkoutContainerHeightRef.current) < 2) return;
+    lastWorkoutContainerHeightRef.current = next;
+    setWorkoutContainerHeight(next);
+  }, []);
 
   const ChooseSplitButton = () => {
     const scale = useRef(new Animated.Value(1)).current;
@@ -1556,6 +1598,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     setShowWorkoutDrawer(false);
     dayMenuOpenedAt.current = Date.now();
     ignoreNextDayMenuPress.current = true;
+    lastDayDropdownWidthRef.current = 0;
     setDayDropdownWidth(0);
     setDayMenuOpen(true);
     InteractionManager.runAfterInteractions(() => {
@@ -1827,14 +1870,14 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     <WhiteBackgroundWrapper style={{ flex: 1 }} padBottom={!renderPlanDrawer}>
       <View
         style={{ flex: 1 }}
-        onLayout={e => setRootHeight(e.nativeEvent.layout.height)}
+        onLayout={onRootLayout}
       >
         <View style={{ flex: 1, justifyContent: 'space-between' }}>
           {/* Zone 1: days and events */}
           <View>
             <View
               style={{ paddingTop: 12 }}
-              onLayout={e => setDaysRowHeight(e.nativeEvent.layout.height)}
+              onLayout={onDaysRowLayout}
             >
               <ScrollView
                 horizontal
@@ -1967,7 +2010,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                     left: dayArrowPos.x - dayDropdownWidth / 2,
                   },
                 ]}
-                onLayout={e => setDayDropdownWidth(e.nativeEvent.layout.width)}
+                onLayout={onDayDropdownLayout}
                 onPress={e => e.stopPropagation()}
               >
                 {plan.days.map((d, idx) => (
@@ -2290,7 +2333,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             ]}
           >
             <Animated.ScrollView
-              onLayout={e => setWorkoutContainerHeight(e.nativeEvent.layout.height)}
+              onLayout={onWorkoutContainerLayout}
               onContentSizeChange={(w, h) => setWorkoutContentHeight(h)}
               onScroll={Animated.event(
                 [{ nativeEvent: { contentOffset: { y: workoutScrollY } } }],
