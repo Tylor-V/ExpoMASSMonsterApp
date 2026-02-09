@@ -610,6 +610,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   );
   const carouselIndexPersist = useRef(calendarCarouselIndex);
   const [carouselIndex, setCarouselIndex] = useState(carouselIndexPersist.current);
+  const [carouselIndexHydrated, setCarouselIndexHydrated] = useState(false);
+  const carouselScrollRef = useRef<ScrollView | null>(null);
+  const carouselHasScrolledRef = useRef(false);
   const goToIndex = useCallback(
     (next: number | ((cur: number) => number)) => {
       setCarouselIndex(cur => {
@@ -629,35 +632,42 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       .then(val => {
         if (!mounted) return;
         loadedCarouselIndex.current = true;
-        if (val != null) {
-          const idx = parseInt(val, 10);
-          if (
-            !isNaN(idx) &&
-            idx !== initialIndex &&
-            carouselIndexPersist.current === initialIndex
-          ) {
-            carouselIndexPersist.current = idx;
-            lastCarouselIndex = idx;
-            setCalendarCarouselIndex(idx);
-            setCarouselIndex(idx);
-          }
-        }
+        const parsedIdx = val != null ? parseInt(val, 10) : NaN;
+        const resolvedIndex = !isNaN(parsedIdx)
+          ? Math.min(Math.max(parsedIdx, 0), carouselItems.length - 1)
+          : initialIndex;
+        carouselIndexPersist.current = resolvedIndex;
+        lastCarouselIndex = resolvedIndex;
+        setCalendarCarouselIndex(resolvedIndex);
+        setCarouselIndex(resolvedIndex);
+        setCarouselIndexHydrated(true);
       })
       .catch(() => {
         loadedCarouselIndex.current = true;
+        setCarouselIndexHydrated(true);
       });
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [carouselItems.length, setCalendarCarouselIndex]);
   useEffect(() => {
+    if (!carouselIndexHydrated) return;
     carouselIndexPersist.current = carouselIndex;
     lastCarouselIndex = carouselIndex;
     setCalendarCarouselIndex(carouselIndex);
     AsyncStorage.setItem(CAROUSEL_INDEX_KEY, String(carouselIndex)).catch(err =>
       console.error('Failed to save carousel index', err)
     );
-  }, [carouselIndex]);
+  }, [carouselIndex, carouselIndexHydrated, setCalendarCarouselIndex]);
+  useEffect(() => {
+    if (!carouselIndexHydrated) return;
+    const targetX = carouselIndex * carouselWidth;
+    const animated = carouselHasScrolledRef.current;
+    carouselScrollRef.current?.scrollTo({ x: targetX, animated });
+    if (!carouselHasScrolledRef.current) {
+      carouselHasScrolledRef.current = true;
+    }
+  }, [carouselIndex, carouselIndexHydrated, carouselWidth]);
   const lastDayDropdownWidthRef = useRef<number>(0);
   const lastWorkoutContainerHeightRef = useRef<number>(0);
 
@@ -1946,8 +1956,19 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     </View>
   );
 
-  const renderScene = () => {
-    const sceneKey = carouselItems[carouselIndex];
+  const handleCarouselScrollEnd = useCallback(
+    (event: any) => {
+      if (!carouselIndexHydrated) return;
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const nextIndex = Math.round(offsetX / carouselWidth);
+      if (nextIndex !== carouselIndex) {
+        setCarouselIndex(nextIndex);
+      }
+    },
+    [carouselIndex, carouselIndexHydrated, carouselWidth],
+  );
+
+  const renderCarouselItem = (sceneKey: string) => {
     if (sceneKey === 'massEvents') return <MassEventsSection />;
     if (sceneKey === 'news') return <NewsSection />;
     if (sceneKey === 'comps') return <CompetitionsSection />;
@@ -1984,8 +2005,27 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             ]}
           >
             <View style={styles.carouselCardFrame}>
-              {renderScene()}
-              {carouselItems.length > 1 && (
+              {carouselIndexHydrated ? (
+                <ScrollView
+                  ref={carouselScrollRef}
+                  horizontal
+                  pagingEnabled
+                  showsHorizontalScrollIndicator={false}
+                  onMomentumScrollEnd={handleCarouselScrollEnd}
+                  scrollEventThrottle={16}
+                  scrollEnabled={carouselItems.length > 1}
+                  contentContainerStyle={styles.carouselScrollContent}
+                >
+                  {carouselItems.map(item => (
+                    <View key={item} style={{ width: carouselWidth }}>
+                      {renderCarouselItem(item)}
+                    </View>
+                  ))}
+                </ScrollView>
+              ) : (
+                <View style={[carouselCardStyle, { minHeight: cardMinHeight }]} />
+              )}
+              {carouselItems.length > 1 && carouselIndexHydrated && (
                 <View style={styles.carouselArrowsOverlay} pointerEvents="box-none">
                   <CarouselNavigator
                     index={carouselIndex}
@@ -1999,7 +2039,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                 </View>
               )}
             </View>
-            {carouselItems.length > 1 && (
+            {carouselItems.length > 1 && carouselIndexHydrated && (
               <CarouselNavigator
                 index={carouselIndex}
                 length={carouselItems.length}
@@ -3196,6 +3236,9 @@ const styles = StyleSheet.create({
     width: '100%',
     flex: 1,
     justifyContent: 'center',
+  },
+  carouselScrollContent: {
+    alignItems: 'stretch',
   },
   carouselArrowsOverlay: {
     position: 'absolute',
