@@ -520,28 +520,11 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const CAROUSEL_CARD_MARGIN = 12;
   const containerWidth = screenWidth;
   const carouselWidth = containerWidth;
-  const [daysRowHeight, setDaysRowHeight] = useState(0);
-  const [bottomRowHeight, setBottomRowHeight] = useState(0);
   const padBottom = !renderPlanDrawer;
-  const cardFrameHeight = useMemo(() => {
-    const topInset = insets.top;
-    const bottomInset = padBottom ? TAB_BAR_HEIGHT + insets.bottom : 0;
-    const baseHeight =
-      windowHeight -
-      topInset -
-      bottomInset -
-      bottomRowHeight -
-      daysRowHeight -
-      16;
-    return clampValue(baseHeight, 260, windowHeight);
-  }, [
-    windowHeight,
-    insets.bottom,
-    insets.top,
-    padBottom,
-    bottomRowHeight,
-    daysRowHeight,
-  ]);
+  const cardMinHeight = useMemo(
+    () => clampValue(windowHeight * 0.35, 260, 360),
+    [windowHeight],
+  );
   const PLAN_DRAWER_HEIGHT = windowHeight * 0.8;
   const WORKOUT_DRAWER_MAX_HEIGHT = windowHeight * 0.6;
 
@@ -1124,6 +1107,32 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     }
   }, [renderPlanDrawer, showPlanDrawer, PLAN_DRAWER_HEIGHT]);
 
+  const planDrawerInteractive = renderPlanDrawer && showPlanDrawer;
+  const workoutDrawerInteractive = renderWorkoutDrawer && showWorkoutDrawer;
+
+  useEffect(() => {
+    if (!__DEV__) return;
+    console.log('CalendarScreen renderPlanDrawer', renderPlanDrawer);
+  }, [renderPlanDrawer]);
+
+  useEffect(() => {
+    if (!__DEV__) return;
+    console.log('CalendarScreen renderWorkoutDrawer', renderWorkoutDrawer);
+  }, [renderWorkoutDrawer]);
+
+  useEffect(() => {
+    if (!__DEV__) return;
+    console.log('CalendarScreen overlay interactive', {
+      plan: planDrawerInteractive,
+      workout: workoutDrawerInteractive,
+    });
+  }, [planDrawerInteractive, workoutDrawerInteractive]);
+
+  useEffect(() => {
+    if (!__DEV__) return;
+    console.log('CalendarScreen dayMenuOpen', dayMenuOpen);
+  }, [dayMenuOpen]);
+
   // ---------- Plan Actions ----------
   const handleTogglePlans = (v: boolean) => {
     if (v) {
@@ -1557,6 +1566,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     InteractionManager.runAfterInteractions(() => {
       requestAnimationFrame(() => {
         dayArrowRef.current?.measureInWindow((x, y, width, height) => {
+          if (x === 0 && y === 0) {
+            setDayMenuOpen(false);
+            return;
+          }
           setDayArrowPos({ x: x + width / 2, y: y + height });
         });
       });
@@ -1577,6 +1590,34 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       openDayMenu();
     }
   };
+
+  useEffect(() => {
+    if (!dayMenuOpen) return;
+    if (dayArrowPos.x === 0 && dayArrowPos.y === 0) {
+      setDayMenuOpen(false);
+      return;
+    }
+    if (dayDropdownWidth <= 0) return;
+    const left = dayArrowPos.x - dayDropdownWidth / 2;
+    const right = left + dayDropdownWidth;
+    const top = dayArrowPos.y;
+    if (
+      left < 8 ||
+      right > screenWidth - 8 ||
+      top < insets.top ||
+      top > windowHeight - insets.bottom - 8
+    ) {
+      setDayMenuOpen(false);
+    }
+  }, [
+    dayMenuOpen,
+    dayArrowPos,
+    dayDropdownWidth,
+    screenWidth,
+    windowHeight,
+    insets.top,
+    insets.bottom,
+  ]);
 
   const openWorkoutDrawer = useCallback(() => {
     setShowPlanDrawer(false);
@@ -1915,12 +1956,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
   // ---------- UI ----------
   return (
-    <WhiteBackgroundWrapper style={{ flex: 1 }} padBottom={padBottom}>
-      <View style={{ flex: 1 }}>
-        <View
-          style={styles.calendarTop}
-          onLayout={event => setDaysRowHeight(Math.round(event.nativeEvent.layout.height))}
-        >
+    <WhiteBackgroundWrapper style={styles.wrapper} padBottom={padBottom}>
+      <View style={styles.root}>
+        <View style={styles.topRegion}>
           <View style={{ paddingTop: 12 }}>
             <ScrollView
               horizontal
@@ -1935,39 +1973,55 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           </View>
         </View>
 
-        <View
-          style={[
-            styles.carouselContainer,
-            {
-              width: carouselWidth,
-              height: cardFrameHeight,
-            },
-          ]}
-        >
-          {renderScene()}
-          {carouselItems.length > 1 && (
-            <CarouselNavigator
-              index={carouselIndex}
-              length={carouselItems.length}
-              onIndexChange={goToIndex}
-              dotsRowStyle={styles.carouselDotsRow}
-              arrowSize={36}
-              dotSize={16}
-              // Optionally add leftOffset/rightOffset/inactiveColor/maxDots as in SplitSharing
-            />
-          )}
+        <View style={styles.middleRegion}>
+          <View
+            style={[
+              styles.carouselContainer,
+              {
+                width: carouselWidth,
+                minHeight: cardMinHeight,
+              },
+            ]}
+          >
+            <View style={styles.carouselCardFrame}>
+              {renderScene()}
+              {carouselItems.length > 1 && (
+                <View style={styles.carouselArrowsOverlay} pointerEvents="box-none">
+                  <CarouselNavigator
+                    index={carouselIndex}
+                    length={carouselItems.length}
+                    onIndexChange={goToIndex}
+                    arrowSize={36}
+                    dotSize={16}
+                    showDots={false}
+                    layout="inline"
+                  />
+                </View>
+              )}
+            </View>
+            {carouselItems.length > 1 && (
+              <CarouselNavigator
+                index={carouselIndex}
+                length={carouselItems.length}
+                onIndexChange={goToIndex}
+                dotsRowStyle={styles.carouselDotsRow}
+                arrowSize={36}
+                dotSize={16}
+                showArrows={false}
+                layout="inline"
+              />
+            )}
+          </View>
         </View>
 
         <View
           style={[
-            styles.bottomRow,
+            styles.bottomRegion,
             {
               paddingLeft: insets.left,
               paddingRight: insets.right,
-              marginTop: 16,
             },
           ]}
-          onLayout={event => setBottomRowHeight(Math.round(event.nativeEvent.layout.height))}
         >
           <TouchableOpacity
             style={styles.addBtn}
@@ -1988,198 +2042,206 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           </View>
         </View>
 
-        <FullListModal
-          visible={showAllEvents}
-          title={selectedDayLabel ? `${selectedDayLabel} Events` : 'Events'}
-          onClose={() => setShowAllEvents(false)}
-        >
-          {dayEvents.length ? (
-            dayEvents.map(item => (
-              <View key={item.id} style={[styles.eventCard, styles.eventCardCompact, styles.fullModalEventCard]}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={24}
-                  color={colors.purple}
-                  style={{ marginRight: 10 }}
-                />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.eventTitle}>{item.title}</Text>
-                  {item.time && <Text style={styles.eventTime}>{item.time}</Text>}
-                </View>
-                {item.type === 'oneonone' && (
-                  <TouchableOpacity
-                    onPress={() => cancelEvent(item.id)}
-                    style={styles.cancelBtn}
-                    accessibilityRole="button"
-                    accessibilityLabel="Cancel one on one"
-                  >
-                    <Text style={styles.cancelBtnTxt}>Cancel</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>No events</Text>
-          )}
-        </FullListModal>
-
-        <FullListModal
-          visible={showAllMassEvents}
-          title="Mass Events"
-          onClose={() => setShowAllMassEvents(false)}
-        >
-          {showSplitPlaceholder && <ChooseSplitButton />}
-          {massEvents.map((ev, idx) => {
-            const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][ev.weekday];
-            const countdown = formatCountdown(ev.diff);
-            return (
-              <View
-                key={ev.id}
-                style={[
-                  carouselChipStyle,
-                  styles.modalChip,
-                  ev.isWorkout && styles.massWorkoutTile,
-                  idx !== 0 && styles.massTileSpacing,
-                ]}
-              >
-                <View style={[styles.massTileHeader, ev.isWorkout && styles.massWorkoutHeader]}>
-                  <Ionicons name={ev.icon} size={22} color={colors.yellow} style={{ marginRight: 8 }} />
-                  <Text style={styles.massTileTitle}>{ev.name.toUpperCase()}</Text>
-                  {ev.isWorkout && (
-                    <AnimatedTouchable
-                      ref={dayArrowRef}
-                      onPress={toggleDayMenu}
-                      onPressIn={handleChevronPressIn}
-                      onPressOut={handleChevronPressOut}
-                      style={styles.dayMenuBtn}
+        {showAllEvents && (
+          <FullListModal
+            visible={showAllEvents}
+            title={selectedDayLabel ? `${selectedDayLabel} Events` : 'Events'}
+            onClose={() => setShowAllEvents(false)}
+          >
+            {dayEvents.length ? (
+              dayEvents.map(item => (
+                <View key={item.id} style={[styles.eventCard, styles.eventCardCompact, styles.fullModalEventCard]}>
+                  <Ionicons
+                    name="calendar-outline"
+                    size={24}
+                    color={colors.purple}
+                    style={{ marginRight: 10 }}
+                  />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.eventTitle}>{item.title}</Text>
+                    {item.time && <Text style={styles.eventTime}>{item.time}</Text>}
+                  </View>
+                  {item.type === 'oneonone' && (
+                    <TouchableOpacity
+                      onPress={() => cancelEvent(item.id)}
+                      style={styles.cancelBtn}
+                      accessibilityRole="button"
+                      accessibilityLabel="Cancel one on one"
                     >
-                      <AnimatedIcon
-                        name="chevron-down-outline"
-                        size={20}
-                        color={colors.blue}
-                        style={{ transform: [{ scale: chevronScale }, { rotate: rotation }] }}
-                      />
-                    </AnimatedTouchable>
+                      <Text style={styles.cancelBtnTxt}>Cancel</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
-                {ev.isWorkout ? (
-                  <View style={styles.massDetailsRow}>
-                    <View style={{ flex: 1 }}>
-                      {plan && (
-                        <Text style={styles.workoutSplitName}>{plan.name}</Text>
-                      )}
-                    </View>
-                    <TouchableOpacity
-                      onPress={openWorkoutDrawer}
-                      style={styles.zoomBtn}
-                    >
-                      <Ionicons
-                        name="information-circle-outline"
-                        size={26}
-                        color={colors.blue}
-                      />
-                    </TouchableOpacity>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No events</Text>
+            )}
+          </FullListModal>
+        )}
+
+        {showAllMassEvents && (
+          <FullListModal
+            visible={showAllMassEvents}
+            title="Mass Events"
+            onClose={() => setShowAllMassEvents(false)}
+          >
+            {showSplitPlaceholder && <ChooseSplitButton />}
+            {massEvents.map((ev, idx) => {
+              const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][ev.weekday];
+              const countdown = formatCountdown(ev.diff);
+              return (
+                <View
+                  key={ev.id}
+                  style={[
+                    carouselChipStyle,
+                    styles.modalChip,
+                    ev.isWorkout && styles.massWorkoutTile,
+                    idx !== 0 && styles.massTileSpacing,
+                  ]}
+                >
+                  <View style={[styles.massTileHeader, ev.isWorkout && styles.massWorkoutHeader]}>
+                    <Ionicons name={ev.icon} size={22} color={colors.yellow} style={{ marginRight: 8 }} />
+                    <Text style={styles.massTileTitle}>{ev.name.toUpperCase()}</Text>
+                    {ev.isWorkout && (
+                      <AnimatedTouchable
+                        ref={dayArrowRef}
+                        onPress={toggleDayMenu}
+                        onPressIn={handleChevronPressIn}
+                        onPressOut={handleChevronPressOut}
+                        style={styles.dayMenuBtn}
+                      >
+                        <AnimatedIcon
+                          name="chevron-down-outline"
+                          size={20}
+                          color={colors.blue}
+                          style={{ transform: [{ scale: chevronScale }, { rotate: rotation }] }}
+                        />
+                      </AnimatedTouchable>
+                    )}
                   </View>
-                ) : (
-                  <View style={styles.massDetailsRow}>
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1 }}>
-                      <Text style={styles.massTileWhen}>{`Every ${dayName} @ 9 AM`}</Text>
-                      <Text style={styles.massCountdown}>{`Starts in ${countdown}`}</Text>
-                    </View>
-                    {ev.link ? (
+                  {ev.isWorkout ? (
+                    <View style={styles.massDetailsRow}>
+                      <View style={{ flex: 1 }}>
+                        {plan && (
+                          <Text style={styles.workoutSplitName}>{plan.name}</Text>
+                        )}
+                      </View>
                       <TouchableOpacity
-                        onPress={() => Linking.openURL(ev.link)}
+                        onPress={openWorkoutDrawer}
                         style={styles.zoomBtn}
                       >
-                        <MaterialIcons name="north-east" size={26} color={colors.blue} />
-                      </TouchableOpacity>
-                    ) : null}
-                  </View>
-                )}
-              </View>
-            );
-          })}
-        </FullListModal>
-
-        <FullListModal
-          visible={showAllNews}
-          title="All News"
-          onClose={() => setShowAllNews(false)}
-        >
-          {newsLoaded ? (
-            mergedNews.length ? (
-              mergedNews.map((item, index) =>
-                item.message ? (
-                  <View
-                    key={item.id || `badge-${index}`}
-                    style={[
-                      carouselChipStyle,
-                      styles.modalChip,
-                      styles.newsTile,
-                      index !== 0 && styles.massTileSpacing,
-                    ]}
-                  >
-                    <Text style={styles.massTileTitle}>{item.message ?? item.title}</Text>
-                  </View>
-                ) : (
-                  <View
-                    key={item.id || `badge-${index}`}
-                    style={[
-                      carouselChipStyle,
-                      styles.modalChip,
-                      styles.newsTile,
-                      index !== 0 && styles.massTileSpacing,
-                    ]}
-                  >
-                    <View style={styles.massTileHeader}>
-                      <Image source={item.image} style={styles.badgeImage} />
-                      <Text style={styles.massTileTitle}>{item.id} Badge</Text>
-                    </View>
-                    <View style={styles.badgeRowCarousel}>
-                      <View style={styles.progressTrack}>
-                        <View
-                          style={[
-                            styles.progressBar,
-                            { width: `${Math.round(item.progress * 100)}%` },
-                          ]}
+                        <Ionicons
+                          name="information-circle-outline"
+                          size={26}
+                          color={colors.blue}
                         />
-                      </View>
-                      <Text style={styles.badgePercent}>{Math.round(item.progress * 100)}%</Text>
+                      </TouchableOpacity>
                     </View>
-                    <Text style={styles.requirements}>{item.requirements}</Text>
-                  </View>
+                  ) : (
+                    <View style={styles.massDetailsRow}>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1 }}>
+                        <Text style={styles.massTileWhen}>{`Every ${dayName} @ 9 AM`}</Text>
+                        <Text style={styles.massCountdown}>{`Starts in ${countdown}`}</Text>
+                      </View>
+                      {ev.link ? (
+                        <TouchableOpacity
+                          onPress={() => Linking.openURL(ev.link)}
+                          style={styles.zoomBtn}
+                        >
+                          <MaterialIcons name="north-east" size={26} color={colors.blue} />
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </FullListModal>
+        )}
+
+        {showAllNews && (
+          <FullListModal
+            visible={showAllNews}
+            title="All News"
+            onClose={() => setShowAllNews(false)}
+          >
+            {newsLoaded ? (
+              mergedNews.length ? (
+                mergedNews.map((item, index) =>
+                  item.message ? (
+                    <View
+                      key={item.id || `badge-${index}`}
+                      style={[
+                        carouselChipStyle,
+                        styles.modalChip,
+                        styles.newsTile,
+                        index !== 0 && styles.massTileSpacing,
+                      ]}
+                    >
+                      <Text style={styles.massTileTitle}>{item.message ?? item.title}</Text>
+                    </View>
+                  ) : (
+                    <View
+                      key={item.id || `badge-${index}`}
+                      style={[
+                        carouselChipStyle,
+                        styles.modalChip,
+                        styles.newsTile,
+                        index !== 0 && styles.massTileSpacing,
+                      ]}
+                    >
+                      <View style={styles.massTileHeader}>
+                        <Image source={item.image} style={styles.badgeImage} />
+                        <Text style={styles.massTileTitle}>{item.id} Badge</Text>
+                      </View>
+                      <View style={styles.badgeRowCarousel}>
+                        <View style={styles.progressTrack}>
+                          <View
+                            style={[
+                              styles.progressBar,
+                              { width: `${Math.round(item.progress * 100)}%` },
+                            ]}
+                          />
+                        </View>
+                        <Text style={styles.badgePercent}>{Math.round(item.progress * 100)}%</Text>
+                      </View>
+                      <Text style={styles.requirements}>{item.requirements}</Text>
+                    </View>
+                  )
                 )
+              ) : (
+                <Text style={styles.newsEmptyText}>No New MASS News</Text>
               )
             ) : (
-              <Text style={styles.newsEmptyText}>No New MASS News</Text>
-            )
-          ) : (
-            <ActivityIndicator color={colors.accent} size="large" style={{ marginTop: 30 }} />
-          )}
-        </FullListModal>
+              <ActivityIndicator color={colors.accent} size="large" style={{ marginTop: 30 }} />
+            )}
+          </FullListModal>
+        )}
 
-        <FullListModal
-          visible={showAllComps}
-          title="Competitions"
-          onClose={() => setShowAllComps(false)}
-        >
-          {fakeComps.map((c, idx) => (
-            <View key={c.id} style={[
-              carouselChipStyle,
-              styles.modalChip,
-              styles.compTile,
-              idx !== 0 && styles.compTileSpacing,
-            ]}>
-              <View style={styles.massTileHeader}>
-                <Ionicons name="flame-outline" size={22} color={colors.purple} style={{ marginRight: 8 }} />
-                <Text style={styles.compTileTitle}>{c.name}</Text>
+        {showAllComps && (
+          <FullListModal
+            visible={showAllComps}
+            title="Competitions"
+            onClose={() => setShowAllComps(false)}
+          >
+            {fakeComps.map((c, idx) => (
+              <View key={c.id} style={[
+                carouselChipStyle,
+                styles.modalChip,
+                styles.compTile,
+                idx !== 0 && styles.compTileSpacing,
+              ]}>
+                <View style={styles.massTileHeader}>
+                  <Ionicons name="flame-outline" size={22} color={colors.purple} style={{ marginRight: 8 }} />
+                  <Text style={styles.compTileTitle}>{c.name}</Text>
+                </View>
+                <Text style={styles.compComingSoon}>{c.status}</Text>
               </View>
-              <Text style={styles.compComingSoon}>{c.status}</Text>
-            </View>
-          ))}
-        </FullListModal>
+            ))}
+          </FullListModal>
+        )}
 
-        {plan && (
+        {plan && dayMenuOpen && (
           <Modal
             visible={dayMenuOpen}
             transparent
@@ -2329,6 +2391,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             onPress={closePlanDrawer}
             accessibilityRole="button"
             accessibilityLabel="Close plan drawer"
+            pointerEvents={planDrawerInteractive ? 'auto' : 'none'}
           />
           <KeyboardAvoidingView
             style={{ flex: 1, justifyContent: 'flex-end' }}
@@ -2522,6 +2585,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             onPress={() => setShowWorkoutDrawer(false)}
             accessibilityRole="button"
             accessibilityLabel="Close workout drawer"
+            pointerEvents={workoutDrawerInteractive ? 'auto' : 'none'}
           />
           <Animated.View
             style={[
@@ -2646,6 +2710,21 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 }
 
 const styles = StyleSheet.create({
+  wrapper: { flex: 1, justifyContent: 'flex-start' },
+  root: { flex: 1 },
+  topRegion: { flexShrink: 0 },
+  middleRegion: {
+    flex: 1,
+    paddingHorizontal: 8,
+    paddingTop: 4,
+  },
+  bottomRegion: {
+    flexShrink: 0,
+    paddingTop: 8,
+    paddingBottom: 12,
+    alignItems: 'center',
+    width: '100%',
+  },
   calendarTop: {
     paddingBottom: 4,
   },
@@ -2716,12 +2795,6 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   emptyText: { color: '#888', alignSelf: 'center', marginTop: 8 },
-  bottomRow: {
-    paddingHorizontal: 0,
-    alignItems: 'center',
-    width: '100%',
-    marginBottom: 16,
-  },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2974,7 +3047,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'stretch',
     marginTop: 12,
-    marginBottom: 12,
+    marginBottom: 8,
     borderRadius: 28,
     shadowColor: '#000',
     shadowOpacity: 0.14,
@@ -2984,8 +3057,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     paddingHorizontal: 30,
     paddingTop: 24,
-    paddingBottom: 40,
+    paddingBottom: 24,
     width: '100%',
+    flex: 1,
   },
   massLogo: {
     position: 'absolute',
@@ -3111,16 +3185,31 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   carouselContainer: {
+    flex: 1,
     position: 'relative',
     width: '100%',
     alignSelf: 'center',
     alignItems: 'center',
-    overflow: 'visible',
+    justifyContent: 'center',
+  },
+  carouselCardFrame: {
+    width: '100%',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  carouselArrowsOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
   },
   carouselDotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginTop: 8,
+    marginBottom: 4,
   },
   sceneBody: {
     flex: 1,
