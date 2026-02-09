@@ -26,7 +26,9 @@ import {
   MAX_DISPLAY_BADGES
 } from '../badges/UnlockableBadges';
 import BadgeImage from '../components/BadgeImage';
+import LoadingOverlay from '../components/LoadingOverlay';
 import ProfileImage from '../components/ProfileImage';
+import StateMessage from '../components/StateMessage';
 import { TAB_BAR_HEIGHT } from '../components/SwipeableTabs';
 import { useAppContext } from '../firebase/AppContext';
 import { levelThresholds } from '../firebase/chatXPHelpers';
@@ -89,11 +91,17 @@ const ProfileScreen = () => {
   const { setAppStatus, points, workoutHistory } = appContext;
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Refresh user data on initial render
-  useEffect(() => {
+  const refreshUser = React.useCallback(() => {
     const uid = auth().currentUser?.uid;
-    if (!uid) return;
+    if (!uid) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
     const authUser = auth().currentUser;
     const displayName = authUser?.displayName || '';
     const authProfile = {
@@ -103,12 +111,18 @@ const ProfileScreen = () => {
       lastName: displayName.split(' ').slice(1).join(' ') || '',
     };
     const ref: any = firestore().collection('users');
-    if (typeof ref.doc !== 'function') return;
+    if (typeof ref.doc !== 'function') {
+      setIsLoading(false);
+      return;
+    }
     ref
       .doc(uid)
       .get()
       .then((doc: any) => {
-        if (!doc.exists) return;
+        if (!doc.exists) {
+          setIsLoading(false);
+          return;
+        }
         const data = { ...authProfile, ...(doc.data() || {}) };
         setAppStatus({
           user: data,
@@ -117,9 +131,19 @@ const ProfileScreen = () => {
             ? data.workoutHistory
             : [],
         });
+        setIsLoading(false);
       })
-      .catch(err => console.error('Failed to refresh user data', err));
-  }, []);
+      .catch(err => {
+        console.error('Failed to refresh user data', err);
+        setError('We could not load your profile. Please try again.');
+        setIsLoading(false);
+      });
+  }, [setAppStatus]);
+
+  // Refresh user data on initial render
+  useEffect(() => {
+    refreshUser();
+  }, [refreshUser]);
   
   const [menuOpen, setMenuOpen] = useState(false);
   const arrowRef = useRef<View | null>(null);
@@ -300,15 +324,31 @@ const ProfileScreen = () => {
   }, [socialDrawerOpen, socialDrawerHeight, renderSocialDrawer]);
 
   // If user is not loaded, show a loading state
-  if (!user) {
+  if (error && !user) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerName}>Profile</Text>
         </View>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text>Loading...</Text>
+        <View style={styles.stateContainer}>
+          <StateMessage
+            title="Unable to load profile"
+            message={error}
+            actionLabel="Retry"
+            onAction={refreshUser}
+          />
         </View>
+      </View>
+    );
+  }
+
+  if (isLoading && !user) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.headerName}>Profile</Text>
+        </View>
+        <LoadingOverlay />
       </View>
     );
   }
@@ -1052,6 +1092,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     alignItems: 'stretch',
+  },
+  stateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    backgroundColor: colors.background,
   },
   header: {
     height: 60,
