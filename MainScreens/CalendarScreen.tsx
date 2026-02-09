@@ -15,7 +15,6 @@ import {
   Alert,
   Animated,
   DeviceEventEmitter,
-  FlatList,
   InteractionManager,
   KeyboardAvoidingView,
   LayoutChangeEvent,
@@ -521,18 +520,28 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const CAROUSEL_CARD_MARGIN = 12;
   const containerWidth = screenWidth;
   const carouselWidth = containerWidth;
-  const MAX_DAY_EVENTS_HEIGHT = useMemo(
-    () => clampValue(windowHeight * 0.28, 160, 260),
-    [windowHeight],
-  );
-  const CARD_FRAME_HEIGHT = useMemo(
-    () => clampValue(windowHeight * 0.42, 360, 440),
-    [windowHeight],
-  );
-  const CAROUSEL_FRAME_HEIGHT = useMemo(
-    () => CARD_FRAME_HEIGHT + 60,
-    [CARD_FRAME_HEIGHT],
-  );
+  const [daysRowHeight, setDaysRowHeight] = useState(0);
+  const [bottomRowHeight, setBottomRowHeight] = useState(0);
+  const padBottom = !renderPlanDrawer;
+  const cardFrameHeight = useMemo(() => {
+    const topInset = insets.top;
+    const bottomInset = padBottom ? TAB_BAR_HEIGHT + insets.bottom : 0;
+    const baseHeight =
+      windowHeight -
+      topInset -
+      bottomInset -
+      bottomRowHeight -
+      daysRowHeight -
+      16;
+    return clampValue(baseHeight, 260, windowHeight);
+  }, [
+    windowHeight,
+    insets.bottom,
+    insets.top,
+    padBottom,
+    bottomRowHeight,
+    daysRowHeight,
+  ]);
   const PLAN_DRAWER_HEIGHT = windowHeight * 0.8;
   const WORKOUT_DRAWER_MAX_HEIGHT = windowHeight * 0.6;
 
@@ -543,10 +552,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       {
         width: carouselWidth - CAROUSEL_CARD_MARGIN * 2,
         marginHorizontal: CAROUSEL_CARD_MARGIN,
-      height: CARD_FRAME_HEIGHT,
+        flex: 1,
       },
     ],
-    [CARD_FRAME_HEIGHT, carouselWidth],
+    [carouselWidth],
   );
   const carouselChipStyle = useMemo(
     () => [styles.carouselChip, { width: carouselWidth - CAROUSEL_CARD_MARGIN * 2 - 60 }],
@@ -613,12 +622,11 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
 
   const carouselItems = useMemo(
-    () => ['massEvents', 'news', 'comps'],
+    () => ['massEvents', 'news', 'comps', 'events'],
     [],
   );
   const carouselIndexPersist = useRef(calendarCarouselIndex);
   const [carouselIndex, setCarouselIndex] = useState(carouselIndexPersist.current);
-  const carouselRef = useRef<ScrollView>(null);
   const goToIndex = useCallback(
     (next: number | ((cur: number) => number)) => {
       setCarouselIndex(cur => {
@@ -660,14 +668,13 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     };
   }, []);
   useEffect(() => {
-    carouselRef.current?.scrollTo({ x: carouselWidth * carouselIndex, animated: true });
     carouselIndexPersist.current = carouselIndex;
     lastCarouselIndex = carouselIndex;
     setCalendarCarouselIndex(carouselIndex);
     AsyncStorage.setItem(CAROUSEL_INDEX_KEY, String(carouselIndex)).catch(err =>
       console.error('Failed to save carousel index', err)
     );
-  }, [carouselIndex, carouselWidth]);
+  }, [carouselIndex]);
   const lastDayDropdownWidthRef = useRef<number>(0);
   const lastWorkoutContainerHeightRef = useRef<number>(0);
 
@@ -937,9 +944,11 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     [selectedDate, computeEventsForDate],
   );
 
-  const eventNumColumns = dayEvents.length > 1 ? 2 : 1;
-  const eventListScrollable =
-    dayEvents.length > eventNumColumns * 2;
+  const MAX_PREVIEW_ITEMS = 3;
+  const [showAllEvents, setShowAllEvents] = useState(false);
+  const [showAllMassEvents, setShowAllMassEvents] = useState(false);
+  const [showAllNews, setShowAllNews] = useState(false);
+  const [showAllComps, setShowAllComps] = useState(false);
 
   const massEvents = useMemo(() => {
     const base = MASS_EVENTS.map(info => {
@@ -981,6 +990,27 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
     return base;
   }, [tick, workoutVisible, plan]);
+
+  const eventsPreview = useMemo(
+    () => dayEvents.slice(0, MAX_PREVIEW_ITEMS),
+    [dayEvents, MAX_PREVIEW_ITEMS],
+  );
+  const massEventsPreview = useMemo(
+    () => massEvents.slice(0, MAX_PREVIEW_ITEMS),
+    [massEvents, MAX_PREVIEW_ITEMS],
+  );
+  const newsPreview = useMemo(
+    () => mergedNews.slice(0, MAX_PREVIEW_ITEMS),
+    [mergedNews, MAX_PREVIEW_ITEMS],
+  );
+  const compsPreview = useMemo(
+    () => fakeComps.slice(0, MAX_PREVIEW_ITEMS),
+    [MAX_PREVIEW_ITEMS],
+  );
+  const hasMoreEvents = dayEvents.length > MAX_PREVIEW_ITEMS;
+  const hasMoreMassEvents = massEvents.length > MAX_PREVIEW_ITEMS;
+  const hasMoreNews = mergedNews.length > MAX_PREVIEW_ITEMS;
+  const hasMoreComps = fakeComps.length > MAX_PREVIEW_ITEMS;
 
   const showSplitPlaceholder = !workoutVisible;
 
@@ -1437,32 +1467,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     </Pressable>
   );
 
-  const renderEvent = ({ item }: { item: typeof dayEvents[0] }) => (
-    <View style={[styles.eventCard, styles.eventCardCompact]}
-    >
-      <Ionicons
-        name="calendar-outline"
-        size={24}
-        color={colors.purple}
-        style={{ marginRight: 10 }}
-      />
-      <View style={{ flex: 1 }}>
-        <Text style={styles.eventTitle}>{item.title}</Text>
-        {item.time && <Text style={styles.eventTime}>{item.time}</Text>}
-      </View>
-      {item.type === 'oneonone' && (
-        <TouchableOpacity
-          onPress={() => cancelEvent(item.id)}
-          style={styles.cancelBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Cancel one on one"
-        >
-          <Text style={styles.cancelBtnTxt}>Cancel</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-
   const onDayDropdownLayout = useCallback((e: LayoutChangeEvent) => {
     const next = Math.round(e.nativeEvent.layout.width);
     if (Math.abs(next - lastDayDropdownWidthRef.current) < 2) return;
@@ -1640,16 +1644,68 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     );
   }, [user?.role]);
 
+  const selectedDayLabel = useMemo(() => {
+    const day = days[selectedIndex];
+    return day?.label ?? '';
+  }, [days, selectedIndex]);
+
+  const summaryText = useMemo(() => {
+    const eventCount = dayEvents.length;
+    const eventLabel = `${eventCount} event${eventCount === 1 ? '' : 's'}`;
+    return selectedDayLabel ? `${selectedDayLabel} • ${eventLabel}` : eventLabel;
+  }, [dayEvents.length, selectedDayLabel]);
+
+  const ViewAllButton = ({
+    onPress,
+    label = 'View all',
+  }: {
+    onPress: () => void;
+    label?: string;
+  }) => (
+    <TouchableOpacity onPress={onPress} style={styles.viewAllBtn}>
+      <Text style={styles.viewAllText}>{label}</Text>
+      <Ionicons name="chevron-forward" size={18} color={colors.accent} />
+    </TouchableOpacity>
+  );
+
+  const FullListModal = ({
+    visible,
+    title,
+    onClose,
+    children,
+  }: {
+    visible: boolean;
+    title: string;
+    onClose: () => void;
+    children: React.ReactNode;
+  }) => (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.fullModalOverlay}>
+        <View style={styles.fullModalCard}>
+          <View style={styles.fullModalHeader}>
+            <Text style={styles.fullModalTitle}>{title}</Text>
+            <TouchableOpacity onPress={onClose} style={styles.fullModalCloseBtn}>
+              <Ionicons name="close" size={22} color={colors.textDark} />
+            </TouchableOpacity>
+          </View>
+          <ScrollView
+            style={styles.fullModalScroll}
+            contentContainerStyle={styles.fullModalContent}
+            showsVerticalScrollIndicator={false}
+          >
+            {children}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+
   const MassEventsSection = () => (
     <View style={carouselCardStyle}>
-      <SectionHeader title="EVENTS" logo={MASS_LOGO} />
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 6 }}
-        showsVerticalScrollIndicator={false}
-      >
+      <SectionHeader title="MASS" logo={MASS_LOGO} />
+      <View style={styles.sceneBody}>
         {showSplitPlaceholder && <ChooseSplitButton />}
-        {massEvents.map((ev, idx) => {
+        {massEventsPreview.map((ev, idx) => {
           const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][ev.weekday];
           const countdown = formatCountdown(ev.diff);
           return (
@@ -1718,7 +1774,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             </View>
           );
         })}
-      </ScrollView>
+        {hasMoreMassEvents && (
+          <ViewAllButton onPress={() => setShowAllMassEvents(true)} />
+        )}
+      </View>
     </View>
   );
 
@@ -1729,12 +1788,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       </SectionHeader>
         {newsLoaded ? (
           mergedNews.length ? (
-            <ScrollView
-              style={{ flex: 1 }}
-              contentContainerStyle={{ paddingBottom: 6 }}
-              showsVerticalScrollIndicator={false}
-            >
-              {mergedNews.map((item, index) =>
+            <View style={styles.sceneBody}>
+              {newsPreview.map((item, index) =>
                 item.message ? (
                   <View
                     key={item.id || `badge-${index}`}
@@ -1774,7 +1829,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                   </View>
                   )
               )}
-            </ScrollView>
+              {hasMoreNews && (
+                <ViewAllButton onPress={() => setShowAllNews(true)} />
+              )}
+            </View>
           ) : (
             <Text style={styles.newsEmptyText}>No New MASS News</Text>
           )
@@ -1787,12 +1845,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const CompetitionsSection = () => (
     <View style={carouselCardStyle}>
       <SectionHeader logo={COMPS_LOGO} />
-      <ScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 6 }}
-        showsVerticalScrollIndicator={false}
-      >
-        {fakeComps.map((c, idx) => (
+      <View style={styles.sceneBody}>
+        {compsPreview.map((c, idx) => (
           <View key={c.id} style={[
             carouselChipStyle,
             styles.compTile,
@@ -1805,139 +1859,325 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             <Text style={styles.compComingSoon}>{c.status}</Text>
           </View>
         ))}
-      </ScrollView>
+        {hasMoreComps && (
+          <ViewAllButton onPress={() => setShowAllComps(true)} />
+        )}
+      </View>
     </View>
   );
 
-
-  const renderCarouselItem = (item: string, idx: number) => (
-    <View
-      key={item}
-      style={{ width: carouselWidth, alignItems: 'center' }}
-    >
-      {item === 'massEvents' ? (
-        <MassEventsSection />
-      ) : item === 'news' ? (
-        <NewsSection />
-      ) : (
-        <CompetitionsSection />
-      )}
+  const EventsSection = () => (
+    <View style={carouselCardStyle}>
+      <SectionHeader title="EVENTS" logo={MASS_LOGO} />
+      <View style={styles.sceneBody}>
+        {eventsPreview.length ? (
+          eventsPreview.map(item => (
+            <View key={item.id} style={[styles.eventCard, styles.eventCardCompact, styles.sceneEventCard]}>
+              <Ionicons
+                name="calendar-outline"
+                size={24}
+                color={colors.purple}
+                style={{ marginRight: 10 }}
+              />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.eventTitle}>{item.title}</Text>
+                {item.time && <Text style={styles.eventTime}>{item.time}</Text>}
+              </View>
+              {item.type === 'oneonone' && (
+                <TouchableOpacity
+                  onPress={() => cancelEvent(item.id)}
+                  style={styles.cancelBtn}
+                  accessibilityRole="button"
+                  accessibilityLabel="Cancel one on one"
+                >
+                  <Text style={styles.cancelBtnTxt}>Cancel</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ))
+        ) : (
+          <Text style={styles.emptyText}>No events</Text>
+        )}
+        {hasMoreEvents && (
+          <ViewAllButton onPress={() => setShowAllEvents(true)} />
+        )}
+      </View>
     </View>
   );
+
+  const renderScene = () => {
+    const sceneKey = carouselItems[carouselIndex];
+    if (sceneKey === 'massEvents') return <MassEventsSection />;
+    if (sceneKey === 'news') return <NewsSection />;
+    if (sceneKey === 'comps') return <CompetitionsSection />;
+    return <EventsSection />;
+  };
 
   // ---------- UI ----------
   return (
-    <WhiteBackgroundWrapper style={{ flex: 1 }} padBottom={!renderPlanDrawer}>
-      <View
-        style={{ flex: 1 }}
-      >
-        <View style={{ flex: 1, justifyContent: 'space-between' }}>
-          {/* Zone 1: days and events */}
-          <View>
-            <View
-              style={{ paddingTop: 12 }}
+    <WhiteBackgroundWrapper style={{ flex: 1 }} padBottom={padBottom}>
+      <View style={{ flex: 1 }}>
+        <View
+          style={styles.calendarTop}
+          onLayout={event => setDaysRowHeight(Math.round(event.nativeEvent.layout.height))}
+        >
+          <View style={{ paddingTop: 12 }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.daysRow}
             >
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.daysRow}
-              >
-                {days.map((item, i) => renderDay({ item, index: i }))}
-              </ScrollView>
-            </View>
-            <FlatList
-              style={[
-                { flexGrow: 0, flexShrink: 0, maxHeight: MAX_DAY_EVENTS_HEIGHT },
-              ]}
-              data={dayEvents}
-              keyExtractor={item => item.id}
-              key={`event-columns-${eventNumColumns}`}
-              renderItem={renderEvent}
-              ListEmptyComponent={<Text style={styles.emptyText}>No events</Text>}
-              contentContainerStyle={{
-                paddingTop: 10,
-                paddingHorizontal: 6,
-                paddingBottom: 16,
-              }}
-              numColumns={eventNumColumns}
-              columnWrapperStyle={
-                eventNumColumns > 1 ? { justifyContent: 'space-between' } : undefined
-              }
-              ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
-              scrollEnabled={eventListScrollable}
-            />
+              {days.map((item, i) => renderDay({ item, index: i }))}
+            </ScrollView>
           </View>
-
-          {/* Zone 2: carousel */}
-            <View
-              style={{
-                flexGrow: 1,
-                justifyContent: 'flex-start',
-                alignItems: 'center',
-              }}
-            >
-            <View
-              style={[
-                styles.carouselContainer,
-                {
-                  width: carouselWidth,
-                  height: CAROUSEL_FRAME_HEIGHT,
-                },
-              ]}
-            >
-              <ScrollView
-                ref={carouselRef}
-                horizontal
-                pagingEnabled
-                scrollEnabled={false} // disables swipe, navigation is via arrows/dots
-                showsHorizontalScrollIndicator={false}
-              >
-                {carouselItems.map(renderCarouselItem)}
-              </ScrollView>
-              {carouselItems.length > 1 && (
-                <CarouselNavigator
-                  index={carouselIndex}
-                  length={carouselItems.length}
-                  onIndexChange={goToIndex}
-                  dotsRowStyle={styles.carouselDotsRow}
-                  arrowSize={36}
-                  dotSize={16}
-                  // Optionally add leftOffset/rightOffset/inactiveColor/maxDots as in SplitSharing
-                />
-              )}
-            </View>
-          </View>
-
-          {/* Zone 3: bottom actions */}
-          <View
-            style={[
-              styles.bottomRow,
-              {
-                paddingLeft: insets.left,
-                paddingRight: insets.right,
-                marginTop: 16,
-              },
-            ]}
-          >
-            <TouchableOpacity
-              style={styles.addBtn}
-              onPress={() => setShowScheduler(true)}
-            >
-              <Ionicons name="add-circle" size={24} color="#fff" />
-              <Text style={styles.addBtnTxt}>Schedule 1-on-1</Text>
-            </TouchableOpacity>
-            <View style={styles.workoutToggleRow}>
-              <Text style={styles.workoutToggleLabel}>Workout Splits</Text>
-              <Switch value={showWorkout} onValueChange={handleTogglePlans} />
-              <TouchableOpacity
-                style={styles.editBtn}
-                onPress={openPlanDrawerFromButton}
-              >
-                <Text style={styles.editBtnTxt}>Splits</Text>
-              </TouchableOpacity>
-            </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryText}>{summaryText}</Text>
           </View>
         </View>
+
+        <View
+          style={[
+            styles.carouselContainer,
+            {
+              width: carouselWidth,
+              height: cardFrameHeight,
+            },
+          ]}
+        >
+          {renderScene()}
+          {carouselItems.length > 1 && (
+            <CarouselNavigator
+              index={carouselIndex}
+              length={carouselItems.length}
+              onIndexChange={goToIndex}
+              dotsRowStyle={styles.carouselDotsRow}
+              arrowSize={36}
+              dotSize={16}
+              // Optionally add leftOffset/rightOffset/inactiveColor/maxDots as in SplitSharing
+            />
+          )}
+        </View>
+
+        <View
+          style={[
+            styles.bottomRow,
+            {
+              paddingLeft: insets.left,
+              paddingRight: insets.right,
+              marginTop: 16,
+            },
+          ]}
+          onLayout={event => setBottomRowHeight(Math.round(event.nativeEvent.layout.height))}
+        >
+          <TouchableOpacity
+            style={styles.addBtn}
+            onPress={() => setShowScheduler(true)}
+          >
+            <Ionicons name="add-circle" size={24} color="#fff" />
+            <Text style={styles.addBtnTxt}>Schedule 1-on-1</Text>
+          </TouchableOpacity>
+          <View style={styles.workoutToggleRow}>
+            <Text style={styles.workoutToggleLabel}>Workout Splits</Text>
+            <Switch value={showWorkout} onValueChange={handleTogglePlans} />
+            <TouchableOpacity
+              style={styles.editBtn}
+              onPress={openPlanDrawerFromButton}
+            >
+              <Text style={styles.editBtnTxt}>Splits</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <FullListModal
+          visible={showAllEvents}
+          title={selectedDayLabel ? `${selectedDayLabel} Events` : 'Events'}
+          onClose={() => setShowAllEvents(false)}
+        >
+          {dayEvents.length ? (
+            dayEvents.map(item => (
+              <View key={item.id} style={[styles.eventCard, styles.eventCardCompact, styles.fullModalEventCard]}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={24}
+                  color={colors.purple}
+                  style={{ marginRight: 10 }}
+                />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.eventTitle}>{item.title}</Text>
+                  {item.time && <Text style={styles.eventTime}>{item.time}</Text>}
+                </View>
+                {item.type === 'oneonone' && (
+                  <TouchableOpacity
+                    onPress={() => cancelEvent(item.id)}
+                    style={styles.cancelBtn}
+                    accessibilityRole="button"
+                    accessibilityLabel="Cancel one on one"
+                  >
+                    <Text style={styles.cancelBtnTxt}>Cancel</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ))
+          ) : (
+            <Text style={styles.emptyText}>No events</Text>
+          )}
+        </FullListModal>
+
+        <FullListModal
+          visible={showAllMassEvents}
+          title="Mass Events"
+          onClose={() => setShowAllMassEvents(false)}
+        >
+          {showSplitPlaceholder && <ChooseSplitButton />}
+          {massEvents.map((ev, idx) => {
+            const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][ev.weekday];
+            const countdown = formatCountdown(ev.diff);
+            return (
+              <View
+                key={ev.id}
+                style={[
+                  carouselChipStyle,
+                  styles.modalChip,
+                  ev.isWorkout && styles.massWorkoutTile,
+                  idx !== 0 && styles.massTileSpacing,
+                ]}
+              >
+                <View style={[styles.massTileHeader, ev.isWorkout && styles.massWorkoutHeader]}>
+                  <Ionicons name={ev.icon} size={22} color={colors.yellow} style={{ marginRight: 8 }} />
+                  <Text style={styles.massTileTitle}>{ev.name.toUpperCase()}</Text>
+                  {ev.isWorkout && (
+                    <AnimatedTouchable
+                      ref={dayArrowRef}
+                      onPress={toggleDayMenu}
+                      onPressIn={handleChevronPressIn}
+                      onPressOut={handleChevronPressOut}
+                      style={styles.dayMenuBtn}
+                    >
+                      <AnimatedIcon
+                        name="chevron-down-outline"
+                        size={20}
+                        color={colors.blue}
+                        style={{ transform: [{ scale: chevronScale }, { rotate: rotation }] }}
+                      />
+                    </AnimatedTouchable>
+                  )}
+                </View>
+                {ev.isWorkout ? (
+                  <View style={styles.massDetailsRow}>
+                    <View style={{ flex: 1 }}>
+                      {plan && (
+                        <Text style={styles.workoutSplitName}>{plan.name}</Text>
+                      )}
+                    </View>
+                    <TouchableOpacity
+                      onPress={openWorkoutDrawer}
+                      style={styles.zoomBtn}
+                    >
+                      <Ionicons
+                        name="information-circle-outline"
+                        size={26}
+                        color={colors.blue}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <View style={styles.massDetailsRow}>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1 }}>
+                      <Text style={styles.massTileWhen}>{`Every ${dayName} @ 9 AM`}</Text>
+                      <Text style={styles.massCountdown}>{`Starts in ${countdown}`}</Text>
+                    </View>
+                    {ev.link ? (
+                      <TouchableOpacity
+                        onPress={() => Linking.openURL(ev.link)}
+                        style={styles.zoomBtn}
+                      >
+                        <MaterialIcons name="north-east" size={26} color={colors.blue} />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                )}
+              </View>
+            );
+          })}
+        </FullListModal>
+
+        <FullListModal
+          visible={showAllNews}
+          title="All News"
+          onClose={() => setShowAllNews(false)}
+        >
+          {newsLoaded ? (
+            mergedNews.length ? (
+              mergedNews.map((item, index) =>
+                item.message ? (
+                  <View
+                    key={item.id || `badge-${index}`}
+                    style={[
+                      carouselChipStyle,
+                      styles.modalChip,
+                      styles.newsTile,
+                      index !== 0 && styles.massTileSpacing,
+                    ]}
+                  >
+                    <Text style={styles.massTileTitle}>{item.message ?? item.title}</Text>
+                  </View>
+                ) : (
+                  <View
+                    key={item.id || `badge-${index}`}
+                    style={[
+                      carouselChipStyle,
+                      styles.modalChip,
+                      styles.newsTile,
+                      index !== 0 && styles.massTileSpacing,
+                    ]}
+                  >
+                    <View style={styles.massTileHeader}>
+                      <Image source={item.image} style={styles.badgeImage} />
+                      <Text style={styles.massTileTitle}>{item.id} Badge</Text>
+                    </View>
+                    <View style={styles.badgeRowCarousel}>
+                      <View style={styles.progressTrack}>
+                        <View
+                          style={[
+                            styles.progressBar,
+                            { width: `${Math.round(item.progress * 100)}%` },
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.badgePercent}>{Math.round(item.progress * 100)}%</Text>
+                    </View>
+                    <Text style={styles.requirements}>{item.requirements}</Text>
+                  </View>
+                )
+              )
+            ) : (
+              <Text style={styles.newsEmptyText}>No New MASS News</Text>
+            )
+          ) : (
+            <ActivityIndicator color={colors.accent} size="large" style={{ marginTop: 30 }} />
+          )}
+        </FullListModal>
+
+        <FullListModal
+          visible={showAllComps}
+          title="Competitions"
+          onClose={() => setShowAllComps(false)}
+        >
+          {fakeComps.map((c, idx) => (
+            <View key={c.id} style={[
+              carouselChipStyle,
+              styles.modalChip,
+              styles.compTile,
+              idx !== 0 && styles.compTileSpacing,
+            ]}>
+              <View style={styles.massTileHeader}>
+                <Ionicons name="flame-outline" size={22} color={colors.purple} style={{ marginRight: 8 }} />
+                <Text style={styles.compTileTitle}>{c.name}</Text>
+              </View>
+              <Text style={styles.compComingSoon}>{c.status}</Text>
+            </View>
+          ))}
+        </FullListModal>
 
         {plan && (
           <Modal
@@ -2406,7 +2646,20 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 }
 
 const styles = StyleSheet.create({
+  calendarTop: {
+    paddingBottom: 4,
+  },
   daysRow: { paddingHorizontal: 12 },
+  summaryRow: {
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    paddingBottom: 6,
+  },
+  summaryText: {
+    color: colors.textDark,
+    fontWeight: '600',
+    fontSize: 14,
+  },
   dayBtn: {
     paddingVertical: 10,
     paddingHorizontal: 16,
@@ -2439,6 +2692,9 @@ const styles = StyleSheet.create({
   eventCardCompact: {
     flex: 1,
     marginHorizontal: 4,
+  },
+  sceneEventCard: {
+    marginBottom: 8,
   },
   eventTitle: { fontWeight: 'bold', color: '#232323', marginBottom: 2, fontSize: 17 },
   eventTime: { color: colors.purple, fontSize: 13, marginBottom: 2 },
@@ -2717,8 +2973,8 @@ const styles = StyleSheet.create({
   carouselCard: {
     justifyContent: 'flex-start',
     alignItems: 'stretch',
-    marginTop: 22,
-    marginBottom: 27,
+    marginTop: 12,
+    marginBottom: 12,
     borderRadius: 28,
     shadowColor: '#000',
     shadowOpacity: 0.14,
@@ -2727,7 +2983,8 @@ const styles = StyleSheet.create({
     elevation: 6,
     backgroundColor: colors.white,
     paddingHorizontal: 30,
-    paddingVertical: 24,
+    paddingTop: 24,
+    paddingBottom: 40,
     width: '100%',
   },
   massLogo: {
@@ -2863,8 +3120,66 @@ const styles = StyleSheet.create({
   carouselDotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: -20,
-    marginBottom: 2,
+    marginBottom: 12,
+  },
+  sceneBody: {
+    flex: 1,
+  },
+  viewAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  viewAllText: {
+    color: colors.accent,
+    fontWeight: '600',
+    marginRight: 4,
+  },
+  modalChip: {
+    width: '100%',
+  },
+  fullModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  fullModalCard: {
+    backgroundColor: colors.white,
+    borderRadius: 24,
+    width: '100%',
+    maxWidth: 480,
+    maxHeight: '85%',
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
+  },
+  fullModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  fullModalTitle: {
+    color: colors.textDark,
+    fontWeight: '700',
+    fontSize: 18,
+  },
+  fullModalCloseBtn: {
+    padding: 4,
+  },
+  fullModalScroll: {
+    flexGrow: 0,
+  },
+  fullModalContent: {
+    paddingBottom: 16,
+  },
+  fullModalEventCard: {
+    marginBottom: 10,
   },
   drawerOverlay: {
     ...StyleSheet.absoluteFillObject,
