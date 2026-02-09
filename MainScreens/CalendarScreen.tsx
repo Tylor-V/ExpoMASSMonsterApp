@@ -657,8 +657,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       console.error('Failed to save carousel index', err)
     );
   }, [carouselIndex, carouselWidth]);
-  const [carouselHeight, setCarouselHeight] = useState<number | undefined>();
-  const lastCarouselHeightRef = useRef<number>(0);
+  const [stableCarouselMinHeight, setStableCarouselMinHeight] = useState<number>(0);
+  const stableCarouselMinHeightRef = useRef<number>(0);
   const lastRootHeightRef = useRef<number>(0);
   const lastDaysRowHeightRef = useRef<number>(0);
   const lastMassCardTopRef = useRef<number | null>(null);
@@ -1493,17 +1493,13 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const onCarouselItemLayout = useCallback(
     (e: LayoutChangeEvent) => {
       const next = Math.round(e.nativeEvent.layout.height);
-      if (Math.abs(next - lastCarouselHeightRef.current) < 2) return;
-      lastCarouselHeightRef.current = next;
-      setCarouselHeight(next);
+      if (next > stableCarouselMinHeightRef.current + 2) {
+        stableCarouselMinHeightRef.current = next;
+        setStableCarouselMinHeight(next);
+      }
     },
     [],
   );
-
-  useEffect(() => {
-    lastCarouselHeightRef.current = 0;
-    setCarouselHeight(undefined);
-  }, [carouselWidth]);
 
   const onRootLayout = useCallback((e: LayoutChangeEvent) => {
     const next = Math.round(e.nativeEvent.layout.height);
@@ -1929,7 +1925,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                 styles.carouselContainer,
                 {
                   width: carouselWidth,
-                  minHeight: carouselHeight,
+                  minHeight: stableCarouselMinHeight,
                 },
               ]}
             >
