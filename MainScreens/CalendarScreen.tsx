@@ -23,6 +23,7 @@ import {
   Modal,
   Platform,
   Pressable,
+  Image as RNImage,
   ScrollView,
   StyleSheet,
   Switch,
@@ -89,7 +90,11 @@ const SectionHeader = React.memo(
     children?: React.ReactNode;
   }) => (
     <View style={styles.massHeaderRow}>
-      <Image source={logo} style={styles.massHeaderLogo} contentFit="contain" />
+      <RNImage
+        source={logo}
+        style={styles.massHeaderLogo}
+        resizeMode="contain"
+      />
       {title ? <Text style={styles.massHeaderTxt}>{title}</Text> : null}
       {children}
     </View>
