@@ -104,6 +104,7 @@ const SectionHeader = React.memo(
 const CAROUSEL_INDEX_KEY = 'calendarCarouselIndex';
 // Persist carousel position across component unmounts
 let lastCarouselIndex = 0;
+const CAROUSEL_CARD_HEIGHT = 420;
 
 
 // ---------- Types ----------
@@ -657,8 +658,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       console.error('Failed to save carousel index', err)
     );
   }, [carouselIndex, carouselWidth]);
-  const [carouselHeight, setCarouselHeight] = useState<number | undefined>();
-  const lastCarouselHeightRef = useRef<number>(0);
   const lastRootHeightRef = useRef<number>(0);
   const lastDaysRowHeightRef = useRef<number>(0);
   const lastMassCardTopRef = useRef<number | null>(null);
@@ -1490,21 +1489,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   }, []);
 
 
-  const onCarouselItemLayout = useCallback(
-    (e: LayoutChangeEvent) => {
-      const next = Math.round(e.nativeEvent.layout.height);
-      if (Math.abs(next - lastCarouselHeightRef.current) < 2) return;
-      lastCarouselHeightRef.current = next;
-      setCarouselHeight(next);
-    },
-    [],
-  );
-
-  useEffect(() => {
-    lastCarouselHeightRef.current = 0;
-    setCarouselHeight(undefined);
-  }, [carouselWidth]);
-
   const onRootLayout = useCallback((e: LayoutChangeEvent) => {
     const next = Math.round(e.nativeEvent.layout.height);
     if (Math.abs(next - lastRootHeightRef.current) < 2) return;
@@ -1858,7 +1842,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     <View
       key={item}
       style={{ width: carouselWidth, alignItems: 'center' }}
-      onLayout={onCarouselItemLayout}
     >
       {item === 'massEvents' ? (
         <MassEventsSection />
@@ -1929,7 +1912,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                 styles.carouselContainer,
                 {
                   width: carouselWidth,
-                  minHeight: carouselHeight,
                 },
               ]}
             >
@@ -2764,7 +2746,7 @@ const styles = StyleSheet.create({
   },
   carouselCard: {
     minHeight: 340,
-    maxHeight: 420,
+    maxHeight: CAROUSEL_CARD_HEIGHT,
     justifyContent: 'flex-start',
     alignItems: 'stretch',
     marginTop: 22,
@@ -2905,6 +2887,7 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
     alignItems: 'center',
+    height: CAROUSEL_CARD_HEIGHT,
     overflow: 'visible',
   },
   carouselDotsRow: {
