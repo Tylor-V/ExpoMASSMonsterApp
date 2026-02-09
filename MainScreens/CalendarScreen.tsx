@@ -43,6 +43,7 @@ import { LIFT_RATINGS } from '../constants/liftRatings';
 import { useAppContext } from '../firebase/AppContext';
 import { getDateKey, getTodayKey, parseDateKey } from '../firebase/dateHelpers';
 import { auth, firestore } from '../firebase/firebase';
+import { postSystemMessage } from '../firebase/systemMessages';
 import {
   fetchSharedSplits,
   removeSharedSplit,
@@ -52,22 +53,23 @@ import {
   saveShowWorkout,
   saveWorkoutPlan,
 } from '../firebase/userProfileHelpers';
-import { postSystemMessage } from '../firebase/systemMessages';
-import { formatUserDisplayName } from '../utils/userDisplayName';
-import {
-  normalizeSharedSplitList,
-  normalizeWorkoutPlan,
-} from '../utils/splitSharing';
 import { colors, fonts } from '../theme';
 import {
   ANIM_BUTTON_POP,
   ANIM_BUTTON_PRESS,
   ANIM_MEDIUM
 } from '../utils/animations';
+import {
+  normalizeSharedSplitList,
+  normalizeWorkoutPlan,
+} from '../utils/splitSharing';
+import { formatUserDisplayName } from '../utils/userDisplayName';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 const MASS_LOGO = require('../assets/mass-logo.png');
 const COMPS_LOGO = require('../assets/comps-logo.png');
+const clampValue = (value: number, min: number, max: number) =>
+  Math.min(Math.max(value, min), max);
 
 type IoniconProps = ComponentProps<typeof Ionicons> & {
   style?: any;
@@ -519,6 +521,18 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const CAROUSEL_CARD_MARGIN = 12;
   const containerWidth = screenWidth;
   const carouselWidth = containerWidth;
+  const MAX_DAY_EVENTS_HEIGHT = useMemo(
+    () => clampValue(windowHeight * 0.28, 160, 260),
+    [windowHeight],
+  );
+  const CARD_FRAME_HEIGHT = useMemo(
+    () => clampValue(windowHeight * 0.42, 360, 440),
+    [windowHeight],
+  );
+  const CAROUSEL_FRAME_HEIGHT = useMemo(
+    () => CARD_FRAME_HEIGHT + 60,
+    [CARD_FRAME_HEIGHT],
+  );
   const PLAN_DRAWER_HEIGHT = windowHeight * 0.8;
   const WORKOUT_DRAWER_MAX_HEIGHT = windowHeight * 0.6;
 
@@ -529,9 +543,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       {
         width: carouselWidth - CAROUSEL_CARD_MARGIN * 2,
         marginHorizontal: CAROUSEL_CARD_MARGIN,
+      height: CARD_FRAME_HEIGHT,
       },
     ],
-    [carouselWidth],
+    [CARD_FRAME_HEIGHT, carouselWidth],
   );
   const carouselChipStyle = useMemo(
     () => [styles.carouselChip, { width: carouselWidth - CAROUSEL_CARD_MARGIN * 2 - 60 }],
@@ -544,11 +559,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   useEffect(() => {
     planDrawerAnim.setValue(showPlanDrawer ? 0 : PLAN_DRAWER_HEIGHT);
   }, [PLAN_DRAWER_HEIGHT, showPlanDrawer]);
-  const [rootHeight, setRootHeight] = useState(0);
-  const [massCardTop, setMassCardTop] = useState<number | null>(null);
-  const [daysRowHeight, setDaysRowHeight] = useState(0);
-  const [eventListMaxHeight, setEventListMaxHeight] = useState<number>();
-  const [drawerOffset, setDrawerOffset] = useState(DRAWER_HEIGHT);
+  const [drawerOffset] = useState(DRAWER_HEIGHT);
   const drawerOffsetRef = useRef(DRAWER_HEIGHT);
   const drawerAnim = useRef(new Animated.Value(DRAWER_HEIGHT)).current;
   const drawerOverlay = useRef(new Animated.Value(0)).current;
@@ -657,31 +668,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       console.error('Failed to save carousel index', err)
     );
   }, [carouselIndex, carouselWidth]);
-  const [stableCarouselMinHeight, setStableCarouselMinHeight] = useState<number>(0);
-  const stableCarouselMinHeightRef = useRef<number>(0);
-  const lastRootHeightRef = useRef<number>(0);
-  const lastDaysRowHeightRef = useRef<number>(0);
-  const lastMassCardTopRef = useRef<number | null>(null);
   const lastDayDropdownWidthRef = useRef<number>(0);
   const lastWorkoutContainerHeightRef = useRef<number>(0);
-
-  useEffect(() => {
-    if (rootHeight && massCardTop !== null) {
-      const h = rootHeight - massCardTop;
-      if (h > 0) {
-        setDrawerOffset(h);
-      }
-    }
-  }, [rootHeight, massCardTop]);
-
-  useEffect(() => {
-    if (massCardTop !== null) {
-      const avail = massCardTop - daysRowHeight;
-      if (avail > 0) {
-        setEventListMaxHeight(avail);
-      }
-    }
-  }, [massCardTop, daysRowHeight]);
 
   useEffect(() => {
     drawerOffsetRef.current = drawerOffset;
@@ -951,7 +939,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
   const eventNumColumns = dayEvents.length > 1 ? 2 : 1;
   const eventListScrollable =
-    dayEvents.length > eventNumColumns * 2 || !!eventListMaxHeight;
+    dayEvents.length > eventNumColumns * 2;
 
   const massEvents = useMemo(() => {
     const base = MASS_EVENTS.map(info => {
@@ -1475,46 +1463,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     </View>
   );
 
-  const onMassCardLayout = useCallback((e: LayoutChangeEvent) => {
-    const layout = e?.nativeEvent?.layout;
-    if (!layout) return;
-    const next = Math.round(layout.y);
-    if (
-      lastMassCardTopRef.current !== null &&
-      Math.abs(next - lastMassCardTopRef.current) < 2
-    ) {
-      return;
-    }
-    lastMassCardTopRef.current = next;
-    setMassCardTop(next);
-  }, []);
-
-
-  const onCarouselItemLayout = useCallback(
-    (e: LayoutChangeEvent) => {
-      const next = Math.round(e.nativeEvent.layout.height);
-      if (next > stableCarouselMinHeightRef.current + 2) {
-        stableCarouselMinHeightRef.current = next;
-        setStableCarouselMinHeight(next);
-      }
-    },
-    [],
-  );
-
-  const onRootLayout = useCallback((e: LayoutChangeEvent) => {
-    const next = Math.round(e.nativeEvent.layout.height);
-    if (Math.abs(next - lastRootHeightRef.current) < 2) return;
-    lastRootHeightRef.current = next;
-    setRootHeight(next);
-  }, []);
-
-  const onDaysRowLayout = useCallback((e: LayoutChangeEvent) => {
-    const next = Math.round(e.nativeEvent.layout.height);
-    if (Math.abs(next - lastDaysRowHeightRef.current) < 2) return;
-    lastDaysRowHeightRef.current = next;
-    setDaysRowHeight(next);
-  }, []);
-
   const onDayDropdownLayout = useCallback((e: LayoutChangeEvent) => {
     const next = Math.round(e.nativeEvent.layout.width);
     if (Math.abs(next - lastDayDropdownWidthRef.current) < 2) return;
@@ -1693,78 +1641,84 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   }, [user?.role]);
 
   const MassEventsSection = () => (
-    <View style={carouselCardStyle} onLayout={onMassCardLayout}>
+    <View style={carouselCardStyle}>
       <SectionHeader title="EVENTS" logo={MASS_LOGO} />
-      {showSplitPlaceholder && <ChooseSplitButton />}
-      {massEvents.map((ev, idx) => {
-        const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][ev.weekday];
-        const countdown = formatCountdown(ev.diff);
-        return (
-          <View
-            key={ev.id}
-            style={[
-              carouselChipStyle,
-              ev.isWorkout && styles.massWorkoutTile,
-              idx !== 0 && styles.massTileSpacing,
-            ]}
-          >
-            <View style={[styles.massTileHeader, ev.isWorkout && styles.massWorkoutHeader]}>
-              <Ionicons name={ev.icon} size={22} color={colors.yellow} style={{ marginRight: 8 }} />
-              <Text style={styles.massTileTitle}>{ev.name.toUpperCase()}</Text>
-              {ev.isWorkout && (
-                <AnimatedTouchable
-                  ref={dayArrowRef}
-                  onPress={toggleDayMenu}
-                  onPressIn={handleChevronPressIn}
-                  onPressOut={handleChevronPressOut}
-                  style={styles.dayMenuBtn}
-                >
-                  <AnimatedIcon
-                    name="chevron-down-outline"
-                    size={20}
-                    color={colors.blue}
-                    style={{ transform: [{ scale: chevronScale }, { rotate: rotation }] }}
-                  />
-                </AnimatedTouchable>
-              )}
-            </View>
-            {ev.isWorkout ? (
-              <View style={styles.massDetailsRow}>
-                <View style={{ flex: 1 }}>
-                  {plan && (
-                    <Text style={styles.workoutSplitName}>{plan.name}</Text>
-                  )}
-                </View>
-                <TouchableOpacity
-                  onPress={openWorkoutDrawer}
-                  style={styles.zoomBtn}
-                >
-                  <Ionicons
-                    name="information-circle-outline"
-                    size={26}
-                    color={colors.blue}
-                  />
-                </TouchableOpacity>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 6 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {showSplitPlaceholder && <ChooseSplitButton />}
+        {massEvents.map((ev, idx) => {
+          const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][ev.weekday];
+          const countdown = formatCountdown(ev.diff);
+          return (
+            <View
+              key={ev.id}
+              style={[
+                carouselChipStyle,
+                ev.isWorkout && styles.massWorkoutTile,
+                idx !== 0 && styles.massTileSpacing,
+              ]}
+            >
+              <View style={[styles.massTileHeader, ev.isWorkout && styles.massWorkoutHeader]}>
+                <Ionicons name={ev.icon} size={22} color={colors.yellow} style={{ marginRight: 8 }} />
+                <Text style={styles.massTileTitle}>{ev.name.toUpperCase()}</Text>
+                {ev.isWorkout && (
+                  <AnimatedTouchable
+                    ref={dayArrowRef}
+                    onPress={toggleDayMenu}
+                    onPressIn={handleChevronPressIn}
+                    onPressOut={handleChevronPressOut}
+                    style={styles.dayMenuBtn}
+                  >
+                    <AnimatedIcon
+                      name="chevron-down-outline"
+                      size={20}
+                      color={colors.blue}
+                      style={{ transform: [{ scale: chevronScale }, { rotate: rotation }] }}
+                    />
+                  </AnimatedTouchable>
+                )}
               </View>
-            ) : (
-              <View style={styles.massDetailsRow}>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1 }}>
-                  <Text style={styles.massTileWhen}>{`Every ${dayName} @ 9 AM`}</Text>
-                  <Text style={styles.massCountdown}>{`Starts in ${countdown}`}</Text>
-                </View>
-                {ev.link ? (
+              {ev.isWorkout ? (
+                <View style={styles.massDetailsRow}>
+                  <View style={{ flex: 1 }}>
+                    {plan && (
+                      <Text style={styles.workoutSplitName}>{plan.name}</Text>
+                    )}
+                  </View>
                   <TouchableOpacity
-                    onPress={() => Linking.openURL(ev.link)}
+                    onPress={openWorkoutDrawer}
                     style={styles.zoomBtn}
                   >
-                    <MaterialIcons name="north-east" size={26} color={colors.blue} />
+                    <Ionicons
+                      name="information-circle-outline"
+                      size={26}
+                      color={colors.blue}
+                    />
                   </TouchableOpacity>
-                ) : null}
-              </View>
-            )}
-          </View>
-        );
-      })}
+                </View>
+              ) : (
+                <View style={styles.massDetailsRow}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', flex: 1 }}>
+                    <Text style={styles.massTileWhen}>{`Every ${dayName} @ 9 AM`}</Text>
+                    <Text style={styles.massCountdown}>{`Starts in ${countdown}`}</Text>
+                  </View>
+                  {ev.link ? (
+                    <TouchableOpacity
+                      onPress={() => Linking.openURL(ev.link)}
+                      style={styles.zoomBtn}
+                    >
+                      <MaterialIcons name="north-east" size={26} color={colors.blue} />
+                    </TouchableOpacity>
+                  ) : null}
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 
@@ -1776,8 +1730,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         {newsLoaded ? (
           mergedNews.length ? (
             <ScrollView
-              style={{ flexGrow: 1 }}
-              contentContainerStyle={{ flexGrow: 1 }}
+              style={{ flex: 1 }}
+              contentContainerStyle={{ paddingBottom: 6 }}
               showsVerticalScrollIndicator={false}
             >
               {mergedNews.map((item, index) =>
@@ -1833,19 +1787,25 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const CompetitionsSection = () => (
     <View style={carouselCardStyle}>
       <SectionHeader logo={COMPS_LOGO} />
-      {fakeComps.map((c, idx) => (
-        <View key={c.id} style={[
-          carouselChipStyle,
-          styles.compTile,
-          idx !== 0 && styles.compTileSpacing,
-        ]}>
-          <View style={styles.massTileHeader}>
-            <Ionicons name="flame-outline" size={22} color={colors.purple} style={{ marginRight: 8 }} />
-            <Text style={styles.compTileTitle}>{c.name}</Text>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ paddingBottom: 6 }}
+        showsVerticalScrollIndicator={false}
+      >
+        {fakeComps.map((c, idx) => (
+          <View key={c.id} style={[
+            carouselChipStyle,
+            styles.compTile,
+            idx !== 0 && styles.compTileSpacing,
+          ]}>
+            <View style={styles.massTileHeader}>
+              <Ionicons name="flame-outline" size={22} color={colors.purple} style={{ marginRight: 8 }} />
+              <Text style={styles.compTileTitle}>{c.name}</Text>
+            </View>
+            <Text style={styles.compComingSoon}>{c.status}</Text>
           </View>
-          <Text style={styles.compComingSoon}>{c.status}</Text>
-        </View>
-      ))}
+        ))}
+      </ScrollView>
     </View>
   );
 
@@ -1854,7 +1814,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     <View
       key={item}
       style={{ width: carouselWidth, alignItems: 'center' }}
-      onLayout={onCarouselItemLayout}
     >
       {item === 'massEvents' ? (
         <MassEventsSection />
@@ -1871,14 +1830,12 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     <WhiteBackgroundWrapper style={{ flex: 1 }} padBottom={!renderPlanDrawer}>
       <View
         style={{ flex: 1 }}
-        onLayout={onRootLayout}
       >
         <View style={{ flex: 1, justifyContent: 'space-between' }}>
           {/* Zone 1: days and events */}
           <View>
             <View
               style={{ paddingTop: 12 }}
-              onLayout={onDaysRowLayout}
             >
               <ScrollView
                 horizontal
@@ -1890,8 +1847,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             </View>
             <FlatList
               style={[
-                { flexGrow: 0, flexShrink: 0 },
-                eventListMaxHeight ? { maxHeight: eventListMaxHeight } : null,
+                { flexGrow: 0, flexShrink: 0, maxHeight: MAX_DAY_EVENTS_HEIGHT },
               ]}
               data={dayEvents}
               keyExtractor={item => item.id}
@@ -1925,7 +1881,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                 styles.carouselContainer,
                 {
                   width: carouselWidth,
-                  minHeight: stableCarouselMinHeight,
+                  height: CAROUSEL_FRAME_HEIGHT,
                 },
               ]}
             >
@@ -2759,8 +2715,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   carouselCard: {
-    minHeight: 340,
-    maxHeight: 420,
     justifyContent: 'flex-start',
     alignItems: 'stretch',
     marginTop: 22,
@@ -2786,12 +2740,15 @@ const styles = StyleSheet.create({
   },
   massHeaderLogo: {
     width: 100,
-    height: 80,
+    height: 60,
     marginRight: 8,
-    marginTop: -20,
-    marginBottom: -20,
   },
-  massHeaderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14 },
+  massHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+    paddingVertical: 6,
+  },
   massHeaderTxt: {
     color: colors.yellow,
     fontSize: 22,
