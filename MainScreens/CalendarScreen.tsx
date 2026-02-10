@@ -518,11 +518,12 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
   const { width: screenWidth, height: windowHeight } = useWindowDimensions();
   const CAROUSEL_CARD_MARGIN = 12;
-  const CAROUSEL_ARROW_GUTTER = 44;
   const containerWidth = screenWidth;
   const carouselWidth = containerWidth;
-  const carouselCardWidth =
-    carouselWidth - CAROUSEL_CARD_MARGIN * 2 - CAROUSEL_ARROW_GUTTER * 2;
+  const pageWidth = carouselWidth;
+  const cardOuterPadding = CAROUSEL_CARD_MARGIN;
+  const carouselCardWidth = pageWidth - cardOuterPadding * 2;
+  const arrowInset = Math.max(4, cardOuterPadding - 4);
   const padBottom = !renderPlanDrawer;
   const cardMinHeight = useMemo(
     () => clampValue(windowHeight * 0.35, 260, 360),
@@ -536,12 +537,12 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     () => [
       styles.carouselCard,
       {
-        width: carouselCardWidth,
-        marginHorizontal: CAROUSEL_CARD_MARGIN,
+        width: '100%',
+        marginHorizontal: 0,
         flex: 1,
       },
     ],
-    [carouselCardWidth],
+    [],
   );
   const carouselChipStyle = useMemo(
     () => [styles.carouselChip, { width: carouselCardWidth - 60 }],
@@ -676,13 +677,13 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       const animated =
         carouselHasScrolledRef.current && carouselUserActionRef.current;
       carouselScrollRef.current?.scrollTo({
-        x: carouselIndex * carouselCardWidth,
+        x: carouselIndex * pageWidth,
         animated,
       });
       carouselHasScrolledRef.current = true;
       carouselUserActionRef.current = false;
     }
-  }, [carouselCardWidth, carouselIndex, carouselIndexHydrated]);
+  }, [carouselIndex, carouselIndexHydrated, pageWidth]);
   const lastDayDropdownWidthRef = useRef<number>(0);
   const lastWorkoutContainerHeightRef = useRef<number>(0);
 
@@ -1963,12 +1964,12 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     (event: any) => {
       if (!carouselIndexHydrated) return;
       const offsetX = event.nativeEvent.contentOffset.x;
-      const nextIndex = Math.round(offsetX / carouselCardWidth);
+      const nextIndex = Math.round(offsetX / pageWidth);
       if (nextIndex !== carouselIndex) {
         setCarouselIndex(nextIndex);
       }
     },
-    [carouselCardWidth, carouselIndex, carouselIndexHydrated],
+    [carouselIndex, carouselIndexHydrated, pageWidth],
   );
 
   const renderCarouselItem = (sceneKey: string) => {
@@ -1978,19 +1979,21 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     return <EventsBody />;
   };
 
-  const activeSceneKey = carouselItems[carouselIndex] ?? 'massEvents';
-  const activeHeader = useMemo(() => {
-    if (activeSceneKey === 'news') {
-      return { title: 'NEWS', logo: MASS_LOGO, trailing: addNewsButton };
-    }
-    if (activeSceneKey === 'comps') {
-      return { title: undefined, logo: COMPS_LOGO, trailing: null };
-    }
-    if (activeSceneKey === 'events') {
-      return { title: 'EVENTS', logo: MASS_LOGO, trailing: null };
-    }
-    return { title: 'MASS', logo: MASS_LOGO, trailing: null };
-  }, [activeSceneKey, addNewsButton]);
+  const getHeaderForScene = useCallback(
+    (sceneKey: string) => {
+      if (sceneKey === 'news') {
+        return { title: 'NEWS', logo: MASS_LOGO, trailing: addNewsButton };
+      }
+      if (sceneKey === 'comps') {
+        return { title: undefined, logo: COMPS_LOGO, trailing: null };
+      }
+      if (sceneKey === 'events') {
+        return { title: 'EVENTS', logo: MASS_LOGO, trailing: null };
+      }
+      return { title: 'MASS', logo: MASS_LOGO, trailing: null };
+    },
+    [addNewsButton],
+  );
 
   // ---------- UI ----------
   return (
@@ -2022,52 +2025,44 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             ]}
           >
             {carouselIndexHydrated ? (
-              <View style={styles.carouselRow} pointerEvents="box-none">
-                <View style={styles.carouselArrowGutter} pointerEvents="box-none">
-                  {carouselItems.length > 1 && (
-                    <CarouselNavigator
-                      index={carouselIndex}
-                      length={carouselItems.length}
-                      onIndexChange={goToIndex}
-                      arrowSize={36}
-                      showDots={false}
-                      showArrows
-                      layout="gutter"
-                    />
-                  )}
-                </View>
-                <View style={styles.carouselCardFrame}>
-                  <View style={[carouselCardStyle, { minHeight: cardMinHeight }]}>
-                    <SectionHeader title={activeHeader.title} logo={activeHeader.logo}>
-                      {activeHeader.trailing}
-                    </SectionHeader>
-                    <View style={styles.carouselBody}>
-                      <ScrollView
-                        ref={carouselScrollRef}
-                        horizontal
-                        pagingEnabled
-                        decelerationRate="fast"
-                        snapToInterval={carouselCardWidth}
-                        snapToAlignment="start"
-                        disableScrollViewPanResponder={false}
-                        showsHorizontalScrollIndicator={false}
-                        onMomentumScrollEnd={handleCarouselScrollEnd}
-                        scrollEventThrottle={16}
-                        scrollEnabled={carouselItems.length > 1}
-                        style={styles.carouselScrollView}
-                        contentContainerStyle={styles.carouselScrollContent}
+              <View style={styles.carouselCardFrame}>
+                <ScrollView
+                  ref={carouselScrollRef}
+                  horizontal
+                  pagingEnabled
+                  decelerationRate="fast"
+                  snapToInterval={pageWidth}
+                  snapToAlignment="start"
+                  disableIntervalMomentum
+                  disableScrollViewPanResponder={false}
+                  showsHorizontalScrollIndicator={false}
+                  onMomentumScrollEnd={handleCarouselScrollEnd}
+                  scrollEventThrottle={16}
+                  scrollEnabled={carouselItems.length > 1}
+                  style={[styles.carouselScrollView, { width: pageWidth }]}
+                  contentContainerStyle={styles.carouselScrollContent}
+                >
+                  {carouselItems.map(item => {
+                    const header = getHeaderForScene(item);
+                    return (
+                      <View
+                        key={item}
+                        style={{ width: pageWidth, paddingHorizontal: cardOuterPadding }}
                       >
-                        {carouselItems.map(item => (
-                          <View key={item} style={{ width: carouselCardWidth }}>
+                        <View style={[carouselCardStyle, { minHeight: cardMinHeight }]}>
+                          <SectionHeader title={header.title} logo={header.logo}>
+                            {header.trailing}
+                          </SectionHeader>
+                          <View style={styles.carouselBody}>
                             {renderCarouselItem(item)}
                           </View>
-                        ))}
-                      </ScrollView>
-                    </View>
-                  </View>
-                </View>
-                <View style={styles.carouselArrowGutter} pointerEvents="box-none">
-                  {carouselItems.length > 1 && (
+                        </View>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+                {carouselItems.length > 1 && (
+                  <View style={styles.carouselArrowOverlay} pointerEvents="box-none">
                     <CarouselNavigator
                       index={carouselIndex}
                       length={carouselItems.length}
@@ -2075,15 +2070,18 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                       arrowSize={36}
                       showDots={false}
                       showArrows
-                      layout="gutter"
-                      invertArrows
+                      layout="overlay"
+                      leftOffset={arrowInset}
+                      rightOffset={arrowInset}
                     />
-                  )}
-                </View>
+                  </View>
+                )}
               </View>
             ) : (
               <View style={styles.carouselCardFrame}>
-                <View style={[carouselCardStyle, { minHeight: cardMinHeight }]} />
+                <View style={{ width: pageWidth, paddingHorizontal: cardOuterPadding }}>
+                  <View style={[carouselCardStyle, { minHeight: cardMinHeight }]} />
+                </View>
               </View>
             )}
             {carouselItems.length > 1 && carouselIndexHydrated && (
@@ -2802,7 +2800,7 @@ const styles = StyleSheet.create({
   topRegion: { flexShrink: 0 },
   middleRegion: {
     flex: 1,
-    paddingHorizontal: 8,
+    paddingHorizontal: 0,
     paddingTop: 4,
   },
   bottomRegion: {
@@ -3294,6 +3292,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  carouselArrowOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
   },
   carouselBody: {
     flex: 1,
