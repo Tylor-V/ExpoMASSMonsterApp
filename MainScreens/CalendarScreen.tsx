@@ -84,20 +84,54 @@ const SectionHeader = React.memo(
   ({
     title,
     logo,
+    onPrev,
+    onNext,
+    canPrev = true,
+    canNext = true,
     children,
   }: {
     title?: string;
     logo: any;
+    onPrev?: () => void;
+    onNext?: () => void;
+    canPrev?: boolean;
+    canNext?: boolean;
     children?: React.ReactNode;
   }) => (
     <View style={styles.massHeaderRow}>
-      <RNImage
-        source={logo}
-        style={styles.massHeaderLogo}
-        resizeMode="contain"
-      />
-      {title ? <Text style={styles.massHeaderTxt}>{title}</Text> : null}
-      {children}
+      <View style={styles.massHeaderSide}>
+        {onPrev ? (
+          <Pressable
+            onPress={onPrev}
+            disabled={!canPrev}
+            hitSlop={10}
+            style={[styles.navBtn, !canPrev && styles.navBtnDisabled]}
+          >
+            <Ionicons name="chevron-back" size={20} color={colors.gray} />
+          </Pressable>
+        ) : null}
+      </View>
+      <View style={styles.massHeaderCenter}>
+        <RNImage
+          source={logo}
+          style={styles.massHeaderLogo}
+          resizeMode="contain"
+        />
+        {title ? <Text style={styles.massHeaderTxt}>{title}</Text> : null}
+      </View>
+      <View style={styles.massHeaderSideRight}>
+        {children}
+        {onNext ? (
+          <Pressable
+            onPress={onNext}
+            disabled={!canNext}
+            hitSlop={10}
+            style={[styles.navBtn, !canNext && styles.navBtnDisabled]}
+          >
+            <Ionicons name="chevron-forward" size={20} color={colors.gray} />
+          </Pressable>
+        ) : null}
+      </View>
     </View>
   ),
 );
@@ -2043,19 +2077,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           >
             {carouselIndexHydrated ? (
               <>
-                {carouselItems.length > 1 && (
-                  <View style={styles.carouselArrowRow}>
-                    <CarouselNavigator
-                      index={carouselIndex}
-                      length={carouselItems.length}
-                      onIndexChange={goToIndex}
-                      arrowSize={30}
-                      showDots={false}
-                      showArrows
-                      layout="inline"
-                    />
-                  </View>
-                )}
                 <View style={styles.carouselCardFrame}>
                   <ScrollView
                     ref={carouselScrollRef}
@@ -2081,7 +2102,14 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                           style={{ width: pageWidth, paddingHorizontal: cardOuterPadding }}
                         >
                           <View style={[carouselCardStyle, { minHeight: cardMinHeight }]}>
-                            <SectionHeader title={header.title} logo={header.logo}>
+                            <SectionHeader
+                              title={header.title}
+                              logo={header.logo}
+                              onPrev={carouselItems.length > 1 ? () => goToIndex(cur => cur - 1) : undefined}
+                              onNext={carouselItems.length > 1 ? () => goToIndex(cur => cur + 1) : undefined}
+                              canPrev={carouselIndex > 0}
+                              canNext={carouselIndex < carouselItems.length - 1}
+                            >
                               {header.trailing}
                             </SectionHeader>
                             <View style={styles.carouselBody}>
@@ -3182,8 +3210,38 @@ const styles = StyleSheet.create({
   massHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 14,
     paddingVertical: 6,
+  },
+  massHeaderSide: {
+    width: 36,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  massHeaderCenter: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  massHeaderSideRight: {
+    minWidth: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  navBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.06)',
+  },
+  navBtnDisabled: {
+    opacity: 0.35,
   },
   massHeaderTxt: {
     color: colors.yellow,
@@ -3296,11 +3354,6 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  carouselArrowRow: {
-    width: '100%',
-    paddingHorizontal: 18,
-    marginBottom: 2,
   },
   carouselCardFrame: {
     flex: 1,
@@ -3707,7 +3760,7 @@ const styles = StyleSheet.create({
   dayDropdownItem: { paddingVertical: 4 },
   dayDropdownItemText: { fontSize: 14, fontWeight: 'bold', color: colors.background },
   dayDropdownItemTextActive: { color: colors.accent },
-  addNewsBtn: { marginLeft: 'auto' },
+  addNewsBtn: { marginRight: 2 },
   newsInput: {
     borderWidth: 1,
     borderColor: colors.grayLight,
