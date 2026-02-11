@@ -2082,6 +2082,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                     ref={carouselScrollRef}
                     horizontal
                     pagingEnabled
+                    removeClippedSubviews={false}
                     decelerationRate="fast"
                     snapToInterval={pageWidth}
                     snapToAlignment="start"
@@ -2105,16 +2106,41 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                             <SectionHeader
                               title={header.title}
                               logo={header.logo}
-                              onPrev={carouselItems.length > 1 ? () => goToIndex(cur => cur - 1) : undefined}
-                              onNext={carouselItems.length > 1 ? () => goToIndex(cur => cur + 1) : undefined}
-                              canPrev={carouselIndex > 0}
-                              canNext={carouselIndex < carouselItems.length - 1}
                             >
                               {header.trailing}
                             </SectionHeader>
                             <View style={styles.carouselBody}>
                               {renderCarouselItem(item)}
                             </View>
+                            {carouselItems.length > 1 && (
+                              <View pointerEvents="box-none" style={styles.cardArrowOverlay}>
+                                <Pressable
+                                  onPress={() => goToIndex(cur => cur - 1)}
+                                  disabled={carouselIndex <= 0}
+                                  hitSlop={12}
+                                  style={[
+                                    styles.cardArrowBtn,
+                                    styles.cardArrowLeft,
+                                    carouselIndex <= 0 && styles.cardArrowBtnDisabled,
+                                  ]}
+                                >
+                                  <Ionicons name="chevron-back" size={20} color={colors.gray} />
+                                </Pressable>
+                                <Pressable
+                                  onPress={() => goToIndex(cur => cur + 1)}
+                                  disabled={carouselIndex >= carouselItems.length - 1}
+                                  hitSlop={12}
+                                  style={[
+                                    styles.cardArrowBtn,
+                                    styles.cardArrowRight,
+                                    carouselIndex >= carouselItems.length - 1 &&
+                                      styles.cardArrowBtnDisabled,
+                                  ]}
+                                >
+                                  <Ionicons name="chevron-forward" size={20} color={colors.gray} />
+                                </Pressable>
+                              </View>
+                            )}
                           </View>
                         </View>
                       );
@@ -3180,7 +3206,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'stretch',
     marginTop: 12,
-    marginBottom: 8,
+    marginBottom: 2,
     borderRadius: 28,
     shadowColor: '#000',
     shadowOpacity: 0.14,
@@ -3359,6 +3385,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingBottom: 14,
   },
   carouselBody: {
     flex: 1,
@@ -3372,8 +3399,34 @@ const styles = StyleSheet.create({
   carouselDotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 4,
+    marginTop: 8,
     marginBottom: 2,
+    paddingBottom: 4,
+  },
+  cardArrowOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+  },
+  cardArrowBtn: {
+    position: 'absolute',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.06)',
+  },
+  cardArrowBtnDisabled: {
+    opacity: 0.35,
+  },
+  cardArrowLeft: {
+    left: 10,
+  },
+  cardArrowRight: {
+    right: 10,
   },
   sceneBody: {
     flex: 1,
