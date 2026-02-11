@@ -629,6 +629,15 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     },
     [carouselItems.length],
   );
+  const jumpToScene = useCallback(
+    (sceneKey: string) => {
+      const targetIndex = carouselItems.indexOf(sceneKey);
+      if (targetIndex >= 0) {
+        goToIndex(targetIndex);
+      }
+    },
+    [carouselItems, goToIndex],
+  );
   const loadedCarouselIndex = useRef(false);
   useEffect(() => {
     if (loadedCarouselIndex.current) return;
@@ -2009,9 +2018,17 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
               {days.map((item, i) => renderDay({ item, index: i }))}
             </ScrollView>
           </View>
-          <View style={styles.summaryRow}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.summaryRow,
+              pressed && styles.summaryRowPressed,
+            ]}
+            onPress={() => jumpToScene('events')}
+            accessibilityRole="button"
+            accessibilityHint="Opens events"
+          >
             <Text style={styles.summaryText}>{summaryText}</Text>
-          </View>
+          </Pressable>
         </View>
 
         <View style={styles.middleRegion}>
@@ -2818,6 +2835,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 6,
     paddingBottom: 6,
+  },
+  summaryRowPressed: {
+    opacity: 0.72,
   },
   summaryText: {
     color: colors.textDark,
