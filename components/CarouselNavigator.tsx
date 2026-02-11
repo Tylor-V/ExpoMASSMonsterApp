@@ -60,7 +60,7 @@ export default function CarouselNavigator({
         style={[styles.gutterArrow, disabled && styles.gutterArrowDisabled]}
         onPress={() => onIndexChange(cur => cur + (isNext ? 1 : -1))}
         disabled={disabled}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Icon
           name={isNext ? 'chevron-forward' : 'chevron-back'}
@@ -180,7 +180,19 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   gutterArrow: {
-    padding: 6,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderWidth: 1,
+    borderColor: '#E9E9E9',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
   },
   gutterArrowDisabled: {
     opacity: 0.3,

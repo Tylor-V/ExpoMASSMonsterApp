@@ -517,13 +517,12 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const chevronRotate = useRef(new Animated.Value(0)).current;
 
   const { width: screenWidth, height: windowHeight } = useWindowDimensions();
-  const CAROUSEL_CARD_MARGIN = 12;
   const containerWidth = screenWidth;
   const carouselWidth = containerWidth;
   const pageWidth = carouselWidth;
-  const cardOuterPadding = CAROUSEL_CARD_MARGIN;
+  const cardOuterPadding = clampValue(screenWidth * 0.03, 8, 14);
   const carouselCardWidth = pageWidth - cardOuterPadding * 2;
-  const arrowInset = Math.max(4, cardOuterPadding - 4);
+  const carouselCardPadding = clampValue(screenWidth * 0.06, 18, 26);
   const padBottom = !renderPlanDrawer;
   const cardMinHeight = useMemo(
     () => clampValue(windowHeight * 0.35, 260, 360),
@@ -540,9 +539,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         width: '100%',
         marginHorizontal: 0,
         flex: 1,
+        paddingHorizontal: carouselCardPadding,
       },
     ],
-    [],
+    [carouselCardPadding],
   );
   const carouselChipStyle = useMemo(
     () => [styles.carouselChip, { width: carouselCardWidth - 60 }],
@@ -2042,58 +2042,58 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             ]}
           >
             {carouselIndexHydrated ? (
-              <View style={styles.carouselCardFrame}>
-                <ScrollView
-                  ref={carouselScrollRef}
-                  horizontal
-                  pagingEnabled
-                  decelerationRate="fast"
-                  snapToInterval={pageWidth}
-                  snapToAlignment="start"
-                  disableIntervalMomentum
-                  disableScrollViewPanResponder={false}
-                  showsHorizontalScrollIndicator={false}
-                  onMomentumScrollEnd={handleCarouselScrollEnd}
-                  scrollEventThrottle={16}
-                  scrollEnabled={carouselItems.length > 1}
-                  style={[styles.carouselScrollView, { width: pageWidth }]}
-                  contentContainerStyle={styles.carouselScrollContent}
-                >
-                  {carouselItems.map(item => {
-                    const header = getHeaderForScene(item);
-                    return (
-                      <View
-                        key={item}
-                        style={{ width: pageWidth, paddingHorizontal: cardOuterPadding }}
-                      >
-                        <View style={[carouselCardStyle, { minHeight: cardMinHeight }]}>
-                          <SectionHeader title={header.title} logo={header.logo}>
-                            {header.trailing}
-                          </SectionHeader>
-                          <View style={styles.carouselBody}>
-                            {renderCarouselItem(item)}
-                          </View>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </ScrollView>
+              <>
                 {carouselItems.length > 1 && (
-                  <View style={styles.carouselArrowOverlay} pointerEvents="box-none">
+                  <View style={styles.carouselArrowRow}>
                     <CarouselNavigator
                       index={carouselIndex}
                       length={carouselItems.length}
                       onIndexChange={goToIndex}
-                      arrowSize={36}
+                      arrowSize={30}
                       showDots={false}
                       showArrows
-                      layout="overlay"
-                      leftOffset={arrowInset}
-                      rightOffset={arrowInset}
+                      layout="inline"
                     />
                   </View>
                 )}
-              </View>
+                <View style={styles.carouselCardFrame}>
+                  <ScrollView
+                    ref={carouselScrollRef}
+                    horizontal
+                    pagingEnabled
+                    decelerationRate="fast"
+                    snapToInterval={pageWidth}
+                    snapToAlignment="start"
+                    disableIntervalMomentum
+                    disableScrollViewPanResponder={false}
+                    showsHorizontalScrollIndicator={false}
+                    onMomentumScrollEnd={handleCarouselScrollEnd}
+                    scrollEventThrottle={16}
+                    scrollEnabled={carouselItems.length > 1}
+                    style={[styles.carouselScrollView, { width: pageWidth }]}
+                    contentContainerStyle={styles.carouselScrollContent}
+                  >
+                    {carouselItems.map(item => {
+                      const header = getHeaderForScene(item);
+                      return (
+                        <View
+                          key={item}
+                          style={{ width: pageWidth, paddingHorizontal: cardOuterPadding }}
+                        >
+                          <View style={[carouselCardStyle, { minHeight: cardMinHeight }]}>
+                            <SectionHeader title={header.title} logo={header.logo}>
+                              {header.trailing}
+                            </SectionHeader>
+                            <View style={styles.carouselBody}>
+                              {renderCarouselItem(item)}
+                            </View>
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              </>
             ) : (
               <View style={styles.carouselCardFrame}>
                 <View style={{ width: pageWidth, paddingHorizontal: cardOuterPadding }}>
@@ -2108,7 +2108,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                 onIndexChange={goToIndex}
                 dotsRowStyle={styles.carouselDotsRow}
                 arrowSize={36}
-                dotSize={16}
+                dotSize={12}
                 showArrows={false}
                 layout="inline"
               />
@@ -3297,25 +3297,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  carouselRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  carouselArrowRow: {
     width: '100%',
-    flex: 1,
-  },
-  carouselArrowGutter: {
-    width: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 18,
+    marginBottom: 2,
   },
   carouselCardFrame: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  carouselArrowOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
   },
   carouselBody: {
     flex: 1,
@@ -3329,8 +3319,8 @@ const styles = StyleSheet.create({
   carouselDotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: 4,
+    marginBottom: 2,
   },
   sceneBody: {
     flex: 1,
