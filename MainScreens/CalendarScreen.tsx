@@ -512,8 +512,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const [newsText, setNewsText] = useState('');
   const [savingNews, setSavingNews] = useState(false);
 
-  const [tick, setTick] = useState(0);
-
   const badgeProgress = useMemo(() => getUserBadgeProgress(user), [user]);
   const mergedNews = useMemo(
     () => [...(news || []), ...badgeProgress],
@@ -662,7 +660,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const lastScrollIndexRef = useRef<number>(carouselIndex);
   const isCarouselAnimatingRef = useRef(false);
   const carouselUnlockTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [carouselPersistTick, setCarouselPersistTick] = useState(0);
   const goToIndex = useCallback(
     (next: number | ((cur: number) => number)) => {
       if (!carouselIndexHydrated) return;
@@ -681,10 +678,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       carouselUserActionRef.current = true;
       lastRequestedIndexRef.current = null;
       lastScrollIndexRef.current = clamped;
-
-      if (clamped !== carouselIndex) {
-        setCarouselIndex(clamped);
-      }
 
       carouselScrollRef.current?.scrollTo({
         x: clamped * pageWidth,
@@ -743,7 +736,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     AsyncStorage.setItem(CAROUSEL_INDEX_KEY, String(carouselIndex)).catch(err =>
       console.error('Failed to save carousel index', err)
     );
-  }, [carouselIndex, carouselIndexHydrated, carouselPersistTick, setCalendarCarouselIndex]);
+  }, [carouselIndex, carouselIndexHydrated, setCalendarCarouselIndex]);
 
   useEffect(
     () => () => {
@@ -783,6 +776,30 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     setDays(getNext7Days());
   }, []);
 
+  const dayRolloverTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clearDayRolloverTimeout = useCallback(() => {
+    if (dayRolloverTimeoutRef.current) {
+      clearTimeout(dayRolloverTimeoutRef.current);
+      dayRolloverTimeoutRef.current = null;
+    }
+  }, []);
+
+  const scheduleDayRolloverCheck = useCallback(() => {
+    clearDayRolloverTimeout();
+    const now = new Date();
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 0, 0);
+    const delay = Math.max(1000, nextMidnight.getTime() - now.getTime());
+    dayRolloverTimeoutRef.current = setTimeout(() => {
+      const todayKey = getTodayKey();
+      if (todayKey !== lastTodayKeyRef.current) {
+        lastTodayKeyRef.current = todayKey;
+        refreshDays();
+      }
+      scheduleDayRolloverCheck();
+    }, delay);
+  }, [clearDayRolloverTimeout, refreshDays]);
+
   useEffect(() => {
     if (!days.length) return;
     const matchIndex = days.findIndex(day => getDateKey(day.date) === selectedDateKey);
@@ -811,7 +828,11 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   useFocusEffect(
     useCallback(() => {
       refreshDays();
+      const todayKey = getTodayKey();
+      lastTodayKeyRef.current = todayKey;
+      scheduleDayRolloverCheck();
       return () => {
+        clearDayRolloverTimeout();
         setDayMenuOpen(false);
         setShowPlanDrawer(false);
         setRenderPlanDrawer(false);
@@ -821,7 +842,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         setShowDatePicker(false);
         setShowTimePicker(false);
       };
-    }, [refreshDays]),
+    }, [clearDayRolloverTimeout, refreshDays, scheduleDayRolloverCheck]),
   );
 
   const workoutVisible = showWorkout && !!plan;
@@ -1014,19 +1035,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     );
   }, [sharedSplits, sharedLoaded]);
 
-  useEffect(() => {
-    const id = setInterval(() => setTick(t => t + 1), 60000);
-    return () => clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    const todayKey = getTodayKey();
-    if (todayKey !== lastTodayKeyRef.current) {
-      lastTodayKeyRef.current = todayKey;
-      refreshDays();
-    }
-  }, [tick, refreshDays]);
-
   const dayEvents = useMemo(
     () => computeEventsForDate(selectedDate),
     [selectedDate, computeEventsForDate],
@@ -1077,7 +1085,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     }
 
     return base;
-  }, [tick, workoutVisible, plan]);
+  }, [workoutVisible, plan]);
 
   const eventsPreview = useMemo(
     () => dayEvents.slice(0, MAX_PREVIEW_ITEMS),
@@ -1119,7 +1127,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       return plan.days[diffIdx % plan.days.length];
     }
     return null;
-  }, [tick, workoutVisible, plan]);
+  }, [workoutVisible, plan]);
 
   const [liftChecks, setLiftChecks] = useState<Record<string, boolean>>({});
 
@@ -1768,7 +1776,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     saveWorkoutPlan(updated).catch(err =>
       console.error('Failed to save workout plan', err)
     );
-    setTick(t => t + 1);
     setDayMenuOpen(false);
   };
 
@@ -2058,8 +2065,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       if (nextIndex !== carouselIndex) {
         setCarouselIndex(nextIndex);
       }
-      setCarouselPersistTick(tick => tick + 1);
-
       const queuedIndex = lastRequestedIndexRef.current;
       lastRequestedIndexRef.current = null;
       if (queuedIndex != null && queuedIndex !== nextIndex) {
@@ -2067,7 +2072,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         isCarouselAnimatingRef.current = true;
         carouselUserActionRef.current = true;
         lastScrollIndexRef.current = queuedIndex;
-        setCarouselIndex(queuedIndex);
         carouselScrollRef.current?.scrollTo({
           x: queuedIndex * pageWidth,
           animated: true,
@@ -2085,23 +2089,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     [carouselIndexHydrated, settleCarouselAtOffset],
   );
 
-  const handleCarouselScroll = useCallback(
-    (event: any) => {
-      if (!carouselIndexHydrated) return;
-      const offsetX = event.nativeEvent.contentOffset.x;
-      const nextIndex = clampValue(
-        Math.round(offsetX / pageWidth),
-        0,
-        carouselItems.length - 1,
-      );
-      if (nextIndex !== lastScrollIndexRef.current) {
-        lastScrollIndexRef.current = nextIndex;
-        setCarouselIndex(nextIndex);
-      }
-    },
-    [carouselIndexHydrated, carouselItems.length, pageWidth],
-  );
-
   const handleCarouselScrollBeginDrag = useCallback(() => {
     if (!carouselIndexHydrated) return;
     isCarouselAnimatingRef.current = true;
@@ -2116,15 +2103,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     (event: any) => {
       if (!carouselIndexHydrated) return;
       const offsetX = event.nativeEvent.contentOffset.x;
-      const nextIndex = clampValue(
-        Math.round(offsetX / pageWidth),
-        0,
-        carouselItems.length - 1,
-      );
-      if (nextIndex !== lastScrollIndexRef.current) {
-        lastScrollIndexRef.current = nextIndex;
-        setCarouselIndex(nextIndex);
-      }
       if (carouselUnlockTimeoutRef.current) {
         clearTimeout(carouselUnlockTimeoutRef.current);
       }
@@ -2132,7 +2110,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         settleCarouselAtOffset(offsetX);
       }, 140);
     },
-    [carouselIndexHydrated, carouselItems.length, pageWidth, settleCarouselAtOffset],
+    [carouselIndexHydrated, settleCarouselAtOffset],
   );
 
   const handleCarouselAnimatedScroll = useMemo(
@@ -2140,10 +2118,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       [{ nativeEvent: { contentOffset: { x: scrollX } } }],
       {
         useNativeDriver: true,
-        listener: handleCarouselScroll,
       },
     ),
-    [handleCarouselScroll, scrollX],
+    [scrollX],
   );
 
   const renderCarouselItem = (sceneKey: string) => {
@@ -2893,7 +2870,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
               onContentSizeChange={(w, h) => setWorkoutContentHeight(h)}
               onScroll={Animated.event(
                 [{ nativeEvent: { contentOffset: { y: workoutScrollY } } }],
-                { useNativeDriver: false },
+                { useNativeDriver: true },
               )}
               scrollEventThrottle={16}
               contentContainerStyle={{ paddingBottom: insets.bottom }}
