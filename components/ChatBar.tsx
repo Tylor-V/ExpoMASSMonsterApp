@@ -282,6 +282,9 @@ const ChatBar: React.FC<ChatBarProps> = ({ isActive = true, onOpenDMInbox, onOpe
   const [pinnedMessages, setPinnedMessages] = useState<any[]>([]);
   const [pinUsers, setPinUsers] = useState<Record<string, any>>({});
   const [scrollToMessageFn, setScrollToMessageFn] = useState<((id: string) => void) | null>(null);
+  const appStateRef = useRef(AppState.currentState);
+  const lastPresencePayloadRef = useRef('');
+  const lastPresenceWriteAtRef = useRef(0);
 
   const user = useCurrentUserDoc();
   const channels = useMemo(
@@ -298,23 +301,78 @@ const ChatBar: React.FC<ChatBarProps> = ({ isActive = true, onOpenDMInbox, onOpe
   useEffect(() => {
     const uid = user?.uid;
     if (!uid) return;
-    const updateStatus = (presence: 'online' | 'offline') => {
-      firestore().collection('users').doc(uid).update({
-        lastActive: firestore.FieldValue.serverTimestamp(),
-        presence,
-      });
+
+    const PRESENCE_KEEPALIVE_MS = 90000;
+    const MIN_WRITE_GAP_MS = 15000;
+    let keepAliveInterval: ReturnType<typeof setInterval> | null = null;
+
+    const stopKeepAlive = () => {
+      if (keepAliveInterval) {
+        clearInterval(keepAliveInterval);
+        keepAliveInterval = null;
+      }
     };
-    const interval = setInterval(() => updateStatus('online'), 30000);
-    updateStatus('online');
+
+    const writePresence = (presence: 'online' | 'offline') => {
+      const now = Date.now();
+      const payloadKey = `${presence}:${isActive ? 'visible' : 'hidden'}`;
+      if (
+        payloadKey === lastPresencePayloadRef.current &&
+        now - lastPresenceWriteAtRef.current < MIN_WRITE_GAP_MS
+      ) {
+        return;
+      }
+      lastPresencePayloadRef.current = payloadKey;
+      lastPresenceWriteAtRef.current = now;
+      firestore()
+        .collection('users')
+        .doc(uid)
+        .update({
+          lastActive: firestore.FieldValue.serverTimestamp(),
+          presence,
+        })
+        .catch(err => console.warn('Failed presence update', err));
+    };
+
+    const shouldBroadcastOnline = () => appStateRef.current === 'active' && isActive;
+
+    const startKeepAlive = () => {
+      if (!shouldBroadcastOnline()) return;
+      stopKeepAlive();
+      keepAliveInterval = setInterval(() => {
+        if (!shouldBroadcastOnline()) {
+          stopKeepAlive();
+          return;
+        }
+        writePresence('online');
+      }, PRESENCE_KEEPALIVE_MS);
+    };
+
+    if (shouldBroadcastOnline()) {
+      writePresence('online');
+      startKeepAlive();
+    } else {
+      stopKeepAlive();
+      writePresence('offline');
+    }
+
     const appListener = AppState.addEventListener('change', state => {
-      if (state === 'active') updateStatus('online');
-      if (state.match(/inactive|background/)) updateStatus('offline');
+      appStateRef.current = state;
+      if (state === 'active' && isActive) {
+        writePresence('online');
+        startKeepAlive();
+      }
+      if (state.match(/inactive|background/)) {
+        stopKeepAlive();
+        writePresence('offline');
+      }
     });
     return () => {
-      clearInterval(interval);
+      stopKeepAlive();
+      writePresence('offline');
       appListener.remove();
     };
-  }, [user?.uid]);
+  }, [isActive, user?.uid]);
 
   const openStoriesViewer = (uid: string) => {
     setStoryUserId(uid);

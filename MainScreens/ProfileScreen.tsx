@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { CommonActions, useNavigation } from '@react-navigation/native';
+import { CommonActions, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -247,13 +247,15 @@ const ProfileScreen = () => {
     }
   }, [socialState, socialEditMode]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const newStr = getTodayKey();
-      if (newStr !== todayStr) setTodayStr(newStr);
-    }, 60 * 1000);
-    return () => clearInterval(interval);
-  }, [todayStr]);
+  useFocusEffect(
+    React.useCallback(() => {
+      const interval = setInterval(() => {
+        const newStr = getTodayKey();
+        setTodayStr(prev => (prev !== newStr ? newStr : prev));
+      }, 60 * 1000);
+      return () => clearInterval(interval);
+    }, []),
+  );
 
   useEffect(() => {
     const height = infoDrawerHeight || DEFAULT_DRAWER_HEIGHT;

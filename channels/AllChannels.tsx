@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
 import {
   Alert,
+  AppState,
   Animated,
   Dimensions,
   FlatList,
@@ -639,6 +640,9 @@ const AllChannels: React.FC<ChatScreenProps> = ({
   const prevActionIdRef = useRef<string | null>(null);
   const prevActiveRef = useRef(isActive);
   const userListenersRef = useRef<Record<string, () => void>>({});
+  const userListenerCleanupTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const appStateRef = useRef(AppState.currentState);
+  const [isAppActive, setIsAppActive] = useState(AppState.currentState === "active");
 
   const insets = useSafeAreaInsets();
   const inputBarHeight = useChatInputBarHeight();
@@ -656,6 +660,14 @@ const AllChannels: React.FC<ChatScreenProps> = ({
     );
     setMessages(combined);
   }, [latestMessages, olderMessages]);
+
+  useEffect(() => {
+    const appStateSub = AppState.addEventListener("change", (nextState) => {
+      appStateRef.current = nextState;
+      setIsAppActive(nextState === "active");
+    });
+    return () => appStateSub.remove();
+  }, []);
 
   const visibleMessages = React.useMemo(
     () =>
@@ -722,7 +734,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
   // Fetch pinned messages
   useEffect(() => {
-    if (!channelId) return;
+    if (!channelId || !isActive || !isAppActive) return;
     const unsubscribe = firestore()
       .collection("channels")
       .doc(channelId)
@@ -766,7 +778,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
         }
       });
     return unsubscribe;
-  }, [channelId]);
+  }, [channelId, isActive, isAppActive]);
 
   const loadMoreMessages = useCallback(async () => {
     if (!channelId || loadingMore || !hasMoreMessages || !lastVisibleRef.current) {
@@ -803,7 +815,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
   // Fetch messages in real-time
   useEffect(() => {
-    if (!channelId) return;
+    if (!channelId || !isActive || !isAppActive) return;
     const unsubscribe = firestore()
       .collection("channels")
       .doc(channelId)
@@ -831,39 +843,35 @@ const AllChannels: React.FC<ChatScreenProps> = ({
         }
       });
     return unsubscribe;
-  }, [channelId]);
+  }, [channelId, isActive, isAppActive]);
 
-  // Fetch user info for every message sender and listen for updates
+  // Fetch user info for visible senders and keep listeners bounded
   useEffect(() => {
-    if (!visibleMessages.length) return;
-    const uniqueUids = [...new Set(visibleMessages.map((m) => m.userId))].filter(
+    if (!isActive || !isAppActive) {
+      if (userListenerCleanupTimerRef.current) {
+        clearTimeout(userListenerCleanupTimerRef.current);
+        userListenerCleanupTimerRef.current = null;
+      }
+      Object.values(userListenersRef.current).forEach((unsub) => unsub());
+      userListenersRef.current = {};
+      return;
+    }
+
+    const recentVisible = visibleMessages.slice(-80);
+    const uniqueUids = [...new Set(recentVisible.map((m) => m.userId))].filter(
       (uid): uid is string => typeof uid === "string" && uid.length > 0,
     );
+    const activeUidSet = new Set(uniqueUids);
 
     uniqueUids.forEach((uid) => {
-      if (!userListenersRef.current[uid]) {
-        const userRef = firestore().collection("users").doc(uid);
+      if (userListenersRef.current[uid]) {
+        return;
+      }
+      const userRef = firestore().collection("users").doc(uid);
 
-        // Prefetch data for instant display
-        userRef
-          .get()
-          .then((doc) => {
-            if (doc.exists) {
-              const data = doc.data() || {};
-              setUserMap((prev) => ({
-                ...prev,
-                [uid]: {
-                  ...(prev[uid] || {}),
-                  ...data,
-                  badges: parseBadges(data.badges),
-                  selectedBadges: parseSelectedBadges(data.selectedBadges),
-                },
-              }));
-            }
-          })
-          .catch((err) => console.error("Failed to fetch user data", err));
-
-        userListenersRef.current[uid] = userRef.onSnapshot((doc) => {
+      userRef
+        .get()
+        .then((doc) => {
           if (doc.exists) {
             const data = doc.data() || {};
             setUserMap((prev) => ({
@@ -876,15 +884,48 @@ const AllChannels: React.FC<ChatScreenProps> = ({
               },
             }));
           }
-        });
-      }
+        })
+        .catch((err) => console.error("Failed to fetch user data", err));
+
+      userListenersRef.current[uid] = userRef.onSnapshot((doc) => {
+        if (doc.exists) {
+          const data = doc.data() || {};
+          setUserMap((prev) => ({
+            ...prev,
+            [uid]: {
+              ...(prev[uid] || {}),
+              ...data,
+              badges: parseBadges(data.badges),
+              selectedBadges: parseSelectedBadges(data.selectedBadges),
+            },
+          }));
+        }
+      });
     });
 
-    // eslint-disable-next-line
-  }, [messages]);
+    if (userListenerCleanupTimerRef.current) {
+      clearTimeout(userListenerCleanupTimerRef.current);
+    }
+    userListenerCleanupTimerRef.current = setTimeout(() => {
+      Object.entries(userListenersRef.current).forEach(([uid, unsub]) => {
+        if (!activeUidSet.has(uid)) {
+          unsub();
+          delete userListenersRef.current[uid];
+        }
+      });
+      userListenerCleanupTimerRef.current = null;
+    }, 500);
+
+    return () => {
+      if (userListenerCleanupTimerRef.current) {
+        clearTimeout(userListenerCleanupTimerRef.current);
+        userListenerCleanupTimerRef.current = null;
+      }
+    };
+  }, [visibleMessages, isActive, isAppActive]);
 
   useEffect(() => {
-    if (!currentUserId) return;
+    if (!currentUserId || !isActive || !isAppActive) return;
     const unsubscribe = firestore()
       .collection("users")
       .doc(currentUserId)
@@ -904,7 +945,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
         }
       });
     return unsubscribe;
-  }, [currentUserId]);
+  }, [currentUserId, isActive, isAppActive]);
 
   // Re-scroll to bottom when additional data changes height of messages
   useEffect(() => {
@@ -932,6 +973,10 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
   useEffect(() => {
     return () => {
+      if (userListenerCleanupTimerRef.current) {
+        clearTimeout(userListenerCleanupTimerRef.current);
+        userListenerCleanupTimerRef.current = null;
+      }
       Object.values(userListenersRef.current).forEach((unsub) => unsub());
       userListenersRef.current = {};
     };

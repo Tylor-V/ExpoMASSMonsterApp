@@ -5,7 +5,7 @@ import React, {
   useEffect,
   useState,
 } from 'react';
-import { Alert } from 'react-native';
+import { Alert, AppState } from 'react-native';
 import { firestore } from './firebase';
 import { auth } from './firebase';
 import {createOrUpdateUserProfile} from './firebaseUserProfile';
@@ -128,9 +128,60 @@ export function AppContextProvider({children}) {
   // Subscribe to auth changes and load user data accordingly
   useEffect(() => {
     let userUnsub: (() => void) | null = null;
-    const authUnsub = auth().onAuthStateChanged(async user => {
-      // Always reset state until new user data loads
+    let currentAuthUser: any | null = null;
+    let appState = AppState.currentState;
+
+    const detachUserListener = () => {
       userUnsub?.();
+      userUnsub = null;
+    };
+
+    const attachUserListener = (user: any) => {
+      if (!user || appState !== 'active') {
+        return;
+      }
+      detachUserListener();
+      userUnsub = firestore()
+        .collection('users')
+        .doc(user.uid)
+        .onSnapshot(
+          doc => {
+            setUserError(null);
+            const data = doc.data();
+            if (data?.isBanned) {
+              Alert.alert('Account Disabled', 'Your account has been disabled.');
+              auth().signOut().catch(() => {});
+              return;
+            }
+            applyUserData(user, data);
+            setAppReady(true);
+          },
+          error => {
+            setUserError(
+              error instanceof Error
+                ? error
+                : new Error('Failed to sync user data.'),
+            );
+            setAppReady(true);
+          },
+        );
+    };
+
+    const appStateSub = AppState.addEventListener('change', nextState => {
+      appState = nextState;
+      if (nextState === 'active' && currentAuthUser) {
+        fetchUserData(currentAuthUser);
+        attachUserListener(currentAuthUser);
+      }
+      if (nextState.match(/inactive|background/)) {
+        detachUserListener();
+      }
+    });
+
+    const authUnsub = auth().onAuthStateChanged(async user => {
+      currentAuthUser = user;
+      // Always reset state until new user data loads
+      detachUserListener();
       setAppReady(false);
       setUserError(null);
       setAuthUser(user);
@@ -154,33 +205,9 @@ export function AppContextProvider({children}) {
         }
         // Fetch user data once immediately so UI updates even if snapshot is delayed
         await fetchUserData(user);
-        userUnsub = firestore()
-          .collection('users')
-          .doc(user.uid)
-          .onSnapshot(
-            doc => {
-              setUserError(null);
-              const data = doc.data();
-              if (data?.isBanned) {
-                Alert.alert('Account Disabled', 'Your account has been disabled.');
-                auth().signOut().catch(() => {});
-                return;
-              }
-              applyUserData(user, data);
-              setAppReady(true);
-            },
-            error => {
-              setUserError(
-                error instanceof Error
-                  ? error
-                  : new Error('Failed to sync user data.'),
-              );
-              setAppReady(true);
-            },
-          );
+        attachUserListener(user);
       } else {
-        userUnsub?.();
-        userUnsub = null;
+        detachUserListener();
         setUser(null);
         setPoints(0);
         setWorkoutHistory([]);
@@ -189,8 +216,9 @@ export function AppContextProvider({children}) {
       }
     });
     return () => {
+      appStateSub.remove();
       authUnsub();
-      userUnsub?.();
+      detachUserListener();
     };
   }, [fetchUserData]);
 
