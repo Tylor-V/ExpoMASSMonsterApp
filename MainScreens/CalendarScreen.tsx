@@ -653,38 +653,43 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const [carouselIndexHydrated, setCarouselIndexHydrated] = useState(false);
   const carouselScrollRef = useRef<ScrollView | null>(null);
   const carouselLockRef = useRef(false);
-  const lastRequestedIndexRef = useRef<number | null>(null);
+  const pendingTargetIndexRef = useRef<number | null>(null);
+  const [, setCarouselDisplayTick] = useState(0);
   const scrollX = useRef(new Animated.Value(0)).current;
   const carouselHasScrolledRef = useRef(false);
-  const carouselUserActionRef = useRef(false);
-  const lastScrollIndexRef = useRef<number>(carouselIndex);
   const isCarouselAnimatingRef = useRef(false);
-  const carouselUnlockTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const carouselMomentumStartedRef = useRef(false);
+  const carouselSettleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const startProgrammaticScroll = useCallback((targetIndex: number) => {
+    const clamped = clampValue(targetIndex, 0, carouselItems.length - 1);
+    pendingTargetIndexRef.current = clamped;
+    carouselLockRef.current = true;
+    isCarouselAnimatingRef.current = true;
+    carouselMomentumStartedRef.current = false;
+    setCarouselDisplayTick(tick => tick + 1);
+    carouselScrollRef.current?.scrollTo({
+      x: clamped * pageWidth,
+      animated: true,
+    });
+  }, [carouselItems.length, pageWidth]);
+
   const goToIndex = useCallback(
     (next: number | ((cur: number) => number)) => {
       if (!carouselIndexHydrated) return;
-      const baseIndex =
-        lastRequestedIndexRef.current ?? lastScrollIndexRef.current ?? carouselIndex;
+      const baseIndex = pendingTargetIndexRef.current ?? carouselIndex;
       const target = typeof next === 'function' ? next(baseIndex) : next;
       const clamped = clampValue(target, 0, carouselItems.length - 1);
+      pendingTargetIndexRef.current = clamped;
+      setCarouselDisplayTick(tick => tick + 1);
 
       if (carouselLockRef.current) {
-        lastRequestedIndexRef.current = clamped;
         return;
       }
 
-      carouselLockRef.current = true;
-      isCarouselAnimatingRef.current = true;
-      carouselUserActionRef.current = true;
-      lastRequestedIndexRef.current = null;
-      lastScrollIndexRef.current = clamped;
-
-      carouselScrollRef.current?.scrollTo({
-        x: clamped * pageWidth,
-        animated: true,
-      });
+      startProgrammaticScroll(clamped);
     },
-    [carouselIndex, carouselIndexHydrated, carouselItems.length, pageWidth],
+    [carouselIndex, carouselIndexHydrated, carouselItems.length, startProgrammaticScroll],
   );
   const jumpToScene = useCallback(
     (sceneKey: string) => {
@@ -709,7 +714,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           ? Math.min(Math.max(parsedIdx, 0), carouselItems.length - 1)
           : initialIndex;
         carouselIndexPersist.current = resolvedIndex;
-        lastScrollIndexRef.current = resolvedIndex;
         lastCarouselIndex = resolvedIndex;
         if (resolvedIndex !== calendarCarouselIndex) {
           setCalendarCarouselIndex(resolvedIndex);
@@ -731,7 +735,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     if (!carouselIndexHydrated) return;
     carouselIndexPersist.current = carouselIndex;
     lastCarouselIndex = carouselIndex;
-    if (isCarouselAnimatingRef.current || carouselUserActionRef.current) return;
+    if (carouselLockRef.current || isCarouselAnimatingRef.current) return;
     setCalendarCarouselIndex(carouselIndex);
     AsyncStorage.setItem(CAROUSEL_INDEX_KEY, String(carouselIndex)).catch(err =>
       console.error('Failed to save carousel index', err)
@@ -740,8 +744,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
   useEffect(
     () => () => {
-      if (carouselUnlockTimeoutRef.current) {
-        clearTimeout(carouselUnlockTimeoutRef.current);
+      if (carouselSettleTimeoutRef.current) {
+        clearTimeout(carouselSettleTimeoutRef.current);
       }
     },
     [],
@@ -2054,31 +2058,35 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         0,
         carouselItems.length - 1,
       );
-      lastScrollIndexRef.current = nextIndex;
-      isCarouselAnimatingRef.current = false;
-      carouselUserActionRef.current = false;
-      carouselLockRef.current = false;
-      if (carouselUnlockTimeoutRef.current) {
-        clearTimeout(carouselUnlockTimeoutRef.current);
-        carouselUnlockTimeoutRef.current = null;
+      const expectedOffset = nextIndex * pageWidth;
+      if (Math.abs(offsetX - expectedOffset) > 0.5) {
+        carouselScrollRef.current?.scrollTo({
+          x: expectedOffset,
+          animated: false,
+        });
       }
+
+      if (carouselSettleTimeoutRef.current) {
+        clearTimeout(carouselSettleTimeoutRef.current);
+        carouselSettleTimeoutRef.current = null;
+      }
+
+      isCarouselAnimatingRef.current = false;
+      carouselLockRef.current = false;
+      carouselMomentumStartedRef.current = false;
       if (nextIndex !== carouselIndex) {
         setCarouselIndex(nextIndex);
       }
-      const queuedIndex = lastRequestedIndexRef.current;
-      lastRequestedIndexRef.current = null;
+
+      const queuedIndex = pendingTargetIndexRef.current;
       if (queuedIndex != null && queuedIndex !== nextIndex) {
-        carouselLockRef.current = true;
-        isCarouselAnimatingRef.current = true;
-        carouselUserActionRef.current = true;
-        lastScrollIndexRef.current = queuedIndex;
-        carouselScrollRef.current?.scrollTo({
-          x: queuedIndex * pageWidth,
-          animated: true,
-        });
+        startProgrammaticScroll(queuedIndex);
+      } else {
+        pendingTargetIndexRef.current = null;
+        setCarouselDisplayTick(tick => tick + 1);
       }
     },
-    [carouselIndex, carouselItems.length, pageWidth],
+    [carouselIndex, carouselItems.length, pageWidth, startProgrammaticScroll],
   );
 
   const handleCarouselScrollEnd = useCallback(
@@ -2093,9 +2101,19 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     if (!carouselIndexHydrated) return;
     isCarouselAnimatingRef.current = true;
     carouselLockRef.current = true;
-    if (carouselUnlockTimeoutRef.current) {
-      clearTimeout(carouselUnlockTimeoutRef.current);
-      carouselUnlockTimeoutRef.current = null;
+    carouselMomentumStartedRef.current = false;
+    if (carouselSettleTimeoutRef.current) {
+      clearTimeout(carouselSettleTimeoutRef.current);
+      carouselSettleTimeoutRef.current = null;
+    }
+  }, [carouselIndexHydrated]);
+
+  const handleCarouselMomentumBegin = useCallback(() => {
+    if (!carouselIndexHydrated) return;
+    carouselMomentumStartedRef.current = true;
+    if (carouselSettleTimeoutRef.current) {
+      clearTimeout(carouselSettleTimeoutRef.current);
+      carouselSettleTimeoutRef.current = null;
     }
   }, [carouselIndexHydrated]);
 
@@ -2103,15 +2121,22 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     (event: any) => {
       if (!carouselIndexHydrated) return;
       const offsetX = event.nativeEvent.contentOffset.x;
-      if (carouselUnlockTimeoutRef.current) {
-        clearTimeout(carouselUnlockTimeoutRef.current);
+      if (carouselSettleTimeoutRef.current) {
+        clearTimeout(carouselSettleTimeoutRef.current);
       }
-      carouselUnlockTimeoutRef.current = setTimeout(() => {
-        settleCarouselAtOffset(offsetX);
-      }, 140);
+      carouselSettleTimeoutRef.current = setTimeout(() => {
+        if (!carouselMomentumStartedRef.current) {
+          settleCarouselAtOffset(offsetX);
+        }
+      }, 120);
     },
     [carouselIndexHydrated, settleCarouselAtOffset],
   );
+
+  const displayCarouselIndex =
+    carouselLockRef.current && pendingTargetIndexRef.current != null
+      ? pendingTargetIndexRef.current
+      : carouselIndex;
 
   const handleCarouselAnimatedScroll = useMemo(
     () => Animated.event(
@@ -2202,6 +2227,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                       onScroll={handleCarouselAnimatedScroll}
                       onScrollBeginDrag={handleCarouselScrollBeginDrag}
                       onScrollEndDrag={handleCarouselScrollEndDrag}
+                      onMomentumScrollBegin={handleCarouselMomentumBegin}
                       onMomentumScrollEnd={handleCarouselScrollEnd}
                       scrollEventThrottle={16}
                       scrollEnabled={carouselItems.length > 1}
@@ -2211,8 +2237,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                       {carouselItems.map(item => {
                       const header = getHeaderForScene(item);
                       const isNews = item === 'news';
-                      const canPrev = carouselIndex > 0;
-                      const canNext = carouselIndex < carouselItems.length - 1;
+                      const canPrev = displayCarouselIndex > 0;
+                      const canNext = displayCarouselIndex < carouselItems.length - 1;
                       return (
                         <View
                           key={item}
@@ -2262,7 +2288,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                 {carouselItems.length > 1 && carouselIndexHydrated && (
                   <View style={styles.carouselDotsWrap}>
                     <CarouselNavigator
-                      index={carouselIndex}
+                      index={displayCarouselIndex}
                       length={carouselItems.length}
                       onIndexChange={goToIndex}
                       dotsRowStyle={styles.carouselDotsRow}
