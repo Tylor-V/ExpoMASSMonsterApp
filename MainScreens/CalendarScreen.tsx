@@ -141,7 +141,6 @@ const SectionHeader = React.memo(
 );
 
 const CAROUSEL_INDEX_KEY = 'calendarCarouselIndex';
-const SHADOW_SAFE_SPACE = 16;
 // Persist carousel position across component unmounts
 let lastCarouselIndex = 0;
 
@@ -653,33 +652,39 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const [carouselIndex, setCarouselIndex] = useState(carouselIndexPersist.current);
   const [carouselIndexHydrated, setCarouselIndexHydrated] = useState(false);
   const carouselScrollRef = useRef<ScrollView | null>(null);
-  const carouselIsAnimatingRef = useRef(false);
-  const queuedCarouselIndexRef = useRef<number | null>(null);
-  const lastArrowTapAtRef = useRef(0);
+  const carouselLockRef = useRef(false);
+  const lastRequestedIndexRef = useRef<number | null>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const carouselHasScrolledRef = useRef(false);
-  const lastIssuedScrollIndexRef = useRef<number | null>(null);
+  const carouselUserActionRef = useRef(false);
   const lastScrollIndexRef = useRef<number>(carouselIndex);
+  const isCarouselAnimatingRef = useRef(false);
   const carouselUnlockTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const goToIndex = useCallback(
     (next: number | ((cur: number) => number)) => {
       if (!carouselIndexHydrated) return;
-      const baseIndex = lastScrollIndexRef.current ?? carouselIndex;
+      const baseIndex =
+        lastRequestedIndexRef.current ?? lastScrollIndexRef.current ?? carouselIndex;
       const target = typeof next === 'function' ? next(baseIndex) : next;
       const clamped = clampValue(target, 0, carouselItems.length - 1);
 
-      if (carouselIsAnimatingRef.current) {
-        queuedCarouselIndexRef.current = clamped;
+      if (carouselLockRef.current) {
+        lastRequestedIndexRef.current = clamped;
         return;
       }
 
-      carouselIsAnimatingRef.current = true;
-      queuedCarouselIndexRef.current = null;
-      lastArrowTapAtRef.current = Date.now();
+      carouselLockRef.current = true;
+      isCarouselAnimatingRef.current = true;
+      carouselUserActionRef.current = true;
+      lastRequestedIndexRef.current = null;
       lastScrollIndexRef.current = clamped;
-      setCarouselIndex(clamped);
+
+      carouselScrollRef.current?.scrollTo({
+        x: clamped * pageWidth,
+        animated: true,
+      });
     },
-    [carouselIndex, carouselIndexHydrated, carouselItems.length],
+    [carouselIndex, carouselIndexHydrated, carouselItems.length, pageWidth],
   );
   const jumpToScene = useCallback(
     (sceneKey: string) => {
@@ -726,7 +731,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     if (!carouselIndexHydrated) return;
     carouselIndexPersist.current = carouselIndex;
     lastCarouselIndex = carouselIndex;
-    if (carouselIsAnimatingRef.current) return;
+    if (isCarouselAnimatingRef.current || carouselUserActionRef.current) return;
     setCalendarCarouselIndex(carouselIndex);
     AsyncStorage.setItem(CAROUSEL_INDEX_KEY, String(carouselIndex)).catch(err =>
       console.error('Failed to save carousel index', err)
@@ -743,20 +748,13 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   );
   useEffect(() => {
     if (!carouselIndexHydrated) return;
-    const shouldScroll =
-      !carouselHasScrolledRef.current ||
-      lastIssuedScrollIndexRef.current !== carouselIndex;
-    if (!shouldScroll) return;
-    const animated = carouselHasScrolledRef.current;
-    if (animated) {
-      carouselIsAnimatingRef.current = true;
+    if (!carouselHasScrolledRef.current) {
+      carouselScrollRef.current?.scrollTo({
+        x: carouselIndex * pageWidth,
+        animated: false,
+      });
+      carouselHasScrolledRef.current = true;
     }
-    carouselScrollRef.current?.scrollTo({
-      x: carouselIndex * pageWidth,
-      animated,
-    });
-    carouselHasScrolledRef.current = true;
-    lastIssuedScrollIndexRef.current = carouselIndex;
   }, [carouselIndex, carouselIndexHydrated, pageWidth]);
   const lastDayDropdownWidthRef = useRef<number>(0);
   const lastWorkoutContainerHeightRef = useRef<number>(0);
@@ -2057,7 +2055,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         carouselItems.length - 1,
       );
       lastScrollIndexRef.current = nextIndex;
-      carouselIsAnimatingRef.current = false;
+      isCarouselAnimatingRef.current = false;
+      carouselUserActionRef.current = false;
+      carouselLockRef.current = false;
       if (carouselUnlockTimeoutRef.current) {
         clearTimeout(carouselUnlockTimeoutRef.current);
         carouselUnlockTimeoutRef.current = null;
@@ -2065,15 +2065,17 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       if (nextIndex !== carouselIndex) {
         setCarouselIndex(nextIndex);
       }
-      const queuedIndex = queuedCarouselIndexRef.current;
+      const queuedIndex = lastRequestedIndexRef.current;
+      lastRequestedIndexRef.current = null;
       if (queuedIndex != null && queuedIndex !== nextIndex) {
-        queuedCarouselIndexRef.current = null;
-        carouselIsAnimatingRef.current = true;
+        carouselLockRef.current = true;
+        isCarouselAnimatingRef.current = true;
+        carouselUserActionRef.current = true;
         lastScrollIndexRef.current = queuedIndex;
-        lastArrowTapAtRef.current = Date.now();
-        setCarouselIndex(queuedIndex);
-      } else {
-        queuedCarouselIndexRef.current = null;
+        carouselScrollRef.current?.scrollTo({
+          x: queuedIndex * pageWidth,
+          animated: true,
+        });
       }
     },
     [carouselIndex, carouselItems.length, pageWidth],
@@ -2089,7 +2091,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
 
   const handleCarouselScrollBeginDrag = useCallback(() => {
     if (!carouselIndexHydrated) return;
-    carouselIsAnimatingRef.current = true;
+    isCarouselAnimatingRef.current = true;
+    carouselLockRef.current = true;
     if (carouselUnlockTimeoutRef.current) {
       clearTimeout(carouselUnlockTimeoutRef.current);
       carouselUnlockTimeoutRef.current = null;
@@ -2100,11 +2103,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     (event: any) => {
       if (!carouselIndexHydrated) return;
       const offsetX = event.nativeEvent.contentOffset.x;
-      const nearestPage = Math.round(offsetX / pageWidth) * pageWidth;
-      if (Math.abs(offsetX - nearestPage) < 1.5) {
-        settleCarouselAtOffset(offsetX);
-        return;
-      }
       if (carouselUnlockTimeoutRef.current) {
         clearTimeout(carouselUnlockTimeoutRef.current);
       }
@@ -2112,7 +2110,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         settleCarouselAtOffset(offsetX);
       }, 140);
     },
-    [carouselIndexHydrated, pageWidth, settleCarouselAtOffset],
+    [carouselIndexHydrated, settleCarouselAtOffset],
   );
 
   const handleCarouselAnimatedScroll = useMemo(
@@ -2208,10 +2206,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                       scrollEventThrottle={16}
                       scrollEnabled={carouselItems.length > 1}
                       style={[styles.carouselScrollView, { width: pageWidth }]}
-                      contentContainerStyle={[
-                        styles.carouselScrollContent,
-                        { paddingBottom: SHADOW_SAFE_SPACE },
-                      ]}
+                      contentContainerStyle={styles.carouselScrollContent}
                       >
                       {carouselItems.map(item => {
                       const header = getHeaderForScene(item);
@@ -2230,12 +2225,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                               leftSlot={(
                                 <Pressable
                                   onPress={() => goToIndex(cur => cur - 1)}
-                                  disabled={!canPrev || carouselIsAnimatingRef.current}
+                                  disabled={!canPrev}
                                   hitSlop={10}
-                                  style={[
-                                    styles.navBtn,
-                                    (!canPrev || carouselIsAnimatingRef.current) && styles.navBtnDisabled,
-                                  ]}
+                                  style={[styles.navBtn, !canPrev && styles.navBtnDisabled]}
                                 >
                                   <Ionicons name="chevron-back" size={20} color={colors.gray} />
                                 </Pressable>
@@ -2245,12 +2237,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                                   {isNews ? header.trailing : null}
                                   <Pressable
                                     onPress={() => goToIndex(cur => cur + 1)}
-                                    disabled={!canNext || carouselIsAnimatingRef.current}
+                                    disabled={!canNext}
                                     hitSlop={10}
-                                    style={[
-                                      styles.navBtn,
-                                      (!canNext || carouselIsAnimatingRef.current) && styles.navBtnDisabled,
-                                    ]}
+                                    style={[styles.navBtn, !canNext && styles.navBtnDisabled]}
                                   >
                                     <Ionicons name="chevron-forward" size={20} color={colors.gray} />
                                   </Pressable>
@@ -2276,7 +2265,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                       index={carouselIndex}
                       length={carouselItems.length}
                       onIndexChange={goToIndex}
-                      disabled={carouselIsAnimatingRef.current}
                       dotsRowStyle={styles.carouselDotsRow}
                       arrowSize={36}
                       dotSize={12}
@@ -3545,7 +3533,7 @@ const styles = StyleSheet.create({
   carouselDotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 10,
+    marginTop: 0,
     marginBottom: 2,
     paddingBottom: 4,
   },

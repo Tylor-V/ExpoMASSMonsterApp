@@ -27,7 +27,6 @@ type Props = {
   layout?: 'overlay' | 'inline' | 'gutter';
   /** When in gutter layout, flip arrow to next direction */
   invertArrows?: boolean;
-  disabled?: boolean;
 };
 
 export default function CarouselNavigator({
@@ -46,7 +45,6 @@ export default function CarouselNavigator({
   showDots = true,
   layout = 'overlay',
   invertArrows = false,
-  disabled = false,
 }: Props) {
   const dots = Array.from({ length: maxDots ? Math.min(length, maxDots) : length });
   const arrowOffset = arrowSize / 2 + 4; // center arrow including padding
@@ -55,13 +53,13 @@ export default function CarouselNavigator({
   if (isGutter) {
     if (!showArrows) return null;
     const isNext = invertArrows;
-    const arrowDisabled = disabled || (isNext ? index === length - 1 : index === 0);
+    const disabled = isNext ? index === length - 1 : index === 0;
     return (
       <TouchableOpacity
         testID={isNext ? 'next-arrow' : 'prev-arrow'}
-        style={[styles.gutterArrow, arrowDisabled && styles.gutterArrowDisabled]}
+        style={[styles.gutterArrow, disabled && styles.gutterArrowDisabled]}
         onPress={() => onIndexChange(cur => cur + (isNext ? 1 : -1))}
-        disabled={arrowDisabled}
+        disabled={disabled}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
         <Icon
@@ -72,9 +70,6 @@ export default function CarouselNavigator({
       </TouchableOpacity>
     );
   }
-  const prevDisabled = disabled || index === 0;
-  const nextDisabled = disabled || index === length - 1;
-
   return (
     <View pointerEvents="box-none" style={isOverlay ? styles.container : styles.inlineContainer}>
       {showArrows && (
@@ -86,14 +81,14 @@ export default function CarouselNavigator({
               isOverlay && { left: leftOffset, transform: [{ translateY: -arrowOffset }] },
             ]}
             onPress={() => onIndexChange(cur => cur - 1)}
-            disabled={prevDisabled}
+            disabled={index === 0}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Icon
               name="chevron-back"
               size={arrowSize}
               color={colors.gray}
-              style={{ opacity: prevDisabled ? 0.3 : 1 }}
+              style={{ opacity: index === 0 ? 0.3 : 1 }}
             />
           </TouchableOpacity>
           <TouchableOpacity
@@ -103,14 +98,14 @@ export default function CarouselNavigator({
               isOverlay && { right: rightOffset, transform: [{ translateY: -arrowOffset }] },
             ]}
             onPress={() => onIndexChange(cur => cur + 1)}
-            disabled={nextDisabled}
+            disabled={index === length - 1}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Icon
               name="chevron-forward"
               size={arrowSize}
               color={colors.gray}
-              style={{ opacity: nextDisabled ? 0.3 : 1 }}
+              style={{ opacity: index === length - 1 ? 0.3 : 1 }}
             />
           </TouchableOpacity>
         </View>
@@ -121,7 +116,6 @@ export default function CarouselNavigator({
             <TouchableOpacity
               key={i}
               onPress={() => onIndexChange(i)}
-              disabled={disabled}
               hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
               style={[
                 styles.dot,
