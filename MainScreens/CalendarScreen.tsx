@@ -654,23 +654,44 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const [carouselIndex, setCarouselIndex] = useState(carouselIndexPersist.current);
   const [carouselIndexHydrated, setCarouselIndexHydrated] = useState(false);
   const carouselScrollRef = useRef<ScrollView | null>(null);
+  const carouselLockRef = useRef(false);
+  const lastRequestedIndexRef = useRef<number | null>(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
   const carouselHasScrolledRef = useRef(false);
   const carouselUserActionRef = useRef(false);
   const lastScrollIndexRef = useRef<number>(carouselIndex);
   const isCarouselAnimatingRef = useRef(false);
-  const lastArrowTapAtRef = useRef(0);
   const carouselUnlockTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [carouselPersistTick, setCarouselPersistTick] = useState(0);
   const goToIndex = useCallback(
     (next: number | ((cur: number) => number)) => {
+      if (!carouselIndexHydrated) return;
+      const baseIndex =
+        lastRequestedIndexRef.current ?? lastScrollIndexRef.current ?? carouselIndex;
+      const target = typeof next === 'function' ? next(baseIndex) : next;
+      const clamped = clampValue(target, 0, carouselItems.length - 1);
+
+      if (carouselLockRef.current) {
+        lastRequestedIndexRef.current = clamped;
+        return;
+      }
+
+      carouselLockRef.current = true;
+      isCarouselAnimatingRef.current = true;
       carouselUserActionRef.current = true;
-      setCarouselIndex(cur => {
-        const target = typeof next === 'function' ? next(cur) : next;
-        const clamped = Math.min(Math.max(target, 0), carouselItems.length - 1);
-        return clamped;
+      lastRequestedIndexRef.current = null;
+      lastScrollIndexRef.current = clamped;
+
+      if (clamped !== carouselIndex) {
+        setCarouselIndex(clamped);
+      }
+
+      carouselScrollRef.current?.scrollTo({
+        x: clamped * pageWidth,
+        animated: true,
       });
     },
-    [carouselItems.length],
+    [carouselIndex, carouselIndexHydrated, carouselItems.length, pageWidth],
   );
   const jumpToScene = useCallback(
     (sceneKey: string) => {
@@ -734,17 +755,12 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   );
   useEffect(() => {
     if (!carouselIndexHydrated) return;
-    const shouldScroll =
-      !carouselHasScrolledRef.current || carouselUserActionRef.current;
-    if (shouldScroll) {
-      const animated =
-        carouselHasScrolledRef.current && carouselUserActionRef.current;
+    if (!carouselHasScrolledRef.current) {
       carouselScrollRef.current?.scrollTo({
         x: carouselIndex * pageWidth,
-        animated,
+        animated: false,
       });
       carouselHasScrolledRef.current = true;
-      carouselUserActionRef.current = false;
     }
   }, [carouselIndex, carouselIndexHydrated, pageWidth]);
   const lastDayDropdownWidthRef = useRef<number>(0);
@@ -2024,10 +2040,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     </View>
   );
 
-  const handleCarouselScrollEnd = useCallback(
-    (event: any) => {
-      if (!carouselIndexHydrated) return;
-      const offsetX = event.nativeEvent.contentOffset.x;
+  const settleCarouselAtOffset = useCallback(
+    (offsetX: number) => {
       const nextIndex = clampValue(
         Math.round(offsetX / pageWidth),
         0,
@@ -2036,6 +2050,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       lastScrollIndexRef.current = nextIndex;
       isCarouselAnimatingRef.current = false;
       carouselUserActionRef.current = false;
+      carouselLockRef.current = false;
       if (carouselUnlockTimeoutRef.current) {
         clearTimeout(carouselUnlockTimeoutRef.current);
         carouselUnlockTimeoutRef.current = null;
@@ -2044,8 +2059,30 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         setCarouselIndex(nextIndex);
       }
       setCarouselPersistTick(tick => tick + 1);
+
+      const queuedIndex = lastRequestedIndexRef.current;
+      lastRequestedIndexRef.current = null;
+      if (queuedIndex != null && queuedIndex !== nextIndex) {
+        carouselLockRef.current = true;
+        isCarouselAnimatingRef.current = true;
+        carouselUserActionRef.current = true;
+        lastScrollIndexRef.current = queuedIndex;
+        setCarouselIndex(queuedIndex);
+        carouselScrollRef.current?.scrollTo({
+          x: queuedIndex * pageWidth,
+          animated: true,
+        });
+      }
     },
-    [carouselIndex, carouselIndexHydrated, carouselItems.length, pageWidth],
+    [carouselIndex, carouselItems.length, pageWidth],
+  );
+
+  const handleCarouselScrollEnd = useCallback(
+    (event: any) => {
+      if (!carouselIndexHydrated) return;
+      settleCarouselAtOffset(event.nativeEvent.contentOffset.x);
+    },
+    [carouselIndexHydrated, settleCarouselAtOffset],
   );
 
   const handleCarouselScroll = useCallback(
@@ -2068,11 +2105,46 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const handleCarouselScrollBeginDrag = useCallback(() => {
     if (!carouselIndexHydrated) return;
     isCarouselAnimatingRef.current = true;
+    carouselLockRef.current = true;
     if (carouselUnlockTimeoutRef.current) {
       clearTimeout(carouselUnlockTimeoutRef.current);
       carouselUnlockTimeoutRef.current = null;
     }
   }, [carouselIndexHydrated]);
+
+  const handleCarouselScrollEndDrag = useCallback(
+    (event: any) => {
+      if (!carouselIndexHydrated) return;
+      const offsetX = event.nativeEvent.contentOffset.x;
+      const nextIndex = clampValue(
+        Math.round(offsetX / pageWidth),
+        0,
+        carouselItems.length - 1,
+      );
+      if (nextIndex !== lastScrollIndexRef.current) {
+        lastScrollIndexRef.current = nextIndex;
+        setCarouselIndex(nextIndex);
+      }
+      if (carouselUnlockTimeoutRef.current) {
+        clearTimeout(carouselUnlockTimeoutRef.current);
+      }
+      carouselUnlockTimeoutRef.current = setTimeout(() => {
+        settleCarouselAtOffset(offsetX);
+      }, 140);
+    },
+    [carouselIndexHydrated, carouselItems.length, pageWidth, settleCarouselAtOffset],
+  );
+
+  const handleCarouselAnimatedScroll = useMemo(
+    () => Animated.event(
+      [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+      {
+        useNativeDriver: true,
+        listener: handleCarouselScroll,
+      },
+    ),
+    [handleCarouselScroll, scrollX],
+  );
 
   const renderCarouselItem = (sceneKey: string) => {
     if (sceneKey === 'massEvents') return <MassEventsBody />;
@@ -2136,9 +2208,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           >
             {carouselIndexHydrated ? (
               <>
-                <View style={styles.carouselCardFrame}>
-                  <View style={styles.carouselCardOuter}>
-                    <ScrollView
+                <View style={styles.carouselCardArea}>
+                  <View style={styles.carouselCardFrame}>
+                    <View style={styles.carouselCardOuter}>
+                      <Animated.ScrollView
                       ref={carouselScrollRef}
                       horizontal
                       pagingEnabled
@@ -2149,15 +2222,16 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                       disableIntervalMomentum
                       disableScrollViewPanResponder={false}
                       showsHorizontalScrollIndicator={false}
-                      onScroll={handleCarouselScroll}
+                      onScroll={handleCarouselAnimatedScroll}
                       onScrollBeginDrag={handleCarouselScrollBeginDrag}
+                      onScrollEndDrag={handleCarouselScrollEndDrag}
                       onMomentumScrollEnd={handleCarouselScrollEnd}
                       scrollEventThrottle={16}
                       scrollEnabled={carouselItems.length > 1}
                       style={[styles.carouselScrollView, { width: pageWidth }]}
                       contentContainerStyle={styles.carouselScrollContent}
-                    >
-                    {carouselItems.map(item => {
+                      >
+                      {carouselItems.map(item => {
                       const header = getHeaderForScene(item);
                       const isNews = item === 'news';
                       const canPrev = carouselIndex > 0;
@@ -2203,8 +2277,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                           </View>
                         </View>
                       );
-                    })}
-                    </ScrollView>
+                      })}
+                      </Animated.ScrollView>
+                    </View>
                   </View>
                 </View>
                 {carouselItems.length > 1 && carouselIndexHydrated && (
@@ -2223,9 +2298,11 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                 )}
               </>
             ) : (
-              <View style={styles.carouselCardFrame}>
-                <View style={{ width: pageWidth, paddingHorizontal: cardOuterPadding }}>
-                  <View style={[carouselCardStyle, { minHeight: cardMinHeight }]} />
+              <View style={styles.carouselCardArea}>
+                <View style={styles.carouselCardFrame}>
+                  <View style={{ width: pageWidth, paddingHorizontal: cardOuterPadding }}>
+                    <View style={[carouselCardStyle, { minHeight: cardMinHeight }]} />
+                  </View>
                 </View>
               </View>
             )}
@@ -3268,7 +3345,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'stretch',
     marginTop: 12,
-    marginBottom: 2,
+    marginBottom: 0,
     borderRadius: 28,
     shadowColor: '#000',
     shadowOpacity: 0.14,
@@ -3447,19 +3524,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  carouselCardArea: {
+    flex: 1,
+    width: '100%',
+    paddingBottom: 10,
+  },
   carouselCardFrame: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 18,
+    paddingBottom: 14,
   },
   carouselCardOuter: {
     flex: 1,
-    paddingBottom: 8,
+    paddingBottom: 12,
   },
   carouselDotsWrap: {
     flexShrink: 0,
-    paddingTop: 6,
+    marginTop: 4,
+    paddingTop: 8,
   },
   carouselBody: {
     flex: 1,
@@ -3863,19 +3946,12 @@ const styles = StyleSheet.create({
   dayDropdownItemText: { fontSize: 14, fontWeight: 'bold', color: colors.background },
   dayDropdownItemTextActive: { color: colors.accent },
   addNewsBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FAFAFA',
-    borderWidth: 1,
-    borderColor: '#EBEBEB',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    backgroundColor: 'rgba(0,0,0,0.06)',
     marginRight: 8,
   },
   newsInput: {
