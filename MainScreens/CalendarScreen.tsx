@@ -562,7 +562,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const carouselCardPadding = clampValue(screenWidth * 0.06, 18, 26);
   const padBottom = !renderPlanDrawer;
   const cardMinHeight = useMemo(
-    () => clampValue(windowHeight * 0.35, 260, 360),
+    () => clampValue(windowHeight * 0.42, 320, 520),
     [windowHeight],
   );
   const PLAN_DRAWER_HEIGHT = windowHeight * 0.8;
@@ -2319,6 +2319,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                     </View>
                   </View>
                 </View>
+                <View style={styles.carouselShadowSpacer} />
                 {carouselItems.length > 1 && carouselIndexHydrated && (
                   <View style={styles.carouselDotsWrap}>
                     <CarouselNavigator
@@ -3573,25 +3574,29 @@ const styles = StyleSheet.create({
   carouselCardArea: {
     flex: 1,
     width: '100%',
-    paddingBottom: 16,
+    paddingBottom: 20,
     overflow: 'visible',
   },
   carouselCardFrame: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 8,
+    paddingBottom: 0,
     overflow: 'visible',
   },
   carouselCardOuter: {
     flex: 1,
-    paddingBottom: 12,
+    paddingBottom: 0,
     overflow: 'visible',
+  },
+  carouselShadowSpacer: {
+    height: 16,
   },
   carouselDotsWrap: {
     flexShrink: 0,
     marginTop: 8,
     paddingTop: 8,
+    backgroundColor: 'transparent',
   },
   carouselBody: {
     flex: 1,
