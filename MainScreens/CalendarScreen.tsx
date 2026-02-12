@@ -558,6 +558,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const pageWidth = carouselWidth;
   const cardOuterPadding = clampValue(screenWidth * 0.03, 8, 14);
   const carouselCardWidth = pageWidth - cardOuterPadding * 2;
+  const carouselViewportWidth = carouselCardWidth;
   const carouselCardPadding = clampValue(screenWidth * 0.06, 18, 26);
   const padBottom = !renderPlanDrawer;
   const cardMinHeight = useMemo(
@@ -669,10 +670,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     carouselMomentumStartedRef.current = false;
     setCarouselDisplayTick(tick => tick + 1);
     carouselScrollRef.current?.scrollTo({
-      x: clamped * pageWidth,
+      x: clamped * carouselViewportWidth,
       animated: true,
     });
-  }, [carouselItems.length, pageWidth]);
+  }, [carouselItems.length, carouselViewportWidth]);
 
   const goToIndex = useCallback(
     (next: number | ((cur: number) => number)) => {
@@ -754,12 +755,12 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     if (!carouselIndexHydrated) return;
     if (!carouselHasScrolledRef.current) {
       carouselScrollRef.current?.scrollTo({
-        x: carouselIndex * pageWidth,
+        x: carouselIndex * carouselViewportWidth,
         animated: false,
       });
       carouselHasScrolledRef.current = true;
     }
-  }, [carouselIndex, carouselIndexHydrated, pageWidth]);
+  }, [carouselIndex, carouselIndexHydrated, carouselViewportWidth]);
   const lastDayDropdownWidthRef = useRef<number>(0);
   const lastWorkoutContainerHeightRef = useRef<number>(0);
 
@@ -2054,11 +2055,11 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const settleCarouselAtOffset = useCallback(
     (offsetX: number) => {
       const nextIndex = clampValue(
-        Math.round(offsetX / pageWidth),
+        Math.round(offsetX / carouselViewportWidth),
         0,
         carouselItems.length - 1,
       );
-      const expectedOffset = nextIndex * pageWidth;
+      const expectedOffset = nextIndex * carouselViewportWidth;
       if (Math.abs(offsetX - expectedOffset) > 0.5) {
         carouselScrollRef.current?.scrollTo({
           x: expectedOffset,
@@ -2086,7 +2087,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
         setCarouselDisplayTick(tick => tick + 1);
       }
     },
-    [carouselIndex, carouselItems.length, pageWidth, startProgrammaticScroll],
+    [carouselIndex, carouselItems.length, carouselViewportWidth, startProgrammaticScroll],
   );
 
   const handleCarouselScrollEnd = useCallback(
@@ -2212,39 +2213,40 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
               <>
                 <View style={styles.carouselCardArea}>
                   <View style={styles.carouselCardFrame}>
-                    <View style={styles.carouselCardOuter}>
-                      <Animated.ScrollView
-                      ref={carouselScrollRef}
-                      horizontal
-                      pagingEnabled
-                      removeClippedSubviews={false}
-                      decelerationRate="fast"
-                      snapToInterval={pageWidth}
-                      snapToAlignment="start"
-                      disableIntervalMomentum
-                      disableScrollViewPanResponder={false}
-                      showsHorizontalScrollIndicator={false}
-                      onScroll={handleCarouselAnimatedScroll}
-                      onScrollBeginDrag={handleCarouselScrollBeginDrag}
-                      onScrollEndDrag={handleCarouselScrollEndDrag}
-                      onMomentumScrollBegin={handleCarouselMomentumBegin}
-                      onMomentumScrollEnd={handleCarouselScrollEnd}
-                      scrollEventThrottle={16}
-                      scrollEnabled={carouselItems.length > 1}
-                      style={[styles.carouselScrollView, { width: pageWidth }]}
-                      contentContainerStyle={styles.carouselScrollContent}
-                      >
-                      {carouselItems.map(item => {
-                      const header = getHeaderForScene(item);
-                      const isNews = item === 'news';
-                      const canPrev = displayCarouselIndex > 0;
-                      const canNext = displayCarouselIndex < carouselItems.length - 1;
-                      return (
-                        <View
-                          key={item}
-                          style={{ width: pageWidth, paddingHorizontal: cardOuterPadding }}
+                    <View style={[styles.carouselCardOuter, { width: pageWidth, paddingHorizontal: cardOuterPadding }]}>
+                      <View style={[styles.carouselCardShell, { minHeight: cardMinHeight }]}>
+                        <Animated.ScrollView
+                        ref={carouselScrollRef}
+                        horizontal
+                        pagingEnabled
+                        removeClippedSubviews={false}
+                        decelerationRate="fast"
+                        snapToInterval={carouselViewportWidth}
+                        snapToAlignment="start"
+                        disableIntervalMomentum
+                        disableScrollViewPanResponder={false}
+                        showsHorizontalScrollIndicator={false}
+                        onScroll={handleCarouselAnimatedScroll}
+                        onScrollBeginDrag={handleCarouselScrollBeginDrag}
+                        onScrollEndDrag={handleCarouselScrollEndDrag}
+                        onMomentumScrollBegin={handleCarouselMomentumBegin}
+                        onMomentumScrollEnd={handleCarouselScrollEnd}
+                        scrollEventThrottle={16}
+                        scrollEnabled={carouselItems.length > 1}
+                        style={[styles.carouselScrollView, { width: carouselViewportWidth }]}
+                        contentContainerStyle={styles.carouselScrollContent}
                         >
-                          <View style={[carouselCardStyle, { minHeight: cardMinHeight }]}>
+                        {carouselItems.map(item => {
+                        const header = getHeaderForScene(item);
+                        const isNews = item === 'news';
+                        const canPrev = displayCarouselIndex > 0;
+                        const canNext = displayCarouselIndex < carouselItems.length - 1;
+                        return (
+                          <View
+                            key={item}
+                            style={{ width: carouselViewportWidth }}
+                          >
+                            <View style={[carouselCardStyle, { minHeight: cardMinHeight }]}>
                             <SectionHeader
                               title={header.title}
                               logo={header.logo}
@@ -2280,8 +2282,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                           </View>
                         </View>
                       );
-                      })}
-                      </Animated.ScrollView>
+                        })}
+                        </Animated.ScrollView>
+                      </View>
                     </View>
                   </View>
                 </View>
@@ -2303,8 +2306,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             ) : (
               <View style={styles.carouselCardArea}>
                 <View style={styles.carouselCardFrame}>
-                  <View style={{ width: pageWidth, paddingHorizontal: cardOuterPadding }}>
-                    <View style={[carouselCardStyle, { minHeight: cardMinHeight }]} />
+                  <View style={[styles.carouselCardOuter, { width: pageWidth, paddingHorizontal: cardOuterPadding }]}>
+                    <View style={[styles.carouselCardShell, { minHeight: cardMinHeight }]}>
+                      <View style={[carouselCardStyle, { minHeight: cardMinHeight }]} />
+                    </View>
                   </View>
                 </View>
               </View>
@@ -3347,20 +3352,26 @@ const styles = StyleSheet.create({
   carouselCard: {
     justifyContent: 'flex-start',
     alignItems: 'stretch',
-    marginTop: 12,
+    marginTop: 0,
     marginBottom: 0,
     borderRadius: 28,
-    shadowColor: '#000',
-    shadowOpacity: 0.14,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 6,
     backgroundColor: colors.white,
     paddingHorizontal: 22,
     paddingTop: 24,
     paddingBottom: 24,
     width: '100%',
     flex: 1,
+  },
+  carouselCardShell: {
+    marginTop: 12,
+    borderRadius: 28,
+    backgroundColor: colors.white,
+    shadowColor: '#000',
+    shadowOpacity: 0.14,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 6,
+    overflow: 'visible',
   },
   massLogo: {
     position: 'absolute',
@@ -3526,25 +3537,29 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
   },
   carouselCardArea: {
     flex: 1,
     width: '100%',
-    paddingBottom: 10,
+    paddingBottom: 16,
+    overflow: 'visible',
   },
   carouselCardFrame: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 14,
+    paddingBottom: 8,
+    overflow: 'visible',
   },
   carouselCardOuter: {
     flex: 1,
     paddingBottom: 12,
+    overflow: 'visible',
   },
   carouselDotsWrap: {
     flexShrink: 0,
-    marginTop: 4,
+    marginTop: 8,
     paddingTop: 8,
   },
   carouselBody: {
