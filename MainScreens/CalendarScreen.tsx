@@ -88,6 +88,8 @@ const SectionHeader = React.memo(
     onNext,
     canPrev = true,
     canNext = true,
+    leftSlot,
+    rightSlot,
     children,
   }: {
     title?: string;
@@ -96,11 +98,13 @@ const SectionHeader = React.memo(
     onNext?: () => void;
     canPrev?: boolean;
     canNext?: boolean;
+    leftSlot?: React.ReactNode;
+    rightSlot?: React.ReactNode;
     children?: React.ReactNode;
   }) => (
     <View style={styles.massHeaderRow}>
       <View style={styles.massHeaderSide}>
-        {onPrev ? (
+        {leftSlot ?? (onPrev ? (
           <Pressable
             onPress={onPrev}
             disabled={!canPrev}
@@ -109,7 +113,7 @@ const SectionHeader = React.memo(
           >
             <Ionicons name="chevron-back" size={20} color={colors.gray} />
           </Pressable>
-        ) : null}
+        ) : null)}
       </View>
       <View style={styles.massHeaderCenter}>
         <RNImage
@@ -120,8 +124,8 @@ const SectionHeader = React.memo(
         {title ? <Text style={styles.massHeaderTxt}>{title}</Text> : null}
       </View>
       <View style={styles.massHeaderSideRight}>
-        {children}
-        {onNext ? (
+        {rightSlot ?? children}
+        {!rightSlot && onNext ? (
           <Pressable
             onPress={onNext}
             disabled={!canNext}
@@ -667,25 +671,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       });
     },
     [carouselItems.length],
-  );
-  const requestCarouselIndex = useCallback(
-    (next: number | ((cur: number) => number)) => {
-      const now = Date.now();
-      if (isCarouselAnimatingRef.current) return;
-      if (now - lastArrowTapAtRef.current < 250) return;
-      lastArrowTapAtRef.current = now;
-      isCarouselAnimatingRef.current = true;
-      if (carouselUnlockTimeoutRef.current) {
-        clearTimeout(carouselUnlockTimeoutRef.current);
-      }
-      goToIndex(next);
-      carouselUnlockTimeoutRef.current = setTimeout(() => {
-        isCarouselAnimatingRef.current = false;
-        carouselUserActionRef.current = false;
-        setCarouselPersistTick(tick => tick + 1);
-      }, 800);
-    },
-    [goToIndex],
   );
   const jumpToScene = useCallback(
     (sceneKey: string) => {
@@ -1779,13 +1764,14 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const addNewsButton = useMemo(() => {
     if (user?.role !== 'moderator') return null;
     return (
-      <TouchableOpacity
+      <Pressable
         onPress={() => setAddNewsOpen(true)}
         style={styles.addNewsBtn}
+        hitSlop={10}
         testID="add-news-btn"
       >
-        <Ionicons name="add-circle-outline" size={24} color={colors.accent} />
-      </TouchableOpacity>
+        <Ionicons name="add" size={20} color={colors.accent} />
+      </Pressable>
     );
   }, [user?.role]);
 
@@ -2151,27 +2137,31 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             {carouselIndexHydrated ? (
               <>
                 <View style={styles.carouselCardFrame}>
-                  <ScrollView
-                    ref={carouselScrollRef}
-                    horizontal
-                    pagingEnabled
-                    removeClippedSubviews={false}
-                    decelerationRate="fast"
-                    snapToInterval={pageWidth}
-                    snapToAlignment="start"
-                    disableIntervalMomentum
-                    disableScrollViewPanResponder={false}
-                    showsHorizontalScrollIndicator={false}
-                    onScroll={handleCarouselScroll}
-                    onScrollBeginDrag={handleCarouselScrollBeginDrag}
-                    onMomentumScrollEnd={handleCarouselScrollEnd}
-                    scrollEventThrottle={16}
-                    scrollEnabled={carouselItems.length > 1}
-                    style={[styles.carouselScrollView, { width: pageWidth }]}
-                    contentContainerStyle={styles.carouselScrollContent}
-                  >
+                  <View style={styles.carouselCardOuter}>
+                    <ScrollView
+                      ref={carouselScrollRef}
+                      horizontal
+                      pagingEnabled
+                      removeClippedSubviews={false}
+                      decelerationRate="fast"
+                      snapToInterval={pageWidth}
+                      snapToAlignment="start"
+                      disableIntervalMomentum
+                      disableScrollViewPanResponder={false}
+                      showsHorizontalScrollIndicator={false}
+                      onScroll={handleCarouselScroll}
+                      onScrollBeginDrag={handleCarouselScrollBeginDrag}
+                      onMomentumScrollEnd={handleCarouselScrollEnd}
+                      scrollEventThrottle={16}
+                      scrollEnabled={carouselItems.length > 1}
+                      style={[styles.carouselScrollView, { width: pageWidth }]}
+                      contentContainerStyle={styles.carouselScrollContent}
+                    >
                     {carouselItems.map(item => {
                       const header = getHeaderForScene(item);
+                      const isNews = item === 'news';
+                      const canPrev = carouselIndex > 0;
+                      const canNext = carouselIndex < carouselItems.length - 1;
                       return (
                         <View
                           key={item}
@@ -2181,47 +2171,56 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                             <SectionHeader
                               title={header.title}
                               logo={header.logo}
+                              leftSlot={(
+                                <Pressable
+                                  onPress={() => goToIndex(cur => cur - 1)}
+                                  disabled={!canPrev}
+                                  hitSlop={10}
+                                  style={[styles.navBtn, !canPrev && styles.navBtnDisabled]}
+                                >
+                                  <Ionicons name="chevron-back" size={20} color={colors.gray} />
+                                </Pressable>
+                              )}
+                              rightSlot={(
+                                <View style={styles.headerRightControls}>
+                                  {isNews ? header.trailing : null}
+                                  <Pressable
+                                    onPress={() => goToIndex(cur => cur + 1)}
+                                    disabled={!canNext}
+                                    hitSlop={10}
+                                    style={[styles.navBtn, !canNext && styles.navBtnDisabled]}
+                                  >
+                                    <Ionicons name="chevron-forward" size={20} color={colors.gray} />
+                                  </Pressable>
+                                </View>
+                              )}
                             >
                               {header.trailing}
                             </SectionHeader>
                             <View style={styles.carouselBody}>
                               {renderCarouselItem(item)}
                             </View>
-                            {carouselItems.length > 1 && (
-                              <View pointerEvents="box-none" style={styles.cardArrowOverlay}>
-                                <Pressable
-                                  onPress={() => requestCarouselIndex(cur => cur - 1)}
-                                  disabled={carouselIndex <= 0}
-                                  hitSlop={12}
-                                  style={[
-                                    styles.cardArrowBtn,
-                                    styles.cardArrowLeft,
-                                    carouselIndex <= 0 && styles.cardArrowBtnDisabled,
-                                  ]}
-                                >
-                                  <Ionicons name="chevron-back" size={20} color={colors.gray} />
-                                </Pressable>
-                                <Pressable
-                                  onPress={() => requestCarouselIndex(cur => cur + 1)}
-                                  disabled={carouselIndex >= carouselItems.length - 1}
-                                  hitSlop={12}
-                                  style={[
-                                    styles.cardArrowBtn,
-                                    styles.cardArrowRight,
-                                    carouselIndex >= carouselItems.length - 1 &&
-                                      styles.cardArrowBtnDisabled,
-                                  ]}
-                                >
-                                  <Ionicons name="chevron-forward" size={20} color={colors.gray} />
-                                </Pressable>
-                              </View>
-                            )}
                           </View>
                         </View>
                       );
                     })}
-                  </ScrollView>
+                    </ScrollView>
+                  </View>
                 </View>
+                {carouselItems.length > 1 && carouselIndexHydrated && (
+                  <View style={styles.carouselDotsWrap}>
+                    <CarouselNavigator
+                      index={carouselIndex}
+                      length={carouselItems.length}
+                      onIndexChange={goToIndex}
+                      dotsRowStyle={styles.carouselDotsRow}
+                      arrowSize={36}
+                      dotSize={12}
+                      showArrows={false}
+                      layout="inline"
+                    />
+                  </View>
+                )}
               </>
             ) : (
               <View style={styles.carouselCardFrame}>
@@ -2229,18 +2228,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                   <View style={[carouselCardStyle, { minHeight: cardMinHeight }]} />
                 </View>
               </View>
-            )}
-            {carouselItems.length > 1 && carouselIndexHydrated && (
-              <CarouselNavigator
-                index={carouselIndex}
-                length={carouselItems.length}
-                onIndexChange={goToIndex}
-                dotsRowStyle={styles.carouselDotsRow}
-                arrowSize={36}
-                dotSize={12}
-                showArrows={false}
-                layout="inline"
-              />
             )}
           </View>
         </View>
@@ -3316,7 +3303,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   massHeaderSide: {
-    width: 36,
+    width: 44,
     alignItems: 'flex-start',
     justifyContent: 'center',
   },
@@ -3328,10 +3315,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   massHeaderSideRight: {
-    minWidth: 36,
+    minWidth: 44,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
+  },
+  headerRightControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   navBtn: {
     width: 36,
@@ -3460,7 +3451,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: 14,
+    paddingBottom: 18,
+  },
+  carouselCardOuter: {
+    flex: 1,
+    paddingBottom: 8,
+  },
+  carouselDotsWrap: {
+    flexShrink: 0,
+    paddingTop: 6,
   },
   carouselBody: {
     flex: 1,
@@ -3474,34 +3473,9 @@ const styles = StyleSheet.create({
   carouselDotsRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 8,
+    marginTop: 0,
     marginBottom: 2,
     paddingBottom: 4,
-  },
-  cardArrowOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-  },
-  cardArrowBtn: {
-    position: 'absolute',
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0,0,0,0.06)',
-  },
-  cardArrowBtnDisabled: {
-    opacity: 0.35,
-  },
-  cardArrowLeft: {
-    left: 10,
-  },
-  cardArrowRight: {
-    right: 10,
   },
   sceneBody: {
     flex: 1,
@@ -3888,7 +3862,22 @@ const styles = StyleSheet.create({
   dayDropdownItem: { paddingVertical: 4 },
   dayDropdownItemText: { fontSize: 14, fontWeight: 'bold', color: colors.background },
   dayDropdownItemTextActive: { color: colors.accent },
-  addNewsBtn: { marginRight: 2 },
+  addNewsBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FAFAFA',
+    borderWidth: 1,
+    borderColor: '#EBEBEB',
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+    marginRight: 8,
+  },
   newsInput: {
     borderWidth: 1,
     borderColor: colors.grayLight,
