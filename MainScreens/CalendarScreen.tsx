@@ -3594,8 +3594,8 @@ const styles = StyleSheet.create({
   },
   carouselDotsWrap: {
     flexShrink: 0,
-    marginTop: 8,
-    paddingTop: 8,
+    marginTop: 0,
+    paddingTop: 0,
     backgroundColor: 'transparent',
   },
   carouselBody: {
