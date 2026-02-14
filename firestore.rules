@@ -55,7 +55,8 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if canWriteUgc(request.auth.uid)
         && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if canWriteUgc(request.auth.uid);
+      allow update, delete: if canWriteUgc(request.auth.uid)
+        && isOwnerOrModerator(resource.data.userId);
     }
 
     match /users/{uid} {
@@ -144,7 +145,8 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow create: if canWriteUgc(request.auth.uid)
         && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if canWriteUgc(request.auth.uid);
+      allow update, delete: if canWriteUgc(request.auth.uid)
+        && isOwnerOrModerator(resource.data.userId);
     }
   }
 }
