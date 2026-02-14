@@ -10,6 +10,12 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    function isModerator(uid) {
+      return isSignedIn()
+        && uid != null
+        && get(/databases/$(database)/documents/users/$(uid)).data.role in ['moderator', 'admin'];
+    }
+
     function getUserDoc(uid) {
       return get(/databases/$(database)/documents/users/$(uid)).data;
     }
@@ -41,6 +47,62 @@ service cloud.firestore {
       allow create: if canWriteUgc(request.auth.uid)
         && request.resource.data.userId == request.auth.uid;
       allow update, delete: if canWriteUgc(request.auth.uid);
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn() && (isUser(uid) || isModerator(request.auth.uid));
+      allow create: if isUser(uid) && request.resource.data.uid == uid;
+      allow update: if isUser(uid) || isModerator(request.auth.uid);
+      allow delete: if isModerator(request.auth.uid);
+    }
+
+    match /users/{uid}/hiddenContent/{docId} {
+      allow read, write: if isUser(uid);
+    }
+
+    match /users/{uid}/lastRead/{channelId} {
+      allow read, write: if isUser(uid);
+    }
+
+    match /users/{uid}/lastReadDMs/{threadId} {
+      allow read, write: if isUser(uid);
+    }
+
+    match /users/{uid}/sharedSplits/{docId} {
+      allow read, write: if isUser(uid);
+    }
+
+    match /users/{uid}/cart/{docId} {
+      allow read, write: if isUser(uid);
+    }
+
+    match /users/{uid}/redemptions/{docId} {
+      allow read, write: if isUser(uid);
+    }
+
+    match /blocks/{blockId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.blockerUid == request.auth.uid;
+      allow update, delete: if isSignedIn()
+        && (resource.data.blockerUid == request.auth.uid
+          || isModerator(request.auth.uid));
+    }
+
+    match /reports/{reportId} {
+      allow read: if isModerator(request.auth.uid);
+      allow create: if isSignedIn()
+        && request.resource.data.reportedBy == request.auth.uid;
+      allow update: if isModerator(request.auth.uid);
+    }
+
+    match /news/{newsId} {
+      allow read: if isSignedIn();
+      allow write: if isModerator(request.auth.uid);
+    }
+
+    match /moderationActions/{id} {
+      allow read, write: if isModerator(request.auth.uid);
     }
 
     match /dms/{threadId} {
