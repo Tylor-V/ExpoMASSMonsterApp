@@ -2275,7 +2275,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                         return (
                           <View
                             key={item}
-                            style={{ width: carouselViewportWidth }}
+                            style={{ width: carouselViewportWidth, flex: 1 }}
                           >
                             <View style={[carouselCardStyle, { minHeight: cardMinHeight }]}>
                             <SectionHeader
@@ -3395,6 +3395,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   carouselCardShell: {
+    flex: 1,
     marginTop: 12,
     borderRadius: 28,
     backgroundColor: colors.white,
@@ -3568,17 +3569,19 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     overflow: 'visible',
   },
   carouselCardArea: {
     flex: 1,
     width: '100%',
+    alignSelf: 'stretch',
     paddingBottom: 20,
     overflow: 'visible',
   },
   carouselCardFrame: {
     flex: 1,
+    alignSelf: 'stretch',
     justifyContent: 'center',
     alignItems: 'center',
     paddingBottom: 0,
@@ -3586,6 +3589,7 @@ const styles = StyleSheet.create({
   },
   carouselCardOuter: {
     flex: 1,
+    alignSelf: 'stretch',
     paddingBottom: 0,
     overflow: 'visible',
   },
@@ -3602,6 +3606,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   carouselScrollContent: {
+    flexGrow: 1,
     alignItems: 'stretch',
   },
   carouselScrollView: {
