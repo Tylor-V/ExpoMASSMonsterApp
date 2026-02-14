@@ -42,6 +42,15 @@ service cloud.firestore {
         && !isTimedOut(uid);
     }
 
+    function isThreadParticipant(threadId) {
+      return isSignedIn()
+        && request.auth.uid in get(/databases/$(database)/documents/dms/$(threadId)).data.participants;
+    }
+
+    function isOwnerOrModerator(resourceUserId) {
+      return resourceUserId == request.auth.uid || isModerator(request.auth.uid);
+    }
+
     match /channels/{channelId}/messages/{messageId} {
       allow read: if isSignedIn();
       allow create: if canWriteUgc(request.auth.uid)
@@ -118,10 +127,11 @@ service cloud.firestore {
     }
 
     match /dms/{threadId}/messages/{messageId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn() && isThreadParticipant(threadId);
       allow create: if canWriteUgc(request.auth.uid)
         && request.resource.data.userId == request.auth.uid;
-      allow update, delete: if canWriteUgc(request.auth.uid);
+      allow update, delete: if canWriteUgc(request.auth.uid)
+        && isOwnerOrModerator(resource.data.userId);
     }
 
     match /stories/{userId}/storyMedia/{storyId} {
