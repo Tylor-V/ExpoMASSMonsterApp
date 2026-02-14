@@ -6,6 +6,7 @@ export default function useChannelUnread(channelIds: string[], activeId: string)
   const [unreadMap, setUnreadMap] = useState<Record<string, boolean>>({});
   const uid = auth().currentUser?.uid ?? null;
   const previousUidRef = useRef<string | null>(uid);
+  const activeIdRef = useRef(activeId);
 
   useEffect(() => {
     if (previousUidRef.current !== uid) {
@@ -29,7 +30,7 @@ export default function useChannelUnread(channelIds: string[], activeId: string)
       const unread =
         (latest[cid] || 0) > (lastReads[cid] || 0) &&
         latestUsers[cid] !== uid;
-      setUnreadMap(prev => ({ ...prev, [cid]: cid === activeId ? false : unread }));
+      setUnreadMap(prev => ({ ...prev, [cid]: cid === activeIdRef.current ? false : unread }));
     };
 
     channelIds.forEach(cid => {
@@ -65,7 +66,11 @@ export default function useChannelUnread(channelIds: string[], activeId: string)
     return () => {
       unsubs.forEach(u => u());
     };
-  }, [activeId, channelIds.join('|'), uid]);
+  }, [channelIds.join('|'), uid]);
+
+  useEffect(() => {
+    activeIdRef.current = activeId;
+  }, [activeId]);
 
   useEffect(() => {
     setUnreadMap(prev => ({ ...prev, [activeId]: false }));

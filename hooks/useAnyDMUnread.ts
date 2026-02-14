@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { firestore } from '../firebase/firebase';
 import { auth } from '../firebase/firebase';
 
 export default function useAnyDMUnread() {
   const [hasUnread, setHasUnread] = useState(false);
+  const threadUnsubsRef = useRef<
+    Map<string, { unsubLastRead?: () => void; unsubLatestMsg?: () => void }>
+  >(new Map());
   const [uid, setUid] = useState<string | null>(() => {
     try {
       return typeof auth === 'function' ? auth()?.currentUser?.uid ?? null : null;
@@ -38,6 +41,11 @@ export default function useAnyDMUnread() {
 
   useEffect(() => {
     if (!uid) {
+      threadUnsubsRef.current.forEach(({ unsubLastRead, unsubLatestMsg }) => {
+        unsubLastRead?.();
+        unsubLatestMsg?.();
+      });
+      threadUnsubsRef.current.clear();
       setHasUnread(false);
       return;
     }
@@ -50,7 +58,6 @@ export default function useAnyDMUnread() {
     const lastReads: Record<string, number> = {};
     const latest: Record<string, number> = {};
     const latestUsers: Record<string, string | null> = {};
-    const unsubs: Array<() => void> = [];
     const threadUnread: Record<string, boolean> = {};
 
     const update = (tid: string) => {
@@ -68,8 +75,24 @@ export default function useAnyDMUnread() {
       const dmQuery = dmCollection?.where?.('participants', 'array-contains', uid);
       unsubThreads = dmQuery?.onSnapshot?.(snap => {
         const tids = snap?.docs?.map(d => d.id) ?? [];
+        const tidSet = new Set(tids);
+
+        threadUnsubsRef.current.forEach(({ unsubLastRead, unsubLatestMsg }, tid) => {
+          if (!tidSet.has(tid)) {
+            unsubLastRead?.();
+            unsubLatestMsg?.();
+            threadUnsubsRef.current.delete(tid);
+            delete lastReads[tid];
+            delete latest[tid];
+            delete latestUsers[tid];
+            delete threadUnread[tid];
+          }
+        });
+
+        setHasUnread(Object.values(threadUnread).some(Boolean));
+
         tids.forEach(tid => {
-          if (!(tid in lastReads)) {
+          if (!threadUnsubsRef.current.has(tid)) {
             const lastReadUnsub = firestore()
               .collection('users')
               .doc(uid)
@@ -79,9 +102,6 @@ export default function useAnyDMUnread() {
                 lastReads[tid] = doc?.data?.()?.timestamp || 0;
                 update(tid);
               });
-            if (typeof lastReadUnsub === 'function') {
-              unsubs.push(lastReadUnsub);
-            }
             const latestUnsub = firestore()
               .collection('dms')
               .doc(tid)
@@ -95,9 +115,11 @@ export default function useAnyDMUnread() {
                 latestUsers[tid] = data?.userId || null;
                 update(tid);
               });
-            if (typeof latestUnsub === 'function') {
-              unsubs.push(latestUnsub);
-            }
+
+            threadUnsubsRef.current.set(tid, {
+              unsubLastRead: typeof lastReadUnsub === 'function' ? lastReadUnsub : undefined,
+              unsubLatestMsg: typeof latestUnsub === 'function' ? latestUnsub : undefined,
+            });
           }
         });
       });
@@ -107,7 +129,11 @@ export default function useAnyDMUnread() {
 
     return () => {
       unsubThreads?.();
-      unsubs.forEach(u => u?.());
+      threadUnsubsRef.current.forEach(({ unsubLastRead, unsubLatestMsg }) => {
+        unsubLastRead?.();
+        unsubLatestMsg?.();
+      });
+      threadUnsubsRef.current.clear();
     };
   }, [uid]);
 
