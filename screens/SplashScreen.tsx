@@ -78,14 +78,24 @@ export default function SplashScreen({navigation}) {
   };
   useEffect(() => {
     const unsub = onAuthStateChanged(auth(), async user => {
-      if (user) {
-        await fixUserLevel(user.uid);
-        await checkAccountabilityStreak(user.uid);
-        setIsLoggedIn(true);
-      } else {
-        setIsLoggedIn(false);
+      try {
+        if (user) {
+          await fixUserLevel(user.uid);
+          await checkAccountabilityStreak(user.uid);
+          setIsLoggedIn(true);
+        } else {
+          setIsLoggedIn(false);
+        }
+      } catch (err) {
+        console.error('Splash auth bootstrap failed', err);
+        if (user) {
+          setIsLoggedIn(true);
+        } else {
+          setIsLoggedIn(false);
+        }
+      } finally {
+        setAuthChecked(true);
       }
-      setAuthChecked(true);
     });
     return unsub;
   }, []);
