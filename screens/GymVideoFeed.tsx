@@ -79,8 +79,11 @@ export default function GymVideoFeed({ navigation }) {
   }, [navigation]);
 
   useEffect(() => {
+    if (!currentUserId) {
+      return;
+    }
     setLoading(true);
-    firestore()
+    const unsubscribe = firestore()
       .collection('videos').doc('gym-feed').collection('gym-feed')
       .orderBy('timestamp', 'desc')
       .onSnapshot(snap => {
@@ -94,6 +97,7 @@ export default function GymVideoFeed({ navigation }) {
         setVideos(arr);
         setLoading(false);
       });
+    return unsubscribe;
   }, [currentUserId]);
 
   const visibleVideos = useMemo(() => videos.filter((video: any) => {
