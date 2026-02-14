@@ -36,67 +36,95 @@ const DMsInboxScreen = ({ navigation }) => {
   const [isPreviewVisible, setIsPreviewVisible] = useState(false);
   const { blockedSet } = useBlockedUserIds();
   const { reportedUserSet } = useReportedUserIds();
+  const publicUserCacheRef = useRef<Map<string, any>>(new Map());
 
   const searchTerm = search.trim();
   const term = searchTerm.toLowerCase();
 
   const buildThreads = useCallback(async (threadDocs) => {
-    const promises = threadDocs.map(async doc => {
-      const threadId = doc.id;
-      const participants = doc.data()?.participants || [];
-      const otherUid = participants.find((uid: string) => uid !== currentUserId) || '';
-      const updatedAtRaw = doc.data()?.updatedAt;
-      const updatedAt = updatedAtRaw?.toMillis ? updatedAtRaw.toMillis() : updatedAtRaw || 0;
+    const hydrated = await Promise.all(threadDocs.map(async doc => {
+      try {
+        const threadId = doc.id;
+        const participants = doc.data()?.participants || [];
+        const otherUid = participants.find((uid: string) => uid !== currentUserId) || '';
+        const updatedAtRaw = doc.data()?.updatedAt;
+        const updatedAt = updatedAtRaw?.toMillis ? updatedAtRaw.toMillis() : updatedAtRaw || 0;
 
-      const userPromise = firestore().collection('publicUsers').doc(otherUid).get();
-      const lastMsgPromise = firestore()
-        .collection('dms')
-        .doc(threadId)
-        .collection('messages')
-        .orderBy('timestamp', 'desc')
-        .limit(10)
-        .get();
-      const lastReadPromise = firestore()
-        .collection('users')
-        .doc(currentUserId)
-        .collection('lastReadDMs')
-        .doc(threadId)
-        .get();
+        const cachedUser = publicUserCacheRef.current.get(otherUid);
+        const userPromise = cachedUser
+          ? Promise.resolve(cachedUser)
+          : firestore().collection('publicUsers').doc(otherUid).get().then(userSnap => {
+            const userData = {
+              firstName: userSnap?.data()?.firstName || 'User',
+              lastName: userSnap?.data()?.lastName || '',
+              profilePicUrl: userSnap?.data()?.profilePicUrl || '',
+            };
+            publicUserCacheRef.current.set(otherUid, userData);
+            return userData;
+          }).catch(() => {
+            const fallbackUser = { firstName: 'User', lastName: '', profilePicUrl: '' };
+            publicUserCacheRef.current.set(otherUid, fallbackUser);
+            return fallbackUser;
+          });
+        const lastReadPromise = firestore()
+          .collection('users')
+          .doc(currentUserId)
+          .collection('lastReadDMs')
+          .doc(threadId)
+          .get();
+        const latestMsgSnap = await firestore()
+          .collection('dms')
+          .doc(threadId)
+          .collection('messages')
+          .orderBy('timestamp', 'desc')
+          .limit(1)
+          .get();
 
-      const [userSnap, lastMsgSnap, lastReadSnap] = await Promise.all([
-        userPromise.catch(() => null),
-        lastMsgPromise,
-        lastReadPromise,
-      ]);
-      const lastMsgDoc = lastMsgSnap.docs.find(doc => {
-        const data = doc.data();
-        return !(data?.status === 'removed' || data?.isRemoved);
-      });
-      const lastMsg = lastMsgDoc?.data() || {};
-      const lastMsgTs = lastMsg.timestamp?.toMillis
-        ? lastMsg.timestamp.toMillis()
-        : lastMsg.timestamp || 0;
-      const lastReadTsRaw = lastReadSnap.data()?.timestamp;
-      const lastReadTs = lastReadTsRaw?.toMillis
-        ? lastReadTsRaw.toMillis()
-        : lastReadTsRaw || 0;
-      const isUnread =
-        !!lastMsg.userId && lastMsg.userId !== currentUserId && lastMsgTs > lastReadTs;
-      return {
-        threadId,
-        updatedAt,
-        otherUser: {
-          uid: otherUid,
-          firstName: userSnap?.data()?.firstName || 'User',
-          lastName: userSnap?.data()?.lastName || '',
-          profilePicUrl: userSnap?.data()?.profilePicUrl || '',
-        },
-        lastMsg,
-        isUnread,
-      };
-    });
-    const result = await Promise.all(promises);
-    return result.sort((a, b) => b.updatedAt - a.updatedAt);
+        let lastMsgDoc = latestMsgSnap.docs[0];
+        if (lastMsgDoc) {
+          const data = lastMsgDoc.data();
+          if (data?.status === 'removed' || data?.isRemoved) {
+            const fallbackMsgSnap = await firestore()
+              .collection('dms')
+              .doc(threadId)
+              .collection('messages')
+              .orderBy('timestamp', 'desc')
+              .limit(5)
+              .get();
+            lastMsgDoc = fallbackMsgSnap.docs.find(msgDoc => {
+              const msg = msgDoc.data();
+              return !(msg?.status === 'removed' || msg?.isRemoved);
+            });
+          }
+        }
+
+        const [otherUser, lastReadSnap] = await Promise.all([userPromise, lastReadPromise]);
+        const lastMsg = lastMsgDoc?.data() || {};
+        const lastMsgTs = lastMsg.timestamp?.toMillis
+          ? lastMsg.timestamp.toMillis()
+          : lastMsg.timestamp || 0;
+        const lastReadTsRaw = lastReadSnap.data()?.timestamp;
+        const lastReadTs = lastReadTsRaw?.toMillis
+          ? lastReadTsRaw.toMillis()
+          : lastReadTsRaw || 0;
+        const isUnread =
+          !!lastMsg.userId && lastMsg.userId !== currentUserId && lastMsgTs > lastReadTs;
+        return {
+          threadId,
+          updatedAt,
+          otherUser: {
+            uid: otherUid,
+            ...otherUser,
+          },
+          lastMsg,
+          isUnread,
+        };
+      } catch (err) {
+        console.warn('Failed to hydrate DM thread', doc.id, err);
+        return null;
+      }
+    }));
+    return hydrated.filter(Boolean).sort((a, b) => b.updatedAt - a.updatedAt);
   }, [currentUserId]);
 
   useEffect(() => {
@@ -157,7 +185,6 @@ const DMsInboxScreen = ({ navigation }) => {
             setThreads(sorted);
           } catch (err) {
             console.warn('Failed to load DMs', err);
-            setThreads([]);
           } finally {
             setLoading(false);
           }
