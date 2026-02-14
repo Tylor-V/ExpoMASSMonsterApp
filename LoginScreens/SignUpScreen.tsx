@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import {useNavigation, StackActions} from '@react-navigation/native';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { auth } from '../firebase/firebase';
 import { fonts, colors, radius } from '../theme';
 import BackgroundWrapper from '../components/BackgroundWrapper';
@@ -48,12 +49,13 @@ const SignUpScreen: React.FC = () => {
       return;
     }
     try {
-      const userCredential = await auth().createUserWithEmailAndPassword(
+      const userCredential = await createUserWithEmailAndPassword(
+        auth(),
         sanitizedEmail,
         sanitizedPassword,
       );
       await clearUserCache();
-      await userCredential.user.updateProfile({
+      await updateProfile(userCredential.user, {
         displayName: `${sanitizedFirst} ${sanitizedLast}`,
       });
       await createOrUpdateUserProfile({
@@ -68,6 +70,7 @@ const SignUpScreen: React.FC = () => {
       // Replace the AuthStack with the main application stack
       navigation.getParent()?.dispatch(StackActions.replace('AcceptanceGate'));
     } catch (error: any) {
+      console.error('SignUp failed:', error);
       if (error.code === 'auth/email-already-in-use') {
         Alert.alert('Email in use', 'That email address is already in use!');
       } else if (error.code === 'auth/invalid-email') {

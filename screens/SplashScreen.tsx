@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as NativeSplashScreen from 'expo-splash-screen';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import { Image } from 'expo-image';
+import { onAuthStateChanged } from 'firebase/auth';
 import React, { useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
@@ -76,7 +77,7 @@ export default function SplashScreen({navigation}) {
     });
   };
   useEffect(() => {
-    const unsub = auth().onAuthStateChanged(async user => {
+    const unsub = onAuthStateChanged(auth(), async user => {
       if (user) {
         await fixUserLevel(user.uid);
         await checkAccountabilityStreak(user.uid);

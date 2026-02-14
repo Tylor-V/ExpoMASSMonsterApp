@@ -6,6 +6,7 @@ import React, {
   useState,
 } from 'react';
 import { Alert, AppState } from 'react-native';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { firestore } from './firebase';
 import { auth } from './firebase';
 import {createOrUpdateUserProfile} from './firebaseUserProfile';
@@ -84,7 +85,7 @@ export function AppContextProvider({children}) {
     const built = buildUserData(authUser, data);
     if (built?.isBanned) {
       Alert.alert('Account Disabled', 'Your account has been disabled.');
-      auth().signOut().catch(() => {});
+      signOut(auth()).catch(() => {});
       return;
     }
     setUser(built);
@@ -150,7 +151,7 @@ export function AppContextProvider({children}) {
             const data = doc.data();
             if (data?.isBanned) {
               Alert.alert('Account Disabled', 'Your account has been disabled.');
-              auth().signOut().catch(() => {});
+              signOut(auth()).catch(() => {});
               return;
             }
             applyUserData(user, data);
@@ -178,7 +179,7 @@ export function AppContextProvider({children}) {
       }
     });
 
-    const authUnsub = auth().onAuthStateChanged(async user => {
+    const authUnsub = onAuthStateChanged(auth(), async user => {
       currentAuthUser = user;
       // Always reset state until new user data loads
       detachUserListener();

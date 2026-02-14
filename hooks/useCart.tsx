@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
 import { firestore } from '../firebase/firebase';
 import { auth } from '../firebase/firebase';
 import { CartItem } from '../firebase/cartHelpers';
@@ -21,7 +22,7 @@ export function CartProvider({ children }) {
 
   useEffect(() => {
     let unsubCart: (() => void) | undefined;
-    const unsubAuth = auth().onAuthStateChanged(firebaseUser => {
+    const unsubAuth = onAuthStateChanged(auth(), firebaseUser => {
       unsubCart?.();
 
       if (firebaseUser) {

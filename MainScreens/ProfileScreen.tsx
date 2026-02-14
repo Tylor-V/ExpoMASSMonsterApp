@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { CommonActions, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Image } from 'expo-image';
+import { signOut } from 'firebase/auth';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -434,7 +435,7 @@ const ProfileScreen = () => {
           lastActive: firestore.FieldValue.serverTimestamp(),
         });
       }
-      await auth().signOut();
+      await signOut(auth());
       setAppStatus({ user: null, points: 0, workoutHistory: [] }); // Clear context
       navigation.dispatch(
         CommonActions.reset({

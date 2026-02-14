@@ -51,6 +51,30 @@ const firebaseConfig = {
   measurementId: env.FIREBASE_MEASUREMENT_ID,
 };
 
+
+const requiredFirebaseConfigKeys = [
+  'apiKey',
+  'authDomain',
+  'projectId',
+  'storageBucket',
+  'messagingSenderId',
+  'appId',
+] as const;
+
+const missingFirebaseConfigKeys = requiredFirebaseConfigKeys.filter(
+  key => !firebaseConfig[key],
+);
+
+if (missingFirebaseConfigKeys.length > 0) {
+  const message = `Missing required Firebase config keys: ${missingFirebaseConfigKeys.join(', ')}`;
+  console.error(message);
+  Alert.alert(
+    'Firebase Configuration Missing',
+    'Required Firebase configuration is missing. The app cannot continue.',
+  );
+  throw new Error(message);
+}
+
 // Ensure the Firebase app and auth are initialized only once
 const existingApps = getApps();
 const app = existingApps.length ? getApp() : initializeApp(firebaseConfig);

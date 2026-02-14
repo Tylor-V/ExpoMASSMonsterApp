@@ -1,3 +1,4 @@
+import { onAuthStateChanged } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import { firestore } from '../firebase/firebase';
 import { auth } from '../firebase/firebase';
@@ -14,12 +15,12 @@ export function useRewardHistory() {
   const [history, setHistory] = useState<RewardHistoryItem[]>([]);
 
   useEffect(() => {
-    if (typeof auth !== 'function' || typeof auth().onAuthStateChanged !== 'function') {
+    if (typeof auth !== 'function') {
       setHistory([]);
       return;
     }
     let unsub: (() => void) | undefined;
-    const unsubAuth = auth().onAuthStateChanged(user => {
+    const unsubAuth = onAuthStateChanged(auth(), user => {
       unsub?.();
       if (user) {
         unsub = firestore()

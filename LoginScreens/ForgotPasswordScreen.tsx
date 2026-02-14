@@ -1,4 +1,5 @@
 import { useNavigation } from '@react-navigation/native';
+import { sendPasswordResetEmail } from 'firebase/auth';
 import React, { useRef, useState } from 'react';
 import {
   Alert,
@@ -28,7 +29,7 @@ const ForgotPasswordScreen: React.FC = () => {
       return;
     }
     try {
-      await auth().sendPasswordResetEmail(sanitizedEmail);
+      await sendPasswordResetEmail(auth(), sanitizedEmail);
       Alert.alert(
         'Success',
         'A password reset link has been sent to your email.',

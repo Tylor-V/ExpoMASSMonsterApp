@@ -1,4 +1,5 @@
 import { Ionicons as Icon } from '@expo/vector-icons';
+import { signOut } from 'firebase/auth';
 import { auth } from '../firebase/firebase';
 import { firestore } from '../firebase/firebase';
 import { CommonActions, useNavigation } from '@react-navigation/native';
@@ -81,7 +82,7 @@ function ProfileModal({
           lastActive: firestore.FieldValue.serverTimestamp(),
         });
       }
-      await auth().signOut();
+      await signOut(auth());
       await clearUserCache();
       navigation.dispatch(
         CommonActions.reset({
