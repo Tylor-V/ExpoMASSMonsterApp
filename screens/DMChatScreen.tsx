@@ -40,6 +40,7 @@ import { dedupeById } from '../utils/dedupeById';
 import { formatDisplayName } from '../utils/displayName';
 
 const EMOJI_LIST = ['💪', '🔥', '😂', '👏', '😎', '🥇', '😍'];
+const LIVE_MESSAGES_LIMIT = 50;
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 
@@ -62,10 +63,14 @@ const DMChatScreen = ({ navigation, route }) => {
   const displayName = formatDisplayName(firstName, lastName);
   const currentUserId = auth().currentUser?.uid;
   const insets = useSafeAreaInsets();
-  const [messages, setMessages] = useState([]);
+  const [liveMessages, setLiveMessages] = useState([]);
+  const [olderMessages, setOlderMessages] = useState([]);
   const [text, setText] = useState('');
   const [showJump, setShowJump] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMoreOlder, setHasMoreOlder] = useState(true);
+  const [olderCursor, setOlderCursor] = useState<any | null>(null);
   const [previewUserId, setPreviewUserId] = useState<string | null>(null);
   const inputBarHeight = useChatInputBarHeight();
   const currentUser = useCurrentUserDoc();
@@ -125,6 +130,8 @@ const DMChatScreen = ({ navigation, route }) => {
   const initialLastReadLoaded = useRef(false);
   const initialScrollDone = useRef(false);
   const prevMessagesRef = useRef<any[]>([]);
+  const hasLoadedOlderRef = useRef(false);
+  const messages = React.useMemo(() => dedupeById([...olderMessages, ...liveMessages]), [olderMessages, liveMessages]);
 
   useEffect(() => {
     initialLastReadLoaded.current = false;
@@ -133,6 +140,11 @@ const DMChatScreen = ({ navigation, route }) => {
     isAtBottomRef.current = true;
     setShowJump(false);
     setShowNewMarker(false);
+    setLiveMessages([]);
+    setOlderMessages([]);
+    setOlderCursor(null);
+    setHasMoreOlder(true);
+    hasLoadedOlderRef.current = false;
   }, [threadId]);
 
   useEffect(() => {
@@ -157,10 +169,16 @@ const DMChatScreen = ({ navigation, route }) => {
       .collection('messages')
       // Load newest messages first
       .orderBy('timestamp', 'desc')
+      .limit(LIVE_MESSAGES_LIMIT)
       .onSnapshot(snap => {
         const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         const ordered = dedupeById(msgs.reverse());
-        setMessages(ordered);
+        setLiveMessages(ordered);
+        const nextCursor = snap.docs.length ? snap.docs[snap.docs.length - 1] : null;
+        setOlderCursor(prev => (hasLoadedOlderRef.current ? prev : nextCursor));
+        if (!hasLoadedOlderRef.current) {
+          setHasMoreOlder(snap.docs.length === LIVE_MESSAGES_LIMIT);
+        }
         setLoading(false);
         if (isAtBottomRef.current) {
           const lastId = ordered.length ? ordered[ordered.length - 1].id : null;
@@ -172,6 +190,34 @@ const DMChatScreen = ({ navigation, route }) => {
       });
     return unsub;
   }, [threadId]);
+
+  const handleLoadOlder = useCallback(async () => {
+    if (!threadId || !olderCursor || loadingMore || !hasMoreOlder) return;
+    setLoadingMore(true);
+    try {
+      const olderSnap = await firestore()
+        .collection('dms')
+        .doc(threadId)
+        .collection('messages')
+        .orderBy('timestamp', 'desc')
+        .startAfter(olderCursor)
+        .limit(LIVE_MESSAGES_LIMIT)
+        .get();
+
+      if (olderSnap.empty) {
+        setHasMoreOlder(false);
+        return;
+      }
+
+      const olderBatch = dedupeById(olderSnap.docs.map(d => ({ id: d.id, ...d.data() })).reverse());
+      setOlderMessages(prev => dedupeById([...olderBatch, ...prev]));
+      hasLoadedOlderRef.current = true;
+      setOlderCursor(olderSnap.docs[olderSnap.docs.length - 1]);
+      setHasMoreOlder(olderSnap.docs.length === LIVE_MESSAGES_LIMIT);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [hasMoreOlder, loadingMore, olderCursor, threadId]);
 
   useEffect(() => {
     return () => {
@@ -400,6 +446,20 @@ const DMChatScreen = ({ navigation, route }) => {
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
                 onContentSizeChange={() => { if (isAtBottomRef.current) scrollToLatest(false); }}
+                  ListHeaderComponent={
+                    hasMoreOlder && !!olderCursor ? (
+                      <TouchableOpacity
+                        onPress={handleLoadOlder}
+                        disabled={loadingMore}
+                        style={styles.loadOlderBtn}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.loadOlderText}>
+                          {loadingMore ? 'Loading...' : 'Load older messages'}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : null
+                  }
                   renderItem={({ item, index }) => {
                     const isMe = item.userId === currentUserId;
                     const showUnreadHere = hasUnreadMarker && index === firstUnreadIndex + 1;
@@ -748,6 +808,19 @@ const localStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ececec',
     backgroundColor: '#f6e3ff',
+  },
+  loadOlderBtn: {
+    alignSelf: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 6,
+    borderRadius: 14,
+    backgroundColor: colors.grayLight,
+  },
+  loadOlderText: {
+    color: colors.accent,
+    fontWeight: '600',
+    fontSize: 13,
   },
   disabledRow: {
     backgroundColor: colors.grayLight,
