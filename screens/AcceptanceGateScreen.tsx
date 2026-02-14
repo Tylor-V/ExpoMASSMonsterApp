@@ -75,7 +75,10 @@ export default function AcceptanceGateScreen() {
   const handleAccept = async () => {
     const uid = auth().currentUser?.uid;
     if (!uid) {
-      Alert.alert('Unable to Continue', 'Please try again.');
+      Alert.alert(
+        'Session Not Ready',
+        'We could not confirm your account session. Please close and reopen the app, then try again.',
+      );
       return;
     }
     if (submitting) return;

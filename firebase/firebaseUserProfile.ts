@@ -50,18 +50,21 @@ export async function createOrUpdateUserProfile({
   firstName,
   lastName,
   role,
+  suppressAlert = false,
 }: {
   uid: string;
   email: string;
   firstName: string;
   lastName: string;
   role?: string;
+  suppressAlert?: boolean;
 }) {
   const userDocRef = firestore().collection('users').doc(uid);
 
   try {
     // Check if profile already exists before writing
-    const doc = await userDocRef.get();
+    const retryOptions = { suppressAlert };
+    const doc = await userDocRef.get(retryOptions);
 
     if (!doc.exists) {
       // New user: set full default profile
@@ -72,8 +75,8 @@ export async function createOrUpdateUserProfile({
         lastName,
         role,
       });
-      await userDocRef.set(profile);
-      await upsertPublicUser(uid, { uid, ...buildPublicUserPayload(profile) }, { merge: true });
+      await userDocRef.set(profile, undefined, retryOptions);
+      await upsertPublicUser(uid, { uid, ...buildPublicUserPayload(profile) }, { merge: true }, retryOptions);
     } else {
       // Existing user: update timestamps and add missing fields
       const data = doc.data() || {};
@@ -87,7 +90,7 @@ export async function createOrUpdateUserProfile({
       if (!data.lastName && lastName) update.lastName = lastName;
       if (!data.email && email) update.email = email;
       if (role && !data.role) update.role = role;
-      await userDocRef.set(update, { merge: true });
+      await userDocRef.set(update, { merge: true }, retryOptions);
       await upsertPublicUser(
         uid,
         {
@@ -101,6 +104,7 @@ export async function createOrUpdateUserProfile({
           }),
         },
         { merge: true },
+        retryOptions,
       );
     }
   } catch (err) {

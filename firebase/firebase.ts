@@ -126,17 +126,29 @@ if (Platform.OS === 'web') {
   });
 }
 
-async function withRetry<T>(operation: () => Promise<T>, retries = 1): Promise<T> {
+type RetryOptions = {
+  suppressAlert?: boolean;
+};
+
+async function withRetry<T>(
+  operation: () => Promise<T>,
+  retries = 1,
+  options: RetryOptions = {},
+): Promise<T> {
   try {
     return await operation();
   } catch (error: any) {
     if (retries > 0 && error?.code === 'unavailable') {
-      Alert.alert('Offline', 'Network unavailable, retrying...');
+      if (!options.suppressAlert) {
+        Alert.alert('Offline', 'Network unavailable, retrying...');
+      }
       await new Promise((res) => setTimeout(res, 1000));
-      return withRetry(operation, retries - 1);
+      return withRetry(operation, retries - 1, options);
     }
     console.error('Firebase operation failed:', error);
-    Alert.alert('Error', 'Something went wrong. Please try again later.');
+    if (!options.suppressAlert) {
+      Alert.alert('Error', 'Something went wrong. Please try again later.');
+    }
     throw error;
   }
 }
@@ -145,10 +157,10 @@ function wrapDoc(path: string[], existingRef?: any) {
   const ref = existingRef || fsDoc(db, ...path);
   const fullPath = [...path];
   return {
-    get: () => withRetry(() => getDoc(ref)),
-    set: (data: any, options?: any) => withRetry(() => setDoc(ref, data, options)),
-    update: (data: any) => withRetry(() => updateDoc(ref, data)),
-    delete: () => withRetry(() => deleteDoc(ref)),
+    get: (retryOptions?: RetryOptions) => withRetry(() => getDoc(ref), 1, retryOptions),
+    set: (data: any, options?: any, retryOptions?: RetryOptions) => withRetry(() => setDoc(ref, data, options), 1, retryOptions),
+    update: (data: any, retryOptions?: RetryOptions) => withRetry(() => updateDoc(ref, data), 1, retryOptions),
+    delete: (retryOptions?: RetryOptions) => withRetry(() => deleteDoc(ref), 1, retryOptions),
     onSnapshot: (cb: any, onError?: any) => {
       try {
         return onSnapshot(ref, cb, onError || ((error: any) => {
@@ -174,8 +186,8 @@ function wrapCollection(path: string[]) {
       const docRef = id ? fsDoc(db, ...path, id) : fsDoc(colRef);
       return wrapDoc([...path, docRef.id], docRef);
     },
-    add: (data: any) => withRetry(() => addDoc(colRef, data)),
-    get: () => withRetry(() => getDocs(q)),
+    add: (data: any, retryOptions?: RetryOptions) => withRetry(() => addDoc(colRef, data), 1, retryOptions),
+    get: (retryOptions?: RetryOptions) => withRetry(() => getDocs(q), 1, retryOptions),
     onSnapshot: (cb: any, onError?: any) => {
       try {
         return onSnapshot(q, cb, onError || ((error: any) => {

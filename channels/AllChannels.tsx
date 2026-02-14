@@ -32,6 +32,7 @@ import {
   submitMessageReport,
   type MessageReportReason,
 } from "../firebase/reportHelpers";
+import { pickPublicUser } from "../firebase/publicUserHelpers";
 import { useLastRead } from "../firebase/userChatReadHelpers";
 import { useCurrentUserDoc } from "../hooks/useCurrentUserDoc";
 import { useKeyboardAnimation } from "../hooks/useKeyboardAnimation";
@@ -873,14 +874,12 @@ const AllChannels: React.FC<ChatScreenProps> = ({
         .get()
         .then((doc) => {
           if (doc.exists) {
-            const data = doc.data() || {};
+            const data = pickPublicUser(doc.data(), uid);
             setUserMap((prev) => ({
               ...prev,
               [uid]: {
                 ...(prev[uid] || {}),
                 ...data,
-                firstName: data.firstName || '',
-                lastName: data.lastName || '',
                 badges: parseBadges(data.badges),
                 selectedBadges: parseSelectedBadges(data.selectedBadges),
               },
@@ -891,14 +890,12 @@ const AllChannels: React.FC<ChatScreenProps> = ({
 
       userListenersRef.current[uid] = userRef.onSnapshot((doc) => {
         if (doc.exists) {
-          const data = doc.data() || {};
+          const data = pickPublicUser(doc.data(), uid);
           setUserMap((prev) => ({
             ...prev,
             [uid]: {
               ...(prev[uid] || {}),
               ...data,
-              firstName: data.firstName || '',
-              lastName: data.lastName || '',
               badges: parseBadges(data.badges),
               selectedBadges: parseSelectedBadges(data.selectedBadges),
             },

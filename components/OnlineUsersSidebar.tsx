@@ -14,6 +14,7 @@ import {
 import { enforceSelectedBadges } from '../badges/UnlockableBadges';
 import { ROLE_COLORS, ROLE_TAGS } from '../constants/roles';
 import { auth, firestore } from '../firebase/firebase';
+import { pickPublicUser } from '../firebase/publicUserHelpers';
 import { useChatInputBarHeight } from '../MainScreens/ChatScreen';
 import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
 import { useReportedUserIds } from '../hooks/useReportedUserIds';
@@ -55,17 +56,7 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
     const unsubscribe = firestore()
       .collection('publicUsers')
       .onSnapshot(snap => {
-        const arr = snap.docs.map(d => {
-          const data: any = d.data() || {};
-          return {
-            id: d.id,
-            ...data,
-            firstName: data.firstName || '',
-            lastName: data.lastName || '',
-            selectedBadges: Array.isArray(data.selectedBadges) ? data.selectedBadges : [],
-            badges: Array.isArray(data.badges) ? data.badges : [],
-          };
-        });
+        const arr = snap.docs.map(d => pickPublicUser(d.data(), d.id));
         setUsers(arr);
       });
     return unsubscribe;

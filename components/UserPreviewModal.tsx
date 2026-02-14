@@ -20,6 +20,7 @@ import {
 } from '../badges/UnlockableBadges';
 import { ROLE_COLORS, ROLE_TAGS } from '../constants/roles';
 import { auth, firestore } from '../firebase/firebase';
+import { pickPublicUser } from '../firebase/publicUserHelpers';
 import { postSystemMessage } from '../firebase/systemMessages';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import { colors } from '../theme';
@@ -89,14 +90,7 @@ export default function UserPreviewModal({ visible, userId, onClose, onUserBlock
           return;
         }
         const data: any = doc.data() || {};
-        setUser({
-          id: doc.id,
-          ...data,
-          firstName: data.firstName || '',
-          lastName: data.lastName || '',
-          selectedBadges: Array.isArray(data.selectedBadges) ? data.selectedBadges : [],
-          badges: Array.isArray(data.badges) ? data.badges : [],
-        });
+        setUser(pickPublicUser(data, doc.id));
       });
     return unsub;
   }, [userId]);

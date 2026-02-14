@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import {useNavigation, StackActions} from '@react-navigation/native';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { auth } from '../firebase/firebase';
+import { auth, firestore } from '../firebase/firebase';
 import { fonts, colors, radius } from '../theme';
 import BackgroundWrapper from '../components/BackgroundWrapper';
 import ResponsivePressable from '../components/ResponsivePressable';
@@ -55,32 +55,52 @@ const SignUpScreen: React.FC = () => {
         sanitizedPassword,
       );
       await clearUserCache();
-      await updateProfile(userCredential.user, {
-        displayName: `${sanitizedFirst} ${sanitizedLast}`,
-      });
-      let profileSetupFailed = false;
+
+      let setupIncomplete = false;
       try {
+        await updateProfile(userCredential.user, {
+          displayName: `${sanitizedFirst} ${sanitizedLast}`,
+        });
         await createOrUpdateUserProfile({
           uid: userCredential.user.uid,
           email: sanitizedEmail,
           firstName: sanitizedFirst,
           lastName: sanitizedLast,
           role: 'member',
+          suppressAlert: true,
         });
-      } catch (profileError) {
-        profileSetupFailed = true;
-        console.error('SignUp profile setup failed:', profileError);
+      } catch (setupError) {
+        setupIncomplete = true;
+        console.error('SignUp setup failed:', setupError);
+        try {
+          await firestore()
+            .collection('users')
+            .doc(userCredential.user.uid)
+            .set(
+              {
+                uid: userCredential.user.uid,
+                email: sanitizedEmail,
+                firstName: sanitizedFirst,
+                lastName: sanitizedLast,
+                role: 'member',
+              },
+              { merge: true },
+              { suppressAlert: true },
+            );
+        } catch (fallbackError) {
+          console.error('SignUp fallback user doc write failed:', fallbackError);
+        }
         Alert.alert(
           'Account Created',
-          'Your account was created, but setup did not finish. Please try logging in now.',
+          "Your account was created, but setup did not finish. Please continue and we'll finish setup shortly.",
         );
       }
       try {
-        await initializeUser(userCredential.user.uid);
+        await initializeUser(userCredential.user.uid, { suppressAlert: true });
       } catch (initError) {
         console.error('SignUp initialize user failed:', initError);
       }
-      if (!profileSetupFailed) {
+      if (!setupIncomplete) {
         Alert.alert('Success', 'Account created! Logging you in...');
       }
       // Replace the AuthStack with the main application stack

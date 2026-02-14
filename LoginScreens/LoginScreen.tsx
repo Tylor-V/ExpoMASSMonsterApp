@@ -88,10 +88,12 @@ const LoginScreen: React.FC = () => {
           email: user.email ?? sanitizedEmail,
           firstName: user.displayName?.split(' ')[0] || '',
           lastName: user.displayName?.split(' ').slice(1).join(' ') || '',
+          suppressAlert: true,
         });
-        await fixUserLevel(user.uid);
-        await checkAccountabilityStreak(user.uid);
-        await initializeUser(user.uid);
+        const retryOptions = { suppressAlert: true };
+        await fixUserLevel(user.uid, retryOptions);
+        await checkAccountabilityStreak(user.uid, retryOptions);
+        await initializeUser(user.uid, retryOptions);
       }
     } catch (setupError) {
       console.error('Login post-auth setup failed:', setupError);

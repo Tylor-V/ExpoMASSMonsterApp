@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts } from '../theme';
 import ResponsivePressable from '../components/ResponsivePressable';
 import { firestore } from '../firebase/firebase';
+import { pickPublicUser } from '../firebase/publicUserHelpers';
 import { auth } from '../firebase/firebase';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -126,17 +127,7 @@ const DMsInboxScreen = ({ navigation }) => {
         ]);
         if (!isActive) return;
         const merged = new Map<string, any>();
-        const mapDoc = (doc: any) => {
-          const data = doc.data() || {};
-          return {
-            id: doc.id,
-            ...data,
-            firstName: data.firstName || '',
-            lastName: data.lastName || '',
-            selectedBadges: Array.isArray(data.selectedBadges) ? data.selectedBadges : [],
-            badges: Array.isArray(data.badges) ? data.badges : [],
-          };
-        };
+        const mapDoc = (doc: any) => pickPublicUser(doc.data(), doc.id);
         firstSnap.docs.forEach(doc => merged.set(doc.id, mapDoc(doc)));
         lastSnap.docs.forEach(doc => merged.set(doc.id, mapDoc(doc)));
         setUsers(Array.from(merged.values()));

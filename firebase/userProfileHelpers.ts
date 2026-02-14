@@ -151,9 +151,9 @@ export async function addAccountabilityPoint(info?: {
 }
 
 // Reset the accountability streak if the user has missed 3 days
-export async function checkAccountabilityStreak(uid: string) {
+export async function checkAccountabilityStreak(uid: string, retryOptions: { suppressAlert?: boolean } = {}) {
   const ref = firestore().collection('users').doc(uid);
-  const doc = await ref.get();
+  const doc = await ref.get(retryOptions);
   if (!doc.exists) return;
   const data = doc.data() || {};
   const streak = data.accountabilityStreak || 0;
@@ -166,8 +166,8 @@ export async function checkAccountabilityStreak(uid: string) {
   last.setHours(0, 0, 0, 0);
   const diff = Math.floor((today.getTime() - last.getTime()) / (24 * 60 * 60 * 1000));
   if (diff >= 3) {
-    await ref.update({ accountabilityStreak: 0 });
-    await upsertPublicUser(uid, buildPublicUserPayload({ accountabilityStreak: 0 }), { merge: true });
+    await ref.update({ accountabilityStreak: 0 }, retryOptions);
+    await upsertPublicUser(uid, buildPublicUserPayload({ accountabilityStreak: 0 }), { merge: true }, retryOptions);
   }
 }
 

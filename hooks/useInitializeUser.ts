@@ -4,9 +4,9 @@ import { firestore } from '../firebase/firebase';
 export function useInitializeUser() {
   const { setAppStatus } = useAppContext();
 
-  return async (uid: string) => {
+  return async (uid: string, retryOptions: { suppressAlert?: boolean } = {}) => {
     try {
-      const doc = await firestore().collection('users').doc(uid).get();
+      const doc = await firestore().collection('users').doc(uid).get(retryOptions);
       let data = doc.data() || {};
       setAppStatus({
         user: data,

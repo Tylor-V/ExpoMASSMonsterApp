@@ -133,16 +133,16 @@ export async function awardStreakXP(uid) {
 }
 
 // --- Fix user level based on their XP (auto-corrects if wrong) ---
-export async function fixUserLevel(uid) {
+export async function fixUserLevel(uid, retryOptions: { suppressAlert?: boolean } = {}) {
   const userRef = firestore().collection('users').doc(uid);
-  const doc = await userRef.get();
+  const doc = await userRef.get(retryOptions);
   if (!doc.exists) return;
   const data = doc.data();
   const xp = data.chatXP || 0;
   const correctLevel = getLevelForXP(xp);
   if (data.chatLevel !== correctLevel) {
-    await userRef.update({ chatLevel: correctLevel });
-    await upsertPublicUser(uid, buildPublicUserPayload({ chatLevel: correctLevel }), { merge: true });
+    await userRef.update({ chatLevel: correctLevel }, retryOptions);
+    await upsertPublicUser(uid, buildPublicUserPayload({ chatLevel: correctLevel }), { merge: true }, retryOptions);
   }
 }
 

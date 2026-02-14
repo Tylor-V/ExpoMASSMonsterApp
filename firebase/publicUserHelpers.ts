@@ -17,6 +17,10 @@ export type PublicUser = {
   badges?: any;
 };
 
+type RetryOptions = {
+  suppressAlert?: boolean;
+};
+
 const PUBLIC_USER_FIELDS = [
   'firstName',
   'lastName',
@@ -50,16 +54,41 @@ export function buildPublicUserPayload(data: any): Partial<PublicUser> {
   return payload;
 }
 
+export function pickPublicUser(data: any, id: string) {
+  const source = data || {};
+  return {
+    id,
+    firstName: source.firstName || '',
+    lastName: source.lastName || '',
+    profilePicUrl: source.profilePicUrl || '',
+    chatLevel: source.chatLevel,
+    role: source.role,
+    selectedBadges: Array.isArray(source.selectedBadges) ? source.selectedBadges : [],
+    badges: Array.isArray(source.badges) ? source.badges : [],
+    bio: source.bio || '',
+    socials: source.socials || {},
+    lastActive: source.lastActive,
+    showOnlineStatus: source.showOnlineStatus,
+    accountabilityStreak: source.accountabilityStreak,
+    timeoutUntil: source.timeoutUntil,
+  };
+}
+
 export async function upsertPublicUser(
   uid: string,
   partialPublicPayload: Partial<PublicUser>,
   options: { merge?: boolean } = { merge: true },
+  retryOptions?: RetryOptions,
 ): Promise<boolean> {
   try {
     await firestore()
       .collection('publicUsers')
       .doc(uid)
-      .set({ uid, ...buildPublicUserPayload(partialPublicPayload) }, { merge: options.merge !== false });
+      .set(
+        { uid, ...buildPublicUserPayload(partialPublicPayload) },
+        { merge: options.merge !== false },
+        retryOptions,
+      );
     return true;
   } catch (err) {
     console.error('Failed to upsert public user', err);

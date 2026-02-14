@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import InboxIcon from '../assets/inbox.png';
 import UsersIcon from '../assets/users.png';
 import { auth, firestore, storage } from '../firebase/firebase';
+import { pickPublicUser } from '../firebase/publicUserHelpers';
 import { useBlockedUserIds } from '../hooks/useBlockedUserIds';
 import { useHiddenStories } from '../hooks/useHiddenStories';
 import useAnyDMUnread from '../hooks/useAnyDMUnread';
@@ -399,16 +400,7 @@ const ChatBar: React.FC<ChatBarProps> = ({ isActive = true, onOpenDMInbox, onOpe
       const map = { ...pinUsers };
       snaps.forEach(doc => {
         if (doc.exists) {
-          const data = doc.data() || {};
-          data.selectedBadges = Array.isArray(data.selectedBadges)
-            ? data.selectedBadges
-            : [];
-          data.badges = Array.isArray(data.badges) ? data.badges : [];
-          map[doc.id] = {
-            firstName: data.firstName || '',
-            lastName: data.lastName || '',
-            ...data,
-          };
+          map[doc.id] = pickPublicUser(doc.data(), doc.id);
         }
       });
       setPinUsers(map);
