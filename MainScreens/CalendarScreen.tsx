@@ -1254,29 +1254,6 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const planDrawerInteractive = renderPlanDrawer && showPlanDrawer;
   const workoutDrawerInteractive = renderWorkoutDrawer && showWorkoutDrawer;
 
-  useEffect(() => {
-    if (!__DEV__) return;
-    console.log('CalendarScreen renderPlanDrawer', renderPlanDrawer);
-  }, [renderPlanDrawer]);
-
-  useEffect(() => {
-    if (!__DEV__) return;
-    console.log('CalendarScreen renderWorkoutDrawer', renderWorkoutDrawer);
-  }, [renderWorkoutDrawer]);
-
-  useEffect(() => {
-    if (!__DEV__) return;
-    console.log('CalendarScreen overlay interactive', {
-      plan: planDrawerInteractive,
-      workout: workoutDrawerInteractive,
-    });
-  }, [planDrawerInteractive, workoutDrawerInteractive]);
-
-  useEffect(() => {
-    if (!__DEV__) return;
-    console.log('CalendarScreen dayMenuOpen', dayMenuOpen);
-  }, [dayMenuOpen]);
-
   // ---------- Plan Actions ----------
   const handleTogglePlans = (v: boolean) => {
     if (v) {
