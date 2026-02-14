@@ -58,17 +58,38 @@ const SignUpScreen: React.FC = () => {
       await updateProfile(userCredential.user, {
         displayName: `${sanitizedFirst} ${sanitizedLast}`,
       });
-      await createOrUpdateUserProfile({
-        uid: userCredential.user.uid,
-        email: sanitizedEmail,
-        firstName: sanitizedFirst,
-        lastName: sanitizedLast,
-        role: 'member',
-      });
-      await initializeUser(userCredential.user.uid);
-      Alert.alert('Success', 'Account created! Logging you in...');
+      let profileSetupFailed = false;
+      try {
+        await createOrUpdateUserProfile({
+          uid: userCredential.user.uid,
+          email: sanitizedEmail,
+          firstName: sanitizedFirst,
+          lastName: sanitizedLast,
+          role: 'member',
+        });
+      } catch (profileError) {
+        profileSetupFailed = true;
+        console.error('SignUp profile setup failed:', profileError);
+        Alert.alert(
+          'Account Created',
+          'Your account was created, but setup did not finish. Please try logging in now.',
+        );
+      }
+      try {
+        await initializeUser(userCredential.user.uid);
+      } catch (initError) {
+        console.error('SignUp initialize user failed:', initError);
+      }
+      if (!profileSetupFailed) {
+        Alert.alert('Success', 'Account created! Logging you in...');
+      }
       // Replace the AuthStack with the main application stack
-      navigation.getParent()?.dispatch(StackActions.replace('AcceptanceGate'));
+      const parentNavigation = navigation.getParent();
+      if (parentNavigation) {
+        parentNavigation.dispatch(StackActions.replace('AcceptanceGate'));
+      } else {
+        navigation.dispatch(StackActions.replace('AcceptanceGate'));
+      }
     } catch (error: any) {
       console.error('SignUp failed:', error);
       if (error.code === 'auth/email-already-in-use') {

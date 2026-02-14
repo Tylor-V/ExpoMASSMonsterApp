@@ -74,11 +74,16 @@ export default function AcceptanceGateScreen() {
 
   const handleAccept = async () => {
     const uid = auth().currentUser?.uid;
-    if (!uid || submitting) return;
+    if (!uid) {
+      Alert.alert('Unable to Continue', 'Please try again.');
+      return;
+    }
+    if (submitting) return;
     setSubmitting(true);
     try {
       await firestore().collection('users').doc(uid).set(
         {
+          uid,
           acceptedAt: firestore.FieldValue.serverTimestamp(),
           acceptedTermsVersion: TERMS_VERSION,
           acceptedGuidelinesVersion: GUIDELINES_VERSION,

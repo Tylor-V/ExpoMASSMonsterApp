@@ -88,11 +88,7 @@ export default function SplashScreen({navigation}) {
         }
       } catch (err) {
         console.error('Splash auth bootstrap failed', err);
-        if (user) {
-          setIsLoggedIn(true);
-        } else {
-          setIsLoggedIn(false);
-        }
+        setIsLoggedIn(!!user);
       } finally {
         setAuthChecked(true);
       }

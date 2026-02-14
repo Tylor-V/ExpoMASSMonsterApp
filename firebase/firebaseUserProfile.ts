@@ -77,6 +77,7 @@ export async function createOrUpdateUserProfile({
       // Existing user: update timestamps and add missing fields
       const data = doc.data() || {};
       const update: any = {
+        uid,
         lastSeen: firestore.FieldValue.serverTimestamp(),
         lastActive: firestore.FieldValue.serverTimestamp(),
         presence: 'online',

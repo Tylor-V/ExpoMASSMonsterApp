@@ -51,15 +51,35 @@ const LoginScreen: React.FC = () => {
       Alert.alert('Error', 'Please enter both email and password.');
       return;
     }
+
+    const sanitizedEmail = email.trim().toLowerCase();
+    const sanitizedPassword = password.trim();
     setLoading(true);
+
     try {
-      const sanitizedEmail = email.trim().toLowerCase();
-      const sanitizedPassword = password.trim();
       await signInWithEmailAndPassword(
         auth(),
         sanitizedEmail,
         sanitizedPassword,
       );
+    } catch (error: any) {
+      if (error.code === 'auth/user-not-found') {
+        Alert.alert(
+          'User not found',
+          'No user found for that email. Please sign up.',
+        );
+      } else if (error.code === 'auth/wrong-password') {
+        Alert.alert('Wrong password', 'That password is incorrect.');
+      } else {
+        Alert.alert('Login failed', error.message);
+      }
+      if (isMountedRef.current) {
+        setLoading(false);
+      }
+      return;
+    }
+
+    try {
       await clearUserCache();
       const user = auth().currentUser;
       if (user) {
@@ -73,20 +93,15 @@ const LoginScreen: React.FC = () => {
         await checkAccountabilityStreak(user.uid);
         await initializeUser(user.uid);
       }
-      // ← Now replace the entire AuthStack with AppStack
-      navigation.getParent()?.dispatch(StackActions.replace('AcceptanceGate'));
-    } catch (error: any) {
-      if (error.code === 'auth/user-not-found') {
-        Alert.alert(
-          'User not found',
-          'No user found for that email. Please sign up.',
-        );
-      } else if (error.code === 'auth/wrong-password') {
-        Alert.alert('Wrong password', 'That password is incorrect.');
+    } catch (setupError) {
+      console.error('Login post-auth setup failed:', setupError);
+    } finally {
+      const parentNavigation = navigation.getParent();
+      if (parentNavigation) {
+        parentNavigation.dispatch(StackActions.replace('AcceptanceGate'));
       } else {
-        Alert.alert('Login failed', error.message);
+        navigation.dispatch(StackActions.replace('AcceptanceGate'));
       }
-      } finally {
       if (isMountedRef.current) {
         setLoading(false);
       }
