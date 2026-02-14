@@ -3,6 +3,7 @@ import { firestore } from './firebase';
 import { auth } from './firebase';
 import { getTodayKey } from './dateHelpers';
 import { normalizeSharedSplitList } from '../utils/splitSharing';
+import { buildPublicUserPayload, upsertPublicUser } from './publicUserHelpers';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 
@@ -25,6 +26,7 @@ export async function updateProfileField(field: string, value: any) {
   const uid = auth().currentUser?.uid;
   if (!uid) throw new Error('No user logged in');
   await firestore().collection('users').doc(uid).update({ [field]: value });
+  await upsertPublicUser(uid, buildPublicUserPayload({ [field]: value }), { merge: true });
 }
 
 // Update a nested field (e.g., socials)
@@ -35,15 +37,16 @@ export async function updateSocialLink(
 ) {
   const uid = auth().currentUser?.uid;
   if (!uid) throw new Error('No user logged in');
-  await firestore()
-    .collection('users')
-    .doc(uid)
-    .update({
-      [`socials.${platform}`]: {
-        handle: buildSocialUrl(platform, handle),
-        hidden,
-      },
-    });
+  const socialPayload = {
+    [platform]: {
+      handle: buildSocialUrl(platform, handle),
+      hidden,
+    },
+  };
+  const userRef = firestore().collection('users').doc(uid);
+  await userRef.update({ [`socials.${platform}`]: socialPayload[platform] });
+  const doc = await userRef.get();
+  await upsertPublicUser(uid, buildPublicUserPayload(doc.data() || {}), { merge: true });
 }
 
 // Update course progress value (0-1) for given course
@@ -144,6 +147,7 @@ export async function addAccountabilityPoint(info?: {
     },
     { merge: true },
   );
+  await upsertPublicUser(uid, buildPublicUserPayload({ accountabilityStreak: streak }), { merge: true });
 }
 
 // Reset the accountability streak if the user has missed 3 days
@@ -163,6 +167,7 @@ export async function checkAccountabilityStreak(uid: string) {
   const diff = Math.floor((today.getTime() - last.getTime()) / (24 * 60 * 60 * 1000));
   if (diff >= 3) {
     await ref.update({ accountabilityStreak: 0 });
+    await upsertPublicUser(uid, buildPublicUserPayload({ accountabilityStreak: 0 }), { merge: true });
   }
 }
 
@@ -290,6 +295,7 @@ export async function unlockBadge(badge: string) {
   }
   selected = enforceSelectedBadges(selected, { ...data, badges });
   await ref.update({ badges, selectedBadges: selected });
+  await upsertPublicUser(uid, buildPublicUserPayload({ badges, selectedBadges: selected }), { merge: true });
 
   if (!alreadyUnlocked) {
     const displayName = formatUserDisplayName(data);
@@ -311,6 +317,7 @@ export async function saveSelectedBadges(selected: string[]) {
   const data = doc.data() || {};
   const finalSel = enforceSelectedBadges(selected, data);
   await ref.update({ selectedBadges: finalSel });
+  await upsertPublicUser(uid, buildPublicUserPayload({ selectedBadges: finalSel }), { merge: true });
 }
 
 export async function grantMindsetBadge() {

@@ -47,7 +47,7 @@ const DMsInboxScreen = ({ navigation }) => {
       const updatedAtRaw = doc.data()?.updatedAt;
       const updatedAt = updatedAtRaw?.toMillis ? updatedAtRaw.toMillis() : updatedAtRaw || 0;
 
-      const userPromise = firestore().collection('users').doc(otherUid).get();
+      const userPromise = firestore().collection('publicUsers').doc(otherUid).get();
       const lastMsgPromise = firestore()
         .collection('dms')
         .doc(threadId)
@@ -63,7 +63,7 @@ const DMsInboxScreen = ({ navigation }) => {
         .get();
 
       const [userSnap, lastMsgSnap, lastReadSnap] = await Promise.all([
-        userPromise,
+        userPromise.catch(() => null),
         lastMsgPromise,
         lastReadPromise,
       ]);
@@ -86,9 +86,9 @@ const DMsInboxScreen = ({ navigation }) => {
         updatedAt,
         otherUser: {
           uid: otherUid,
-          firstName: userSnap.data()?.firstName || 'User',
-          lastName: userSnap.data()?.lastName || '',
-          profilePicUrl: userSnap.data()?.profilePicUrl || '',
+          firstName: userSnap?.data()?.firstName || 'User',
+          lastName: userSnap?.data()?.lastName || '',
+          profilePicUrl: userSnap?.data()?.profilePicUrl || '',
         },
         lastMsg,
         isUnread,
@@ -107,14 +107,14 @@ const DMsInboxScreen = ({ navigation }) => {
     const fetchUsers = async () => {
       try {
         const firstNameQuery = firestore()
-          .collection('users')
+          .collection('publicUsers')
           .orderBy('firstName')
           .startAt(searchTerm)
           .endAt(`${searchTerm}\uf8ff`)
           .limit(10)
           .get();
         const lastNameQuery = firestore()
-          .collection('users')
+          .collection('publicUsers')
           .orderBy('lastName')
           .startAt(searchTerm)
           .endAt(`${searchTerm}\uf8ff`)
@@ -126,8 +126,19 @@ const DMsInboxScreen = ({ navigation }) => {
         ]);
         if (!isActive) return;
         const merged = new Map<string, any>();
-        firstSnap.docs.forEach(doc => merged.set(doc.id, { id: doc.id, ...doc.data() }));
-        lastSnap.docs.forEach(doc => merged.set(doc.id, { id: doc.id, ...doc.data() }));
+        const mapDoc = (doc: any) => {
+          const data = doc.data() || {};
+          return {
+            id: doc.id,
+            ...data,
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            selectedBadges: Array.isArray(data.selectedBadges) ? data.selectedBadges : [],
+            badges: Array.isArray(data.badges) ? data.badges : [],
+          };
+        };
+        firstSnap.docs.forEach(doc => merged.set(doc.id, mapDoc(doc)));
+        lastSnap.docs.forEach(doc => merged.set(doc.id, mapDoc(doc)));
         setUsers(Array.from(merged.values()));
       } catch (err) {
         console.warn('Failed to search users', err);

@@ -53,9 +53,19 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
   useEffect(() => {
     if (!render) return;
     const unsubscribe = firestore()
-      .collection('users')
+      .collection('publicUsers')
       .onSnapshot(snap => {
-        const arr = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const arr = snap.docs.map(d => {
+          const data: any = d.data() || {};
+          return {
+            id: d.id,
+            ...data,
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            selectedBadges: Array.isArray(data.selectedBadges) ? data.selectedBadges : [],
+            badges: Array.isArray(data.badges) ? data.badges : [],
+          };
+        });
         setUsers(arr);
       });
     return unsubscribe;

@@ -80,7 +80,7 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
 
   useEffect(() => {
     const fetchStories = async () => {
-      const usersSnap = await firestore().collection('users').get();
+      const usersSnap = await firestore().collection('publicUsers').get();
       const now = Date.now();
       const storyPromises = usersSnap.docs.map(async userDoc => {
         const storySnap = await firestore()
@@ -111,8 +111,8 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
           return {
             userId: userDoc.id,
             storyId,
-            firstName: userDoc.data().firstName,
-            profilePicUrl: userDoc.data().profilePicUrl,
+            firstName: userDoc.data()?.firstName || 'User',
+            profilePicUrl: userDoc.data()?.profilePicUrl || '',
             ...s,
           };
         }
@@ -324,13 +324,20 @@ const ChatBar: React.FC<ChatBarProps> = ({ isActive = true, onOpenDMInbox, onOpe
       }
       lastPresencePayloadRef.current = payloadKey;
       lastPresenceWriteAtRef.current = now;
+      const timestamp = firestore.FieldValue.serverTimestamp();
       firestore()
         .collection('users')
         .doc(uid)
         .update({
-          lastActive: firestore.FieldValue.serverTimestamp(),
+          lastActive: timestamp,
           presence,
         })
+        .then(() =>
+          firestore()
+            .collection('publicUsers')
+            .doc(uid)
+            .set({ uid, lastActive: timestamp }, { merge: true }),
+        )
         .catch(err => console.warn('Failed presence update', err));
     };
 
@@ -387,7 +394,7 @@ const ChatBar: React.FC<ChatBarProps> = ({ isActive = true, onOpenDMInbox, onOpe
         .filter(uid => uid && !pinUsers[uid]);
       if (!missing.length) return;
       const snaps = await Promise.all(
-        missing.map(uid => firestore().collection('users').doc(uid).get()),
+        missing.map(uid => firestore().collection('publicUsers').doc(uid).get()),
       );
       const map = { ...pinUsers };
       snaps.forEach(doc => {
@@ -395,8 +402,13 @@ const ChatBar: React.FC<ChatBarProps> = ({ isActive = true, onOpenDMInbox, onOpe
           const data = doc.data() || {};
           data.selectedBadges = Array.isArray(data.selectedBadges)
             ? data.selectedBadges
-            : Object.values(data.selectedBadges || {});
-          map[doc.id] = data;
+            : [];
+          data.badges = Array.isArray(data.badges) ? data.badges : [];
+          map[doc.id] = {
+            firstName: data.firstName || '',
+            lastName: data.lastName || '',
+            ...data,
+          };
         }
       });
       setPinUsers(map);

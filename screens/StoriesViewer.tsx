@@ -126,12 +126,12 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
       return;
     }
     firestore()
-      .collection('users')
+      .collection('publicUsers')
       .doc(userId)
       .get()
       .then(doc => {
         const data = doc.data() || {};
-        const name = String(data.firstName || data.username || data.displayName || '');
+        const name = String(data.firstName || data.username || data.displayName || 'User');
         setOwnerName(name);
       })
       .catch(() => setOwnerName(''));

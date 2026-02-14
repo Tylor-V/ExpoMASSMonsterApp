@@ -81,10 +81,22 @@ export default function UserPreviewModal({ visible, userId, onClose, onUserBlock
       return;
     }
     const unsub = firestore()
-      .collection('users')
+      .collection('publicUsers')
       .doc(userId)
       .onSnapshot(doc => {
-        setUser(doc.exists ? { id: doc.id, ...doc.data() } : null);
+        if (!doc.exists) {
+          setUser({ id: userId, firstName: 'User', lastName: '', selectedBadges: [], badges: [] });
+          return;
+        }
+        const data: any = doc.data() || {};
+        setUser({
+          id: doc.id,
+          ...data,
+          firstName: data.firstName || '',
+          lastName: data.lastName || '',
+          selectedBadges: Array.isArray(data.selectedBadges) ? data.selectedBadges : [],
+          badges: Array.isArray(data.badges) ? data.badges : [],
+        });
       });
     return unsub;
   }, [userId]);

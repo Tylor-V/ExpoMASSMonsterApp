@@ -1,6 +1,7 @@
 import { firestore } from './firebase';
 import { Timestamp } from 'firebase/firestore';
 import { Alert } from 'react-native';
+import { buildPublicUserPayload, upsertPublicUser } from './publicUserHelpers';
 
 function notifyLevelUp(level: number) {
   Alert.alert('Level Up!', `You reached level ${level}!`);
@@ -85,7 +86,10 @@ export async function awardXP(uid, type: 'message'|'reaction'|'referral'|'event'
   }
   updateObj['chatXP'] = xp;
 
-  if (shouldUpdate || newLevel !== level) await userRef.update(updateObj);
+  if (shouldUpdate || newLevel !== level) {
+    await userRef.update(updateObj);
+    await upsertPublicUser(uid, buildPublicUserPayload({ chatLevel: newLevel }), { merge: true });
+  }
 }
 
 // --- Award daily streak XP (call once per login/session/chat open) ---
@@ -123,6 +127,7 @@ export async function awardStreakXP(uid) {
       notifyLevelUp(newLevel);
     }
     await userRef.update(updateObj);
+    await upsertPublicUser(uid, buildPublicUserPayload({ chatLevel: newLevel }), { merge: true });
     // Optionally: show streak animation in UI!
   }
 }
@@ -137,6 +142,7 @@ export async function fixUserLevel(uid) {
   const correctLevel = getLevelForXP(xp);
   if (data.chatLevel !== correctLevel) {
     await userRef.update({ chatLevel: correctLevel });
+    await upsertPublicUser(uid, buildPublicUserPayload({ chatLevel: correctLevel }), { merge: true });
   }
 }
 

@@ -867,7 +867,7 @@ const AllChannels: React.FC<ChatScreenProps> = ({
       if (userListenersRef.current[uid]) {
         return;
       }
-      const userRef = firestore().collection("users").doc(uid);
+      const userRef = firestore().collection("publicUsers").doc(uid);
 
       userRef
         .get()
@@ -879,6 +879,8 @@ const AllChannels: React.FC<ChatScreenProps> = ({
               [uid]: {
                 ...(prev[uid] || {}),
                 ...data,
+                firstName: data.firstName || '',
+                lastName: data.lastName || '',
                 badges: parseBadges(data.badges),
                 selectedBadges: parseSelectedBadges(data.selectedBadges),
               },
@@ -895,6 +897,8 @@ const AllChannels: React.FC<ChatScreenProps> = ({
             [uid]: {
               ...(prev[uid] || {}),
               ...data,
+              firstName: data.firstName || '',
+              lastName: data.lastName || '',
               badges: parseBadges(data.badges),
               selectedBadges: parseSelectedBadges(data.selectedBadges),
             },

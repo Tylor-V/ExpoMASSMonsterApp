@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { auth, firestore, storage } from './firebase';
+import { buildPublicUserPayload, upsertPublicUser } from './publicUserHelpers';
 
 // Generates the full user profile doc for new users
 export const getDefaultUserProfile = ({
@@ -64,15 +65,15 @@ export async function createOrUpdateUserProfile({
 
     if (!doc.exists) {
       // New user: set full default profile
-      await userDocRef.set(
-        getDefaultUserProfile({
-          uid,
-          email,
-          firstName,
-          lastName,
-          role,
-        }),
-      );
+      const profile = getDefaultUserProfile({
+        uid,
+        email,
+        firstName,
+        lastName,
+        role,
+      });
+      await userDocRef.set(profile);
+      await upsertPublicUser(uid, { uid, ...buildPublicUserPayload(profile) }, { merge: true });
     } else {
       // Existing user: update timestamps and add missing fields
       const data = doc.data() || {};
@@ -87,6 +88,20 @@ export async function createOrUpdateUserProfile({
       if (!data.email && email) update.email = email;
       if (role && !data.role) update.role = role;
       await userDocRef.set(update, { merge: true });
+      await upsertPublicUser(
+        uid,
+        {
+          uid,
+          ...buildPublicUserPayload({
+            ...data,
+            ...update,
+            firstName: data.firstName || firstName || '',
+            lastName: data.lastName || lastName || '',
+            role: data.role || role,
+          }),
+        },
+        { merge: true },
+      );
     }
   } catch (err) {
     console.error('Failed to create or update user profile', err);
