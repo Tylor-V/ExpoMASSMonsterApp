@@ -79,6 +79,28 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
       return;
     }
     const now = Date.now();
+    const isOwner = currentUserId === userId;
+    const cleanupExpiredStory = async (storyId: string, storyUrl?: string) => {
+      try {
+        await firestore()
+          .collection('stories')
+          .doc(userId)
+          .collection('storyMedia')
+          .doc(storyId)
+          .delete();
+      } catch (err) {
+        console.error('Failed to delete expired story doc', err);
+      }
+
+      if (!storyUrl) return;
+      try {
+        const ref = storage().refFromURL(storyUrl);
+        await ref.delete();
+      } catch (err) {
+        console.error('Failed to delete expired story media', err);
+      }
+    };
+
     firestore()
       .collection('stories')
       .doc(userId)
@@ -96,20 +118,8 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
             return;
           }
           if (now - s.timestamp > 24 * 60 * 60 * 1000) {
-            // Delete expired
-            firestore()
-              .collection('stories')
-              .doc(userId)
-              .collection('storyMedia')
-              .doc(doc.id)
-              .delete();
-            if (s.url) {
-              try {
-                const ref = storage().refFromURL(s.url);
-                ref.delete();
-              } catch (err) {
-                console.error('Failed to delete expired story media', err);
-              }
+            if (isOwner) {
+              void cleanupExpiredStory(doc.id, s.url);
             }
           } else {
             filtered.push({ id: doc.id, ...s });
@@ -117,8 +127,11 @@ export default function StoriesViewer({ visible, userId, onClose, initialIndex =
         });
         setStories(filtered);
         setIdx(0);
+      })
+      .catch(err => {
+        console.error('Failed to load stories', err);
       });
-  }, [userId, visible, blockedSet, reportedUserSet, hiddenStorySet]);
+  }, [userId, visible, blockedSet, reportedUserSet, hiddenStorySet, currentUserId]);
 
   useEffect(() => {
     if (!userId || !visible) {
