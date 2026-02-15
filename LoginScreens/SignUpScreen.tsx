@@ -43,6 +43,7 @@ const SignUpScreen: React.FC = () => {
     const sanitizedFirst = firstName.trim();
     const sanitizedLast = lastName.trim();
     const sanitizedPassword = password.trim();
+    const previousUid = auth().currentUser?.uid;
 
     if (!sanitizedEmail || !sanitizedPassword || !sanitizedFirst || !sanitizedLast) {
       Alert.alert('Error', 'Please enter all fields.');
@@ -54,7 +55,7 @@ const SignUpScreen: React.FC = () => {
         sanitizedEmail,
         sanitizedPassword,
       );
-      await clearUserCache();
+      await clearUserCache(previousUid);
 
       let setupIncomplete = false;
       try {

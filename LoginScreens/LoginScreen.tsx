@@ -54,6 +54,7 @@ const LoginScreen: React.FC = () => {
 
     const sanitizedEmail = email.trim().toLowerCase();
     const sanitizedPassword = password.trim();
+    const previousUid = auth().currentUser?.uid;
     setLoading(true);
 
     try {
@@ -80,7 +81,7 @@ const LoginScreen: React.FC = () => {
     }
 
     try {
-      await clearUserCache();
+      await clearUserCache(previousUid);
       const user = auth().currentUser;
       if (user) {
         await createOrUpdateUserProfile({

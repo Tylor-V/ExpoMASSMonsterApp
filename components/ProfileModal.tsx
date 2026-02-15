@@ -83,7 +83,7 @@ function ProfileModal({
         });
       }
       await signOut(auth());
-      await clearUserCache();
+      await clearUserCache(uid);
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
