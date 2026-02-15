@@ -427,14 +427,20 @@ const ProfileScreen = () => {
   };
 
   const handleSignOut = async () => {
+    const uid = auth().currentUser?.uid;
+
     try {
-      const uid = auth().currentUser?.uid;
       if (uid) {
-        await firestore().collection('users').doc(uid).update({
-          presence: 'offline',
-          lastActive: firestore.FieldValue.serverTimestamp(),
-        });
+        try {
+          await firestore().collection('users').doc(uid).update({
+            presence: 'offline',
+            lastActive: firestore.FieldValue.serverTimestamp(),
+          });
+        } catch (presenceError) {
+          console.warn('Failed to set offline presence before sign out', presenceError);
+        }
       }
+
       await signOut(auth());
       setAppStatus({ user: null, points: 0, workoutHistory: [] }); // Clear context
       navigation.dispatch(

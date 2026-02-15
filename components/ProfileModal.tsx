@@ -74,14 +74,20 @@ function ProfileModal({
 
   // SIGN OUT LOGIC HERE
   const handleSignOut = async () => {
+    const uid = auth().currentUser?.uid;
+
     try {
-      const uid = auth().currentUser?.uid;
       if (uid) {
-        await firestore().collection('users').doc(uid).update({
-          presence: 'offline',
-          lastActive: firestore.FieldValue.serverTimestamp(),
-        });
+        try {
+          await firestore().collection('users').doc(uid).update({
+            presence: 'offline',
+            lastActive: firestore.FieldValue.serverTimestamp(),
+          });
+        } catch (presenceError) {
+          console.warn('Failed to set offline presence before sign out', presenceError);
+        }
       }
+
       await signOut(auth());
       await clearUserCache(uid);
       navigation.dispatch(
