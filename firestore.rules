@@ -130,11 +130,15 @@ service cloud.firestore {
     }
 
     match /dms/{threadId}/messages/{messageId} {
-      allow read: if isSignedIn() && isThreadParticipant(threadId);
+      allow read: if isSignedIn()
+        && request.auth.uid in get(/databases/$(database)/documents/dms/$(threadId)).data.participants;
       allow create: if canWriteUgc(request.auth.uid)
-        && request.resource.data.userId == request.auth.uid;
+        && request.resource.data.userId == request.auth.uid
+        && request.auth.uid in get(/databases/$(database)/documents/dms/$(threadId)).data.participants;
       allow update, delete: if canWriteUgc(request.auth.uid)
-        && isOwnerOrModerator(resource.data.userId);
+        && (resource.data.userId == request.auth.uid
+          || isModerator(request.auth.uid))
+        && request.auth.uid in get(/databases/$(database)/documents/dms/$(threadId)).data.participants;
     }
 
     match /stories/{userId}/storyMedia/{storyId} {
