@@ -58,11 +58,11 @@ const ModerationQueueScreen = () => {
     }
     const unsub = firestore()
       .collection('reports')
+      .where('status', '==', 'open')
       .onSnapshot(
         snap => {
           const next = snap.docs
             .map(doc => ({ id: doc.id, ...(doc.data() as any) }))
-            .filter(item => !item.status || item.status === 'open')
             .sort((a, b) => {
               const left = toMillis(a.createdAt) || toMillis(a.timestamp);
               const right = toMillis(b.createdAt) || toMillis(b.timestamp);
