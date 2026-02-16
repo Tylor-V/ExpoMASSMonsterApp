@@ -117,18 +117,25 @@ function StoriesBar({ openStoriesViewer }: { openStoriesViewer: (uid: string) =>
             ...s,
           };
         }
-        firestore()
-          .collection('stories')
-          .doc(userDoc.id)
-          .collection('storyMedia')
-          .doc(storyId)
-          .delete();
-        if (s.url) {
+        if (userDoc.id === currentUserId) {
           try {
-            const ref = storage().refFromURL(s.url);
-            ref.delete();
+            await firestore()
+              .collection('stories')
+              .doc(userDoc.id)
+              .collection('storyMedia')
+              .doc(storyId)
+              .delete();
           } catch (err) {
-            console.error('Failed to delete story media', err);
+            console.error('Failed to delete expired story doc', err);
+          }
+
+          if (s.url) {
+            try {
+              const ref = storage().refFromURL(s.url);
+              await ref.delete();
+            } catch (err) {
+              console.error('Failed to delete story media', err);
+            }
           }
         }
         return null;

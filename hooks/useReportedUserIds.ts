@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { auth, firestore } from '../firebase/firebase';
+import { useCurrentUserDoc } from './useCurrentUserDoc';
 
 export function useReportedUserIds() {
   const currentUserId = auth().currentUser?.uid;
+  const currentUser = useCurrentUserDoc();
+  const isModerator = currentUser?.role === 'moderator';
   const [reportedUserIds, setReportedUserIds] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!currentUserId) {
+    if (!currentUserId || !isModerator) {
       setReportedUserIds([]);
       return;
     }
@@ -23,7 +26,7 @@ export function useReportedUserIds() {
       });
 
     return unsubscribe;
-  }, [currentUserId]);
+  }, [currentUserId, isModerator]);
 
   const reportedUserSet = useMemo(() => new Set(reportedUserIds), [reportedUserIds]);
 
