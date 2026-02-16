@@ -4,10 +4,11 @@ import {
   Inter_700Bold,
   useFonts,
 } from '@expo-google-fonts/inter';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, StackActions, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as NativeSplashScreen from 'expo-splash-screen';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import ForgotPasswordScreen from './LoginScreens/ForgotPasswordScreen';
 import LoginScreen from './LoginScreens/LoginScreen';
@@ -92,13 +93,47 @@ function AppStackScreen({ news, newsLoaded, newsOpen, setNewsOpen }) {
 
 function GuardedAppStackScreen({ news, newsLoaded, newsOpen, setNewsOpen }) {
   const { appReady, user } = useAppContext();
+  const navigation = useNavigation();
+  const hasRedirected = useRef<string | null>(null);
+
+  const targetRoute = !appReady
+    ? null
+    : !user
+      ? 'AuthStack'
+      : !hasAcceptedLatest(user)
+        ? 'AcceptanceGate'
+        : null;
+
+  useEffect(() => {
+    if (!targetRoute) {
+      hasRedirected.current = null;
+      return;
+    }
+
+    if (hasRedirected.current === targetRoute) {
+      return;
+    }
+
+    hasRedirected.current = targetRoute;
+    navigation.dispatch(StackActions.replace(targetRoute));
+  }, [navigation, targetRoute]);
 
   if (!appReady) {
-    return null;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="small" />
+        <Text style={styles.loadingText}>Loading…</Text>
+      </View>
+    );
   }
 
-  if (!user || !hasAcceptedLatest(user)) {
-    return <AcceptanceGateScreen />;
+  if (targetRoute) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="small" />
+        <Text style={styles.loadingText}>Loading…</Text>
+      </View>
+    );
   }
 
   return (
@@ -110,6 +145,19 @@ function GuardedAppStackScreen({ news, newsLoaded, newsOpen, setNewsOpen }) {
     />
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  loadingText: {
+    fontFamily: 'Inter',
+    color: '#6b7280',
+  },
+});
 
 export default function App() {
   const [fontsLoaded] = useFonts({
