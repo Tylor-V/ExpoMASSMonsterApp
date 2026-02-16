@@ -34,6 +34,7 @@ export default function SplashScreen({navigation}) {
   const hasNavigated = useRef(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const timeoutRef = useRef<NodeJS.Timeout>();
+  const authCheckedRef = useRef(false);
   const player = useVideoPlayer(splashVideo, player => {
     player.loop = false;
     player.addListener('playToEnd', () => handleFinish());
@@ -56,7 +57,7 @@ export default function SplashScreen({navigation}) {
   }, []);
 
   // When splash video ends or tap to skip, navigate accordingly
-  const handleFinish = (force = false) => {
+  const handleFinish = React.useCallback((force = false) => {
     if (!authChecked || hasNavigated.current) return;
     if (!force && isLoggedIn && !appReady) return;
     hasNavigated.current = true;
@@ -75,7 +76,12 @@ export default function SplashScreen({navigation}) {
         navigation.replace('AuthStack');
       }
     });
-  };
+  }, [appReady, authChecked, fadeAnim, isLoggedIn, navigation]);
+
+  useEffect(() => {
+    authCheckedRef.current = authChecked;
+  }, [authChecked]);
+
   useEffect(() => {
     const unsub = onAuthStateChanged(auth(), async user => {
       try {
@@ -98,13 +104,20 @@ export default function SplashScreen({navigation}) {
 
   // Fallback timeout in case auth or app data hangs
   useEffect(() => {
-    timeoutRef.current = setTimeout(() => {
+    const tryForcedFinish = () => {
+      if (hasNavigated.current) return;
+      if (!authCheckedRef.current) {
+        timeoutRef.current = setTimeout(tryForcedFinish, 250);
+        return;
+      }
       handleFinish(true);
-    }, SPLASH_TIMEOUT);
+    };
+
+    timeoutRef.current = setTimeout(tryForcedFinish, SPLASH_TIMEOUT);
     return () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, []);
+  }, [handleFinish]);
 
   // If auth and data fetching finish after the video ends, navigate automatically
   useEffect(() => {
