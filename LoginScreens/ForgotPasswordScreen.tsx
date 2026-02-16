@@ -6,6 +6,7 @@ import {
   Animated,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -78,6 +79,11 @@ const ForgotPasswordScreen: React.FC = () => {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.container}>
       <Text style={styles.header}>Forgot Password</Text>
       <Text style={styles.subtext}>
@@ -122,6 +128,7 @@ const ForgotPasswordScreen: React.FC = () => {
         <Text style={styles.linkText}>Back to Login</Text>
       </ResponsivePressable>
     </View>
+    </ScrollView>
     </KeyboardAvoidingView>
     </BackgroundWrapper>
   );
@@ -133,10 +140,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   container: {
-    flex: 1,
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   header: {
     fontSize: 28,
@@ -191,7 +202,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     fontSize: 14,
     textAlign: 'center',
-    fontWeight: '600',
     fontWeight: 'bold',
   },
 });

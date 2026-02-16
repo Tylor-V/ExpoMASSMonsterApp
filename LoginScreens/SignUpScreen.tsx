@@ -8,6 +8,7 @@ import {
   Animated,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import {useNavigation, StackActions} from '@react-navigation/native';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
@@ -169,9 +170,14 @@ const SignUpScreen: React.FC = () => {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.container}>
-      <Text style={styles.header} numberOfLines={1}>Starting your MASS lifestyle...</Text>
-      <Text style={styles.subtext} numberOfLines={1}>Create account</Text>
+      <Text style={styles.header}>Starting your MASS lifestyle...</Text>
+      <Text style={styles.subtext}>Create account</Text>
 
       <Animated.View
         style={[
@@ -290,6 +296,7 @@ const SignUpScreen: React.FC = () => {
         <Text style={styles.linkText}>Back to Login</Text>
       </ResponsivePressable>
   </View>
+  </ScrollView>
     </KeyboardAvoidingView>
     </BackgroundWrapper>
   );
@@ -301,10 +308,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   container: {
-    flex: 1,
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   header: {
     fontSize: 32,
@@ -359,7 +370,6 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
     fontSize: 14,
     textAlign: 'center',
-    fontWeight: '600',
     fontWeight: 'bold',
   },
 });

@@ -8,6 +8,7 @@ import {
   Animated,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -150,13 +151,18 @@ const LoginScreen: React.FC = () => {
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         <View style={styles.container}>
         <Image
           source={require('../assets/mass-logo.png')}
           style={styles.logo}
           contentFit="contain"
         />
-      <Text style={styles.header} numberOfLines={1}>LET'S DO IT</Text>
+      <Text style={styles.header}>LET'S DO IT</Text>
       <Animated.View
         style={[
           styles.inputWrapper,
@@ -237,6 +243,7 @@ const LoginScreen: React.FC = () => {
         </ResponsivePressable>
       </View>
       </View>
+      </ScrollView>
       </KeyboardAvoidingView>
     </BackgroundWrapper>
     );
@@ -248,10 +255,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   container: {
-    flex: 1,
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   header: {
     fontSize: 32,
@@ -304,7 +315,6 @@ const styles = StyleSheet.create({
     color: colors.accent,
     marginHorizontal: 10,
     fontSize: 14,
-    fontWeight: '600',
     fontWeight: 'bold',
   },
   logo: {
