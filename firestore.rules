@@ -10,6 +10,32 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == uid;
     }
 
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Prevent self-service role escalation at profile creation.
+    function isRoleSafeForSelfCreate() {
+      return request.resource.data.get('role', null) in [null, 'member'];
+    }
+
+    // Keep role locked for self-updates, with a one-time legacy null -> member migration.
+    function isRoleUnchangedOrDefaultMember() {
+      let currentRole = resource.data.get('role', null);
+      let nextRole = request.resource.data.get('role', null);
+      return nextRole == currentRole
+        || (currentRole == null && nextRole == 'member');
+    }
+
+    // Self cannot clear or set enforcement flags.
+    function protectedFieldsUnchanged() {
+      return request.resource.data.get('isBanned', null) == resource.data.get('isBanned', null)
+        && request.resource.data.get('ugcDisabled', null) == resource.data.get('ugcDisabled', null)
+        && request.resource.data.get('timeoutUntil', null) == resource.data.get('timeoutUntil', null)
+        && request.resource.data.get('bannedAt', null) == resource.data.get('bannedAt', null)
+        && request.resource.data.get('bannedBy', null) == resource.data.get('bannedBy', null);
+    }
+
     function isModerator(uid) {
       return isSignedIn()
         && uid != null
@@ -62,14 +88,26 @@ service cloud.firestore {
 
     match /users/{uid} {
       allow read: if isSignedIn() && (isUser(uid) || isModerator(request.auth.uid));
-      allow create: if isUser(uid) && request.resource.data.uid == uid;
-      allow update: if isUser(uid) || isModerator(request.auth.uid);
+      // Self can create only with a safe role (missing/member), never moderator/admin.
+      allow create: if isSelf(uid)
+        && request.resource.data.uid == uid
+        && isRoleSafeForSelfCreate();
+      allow update: if (isSelf(uid)
+          && protectedFieldsUnchanged()
+          && isRoleUnchangedOrDefaultMember())
+        || isModerator(request.auth.uid);
       allow delete: if isModerator(request.auth.uid);
     }
 
     match /publicUsers/{uid} {
       allow read: if isSignedIn();
-      allow create, update: if isUser(uid) || isModerator(request.auth.uid);
+      // Public role mirrors must also be locked against self-escalation.
+      allow create: if isSelf(uid)
+        && isRoleSafeForSelfCreate()
+        || isModerator(request.auth.uid);
+      allow update: if (isSelf(uid)
+          && isRoleUnchangedOrDefaultMember())
+        || isModerator(request.auth.uid);
       allow delete: if isModerator(request.auth.uid);
     }
 
