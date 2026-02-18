@@ -44,6 +44,7 @@ import {
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import { colors } from '../theme';
 import { ANIM_INSTANT, ANIM_MEDIUM } from '../utils/animations';
+import { clearUserCache } from '../utils/clearUserCache';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(Pressable);
 
@@ -442,6 +443,11 @@ const ProfileScreen = () => {
       }
 
       await signOut(auth());
+      if (uid) {
+        void clearUserCache(uid).catch(cacheError => {
+          console.warn('Failed to clear user cache on sign out', cacheError);
+        });
+      }
       setAppStatus({ user: null, points: 0, workoutHistory: [] }); // Clear context
       navigation.dispatch(
         CommonActions.reset({

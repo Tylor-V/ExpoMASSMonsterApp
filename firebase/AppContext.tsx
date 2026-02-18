@@ -85,6 +85,10 @@ export function AppContextProvider({children}) {
     const built = buildUserData(authUser, data);
     if (built?.isBanned) {
       Alert.alert('Account Disabled', 'Your account has been disabled.');
+      setUser(null);
+      setPoints(0);
+      setWorkoutHistory([]);
+      setAppReady(true);
       signOut(auth()).catch(() => {});
       return;
     }
@@ -151,6 +155,10 @@ export function AppContextProvider({children}) {
             const data = doc.data();
             if (data?.isBanned) {
               Alert.alert('Account Disabled', 'Your account has been disabled.');
+              setUser(null);
+              setPoints(0);
+              setWorkoutHistory([]);
+              setAppReady(true);
               signOut(auth()).catch(() => {});
               return;
             }
