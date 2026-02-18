@@ -8,16 +8,31 @@ export default function usePresence() {
     if (!uid) return;
 
     const userRef = firestore().collection('users').doc(uid);
+    const publicUserRef = firestore().collection('publicUsers').doc(uid);
 
-    const setOnline = () =>
-      userRef
-        .update({ presence: 'online', lastActive: Date.now() })
-        .catch(err => console.error('Failed to set online presence', err));
+    const updatePresence = async (presence: 'online' | 'offline') => {
+      const timestamp = Date.now();
+      try {
+        await userRef.update({ presence, lastActive: timestamp });
+      } catch (err) {
+        console.error(`Failed to set ${presence} presence`, err);
+        return;
+      }
 
-    const setOffline = () =>
-      userRef
-        .update({ presence: 'offline', lastActive: Date.now() })
-        .catch(err => console.error('Failed to set offline presence', err));
+      try {
+        await publicUserRef.set({ uid, lastActive: timestamp }, { merge: true });
+      } catch (err) {
+        console.warn('Failed to mirror public lastActive', err);
+      }
+    };
+
+    const setOnline = () => {
+      void updatePresence('online');
+    };
+
+    const setOffline = () => {
+      void updatePresence('offline');
+    };
 
     setOnline();
 
