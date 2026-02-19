@@ -315,18 +315,22 @@ const DMChatScreen = ({ navigation, route }) => {
     const trimmedText = text.trim();
     if (!trimmedText) return;
     const otherUid = otherUser?.uid;
+    const threadRef = firestore().collection('dms').doc(threadId);
     // Ensure thread document exists so DM inbox can list it
-    await firestore()
-      .collection('dms')
-      .doc(threadId)
-      .set(
-        {
-          participants: [currentUserId, otherUid],
-          updatedAt: firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true },
-      );
-    await firestore().collection('dms').doc(threadId).collection('messages').add({
+    try {
+      await threadRef.update({
+        updatedAt: firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (error: any) {
+      if (error?.code !== 'firestore/not-found') {
+        throw error;
+      }
+      await threadRef.set({
+        participants: [currentUserId, otherUid],
+        updatedAt: firestore.FieldValue.serverTimestamp(),
+      });
+    }
+    await threadRef.collection('messages').add({
       userId: currentUserId,
       text: trimmedText,
       timestamp: firestore.FieldValue.serverTimestamp(),

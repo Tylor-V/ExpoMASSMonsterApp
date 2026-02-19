@@ -147,20 +147,29 @@ export default function UserPreviewModal({ visible, userId, onClose, onUserBlock
       }
     }
 
-    await firestore()
-      .collection('dms')
-      .doc(threadId)
-      .set(
-        {
+    const threadRef = firestore().collection('dms').doc(threadId);
+    if (threadDoc.exists) {
+      try {
+        await threadRef.update({
+          updatedAt: firestore.FieldValue.serverTimestamp(),
+        });
+      } catch (error: any) {
+        if (error?.code !== 'firestore/not-found') {
+          throw error;
+        }
+        await threadRef.set({
           participants: [currentUserId, user.id],
           updatedAt: firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true },
-      );
+        });
+      }
+    } else {
+      await threadRef.set({
+        participants: [currentUserId, user.id],
+        updatedAt: firestore.FieldValue.serverTimestamp(),
+      });
+    }
 
-    await firestore()
-      .collection('dms')
-      .doc(threadId)
+    await threadRef
       .collection('messages')
       .add({
         userId: currentUserId,
