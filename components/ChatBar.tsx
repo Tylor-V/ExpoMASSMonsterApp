@@ -6,7 +6,6 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
-  AppState,
   Dimensions,
   InteractionManager,
   Pressable,
@@ -290,9 +289,6 @@ const ChatBar: React.FC<ChatBarProps> = ({ isActive = true, onOpenDMInbox, onOpe
   const [pinnedMessages, setPinnedMessages] = useState<any[]>([]);
   const [pinUsers, setPinUsers] = useState<Record<string, any>>({});
   const [scrollToMessageFn, setScrollToMessageFn] = useState<((id: string) => void) | null>(null);
-  const appStateRef = useRef(AppState.currentState);
-  const lastPresencePayloadRef = useRef('');
-  const lastPresenceWriteAtRef = useRef(0);
 
   const user = useCurrentUserDoc();
   const channels = useMemo(
@@ -305,89 +301,6 @@ const ChatBar: React.FC<ChatBarProps> = ({ isActive = true, onOpenDMInbox, onOpe
       setSelectedId(channels[0].id);
     }
   }, [channels, selectedId]);
-
-  useEffect(() => {
-    const uid = user?.uid;
-    if (!uid) return;
-
-    const PRESENCE_KEEPALIVE_MS = 90000;
-    const MIN_WRITE_GAP_MS = 15000;
-    let keepAliveInterval: ReturnType<typeof setInterval> | null = null;
-
-    const stopKeepAlive = () => {
-      if (keepAliveInterval) {
-        clearInterval(keepAliveInterval);
-        keepAliveInterval = null;
-      }
-    };
-
-    const writePresence = (presence: 'online' | 'offline') => {
-      const now = Date.now();
-      const payloadKey = `${presence}:${isActive ? 'visible' : 'hidden'}`;
-      if (
-        payloadKey === lastPresencePayloadRef.current &&
-        now - lastPresenceWriteAtRef.current < MIN_WRITE_GAP_MS
-      ) {
-        return;
-      }
-      lastPresencePayloadRef.current = payloadKey;
-      lastPresenceWriteAtRef.current = now;
-      const timestamp = firestore.FieldValue.serverTimestamp();
-      firestore()
-        .collection('users')
-        .doc(uid)
-        .update({
-          lastActive: timestamp,
-          presence,
-        })
-        .then(() =>
-          firestore()
-            .collection('publicUsers')
-            .doc(uid)
-            .set({ uid, lastActive: timestamp }, { merge: true }),
-        )
-        .catch(err => console.warn('Failed presence update', err));
-    };
-
-    const shouldBroadcastOnline = () => appStateRef.current === 'active' && isActive;
-
-    const startKeepAlive = () => {
-      if (!shouldBroadcastOnline()) return;
-      stopKeepAlive();
-      keepAliveInterval = setInterval(() => {
-        if (!shouldBroadcastOnline()) {
-          stopKeepAlive();
-          return;
-        }
-        writePresence('online');
-      }, PRESENCE_KEEPALIVE_MS);
-    };
-
-    if (shouldBroadcastOnline()) {
-      writePresence('online');
-      startKeepAlive();
-    } else {
-      stopKeepAlive();
-      writePresence('offline');
-    }
-
-    const appListener = AppState.addEventListener('change', state => {
-      appStateRef.current = state;
-      if (state === 'active' && isActive) {
-        writePresence('online');
-        startKeepAlive();
-      }
-      if (state.match(/inactive|background/)) {
-        stopKeepAlive();
-        writePresence('offline');
-      }
-    });
-    return () => {
-      stopKeepAlive();
-      writePresence('offline');
-      appListener.remove();
-    };
-  }, [isActive, user?.uid]);
 
   const openStoriesViewer = (uid: string) => {
     setStoryUserId(uid);
