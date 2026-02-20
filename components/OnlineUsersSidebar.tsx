@@ -29,6 +29,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const SIDEBAR_WIDTH = 300;
 const ONLINE_THRESHOLD = 10 * 60 * 1000; // 10 minutes in ms
+const RECENT_USERS_LIMIT = 300;
 
 
 function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
@@ -55,6 +56,8 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
     if (!render) return;
     const unsubscribe = firestore()
       .collection('publicUsers')
+      .orderBy('lastActive', 'desc')
+      .limit(RECENT_USERS_LIMIT)
       .onSnapshot(snap => {
         const arr = snap.docs.map(d => pickPublicUser(d.data(), d.id));
         setUsers(arr);
@@ -244,8 +247,8 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
         <SectionList
           style={{ flex: 1 }}
           sections={[
-            { title: `Online (${filteredOnline.length})`, data: filteredOnline },
-            { title: `Offline (${filteredOffline.length})`, data: filteredOffline },
+            { title: `Online now (${filteredOnline.length})`, data: filteredOnline },
+            { title: `Recently active (${filteredOffline.length})`, data: filteredOffline },
           ]}
           keyExtractor={item => item.id}
           renderItem={({ item }) => renderUser(item)}
@@ -256,8 +259,8 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
             section.data.length === 0 ? (
               <Text style={styles.emptyTxt}>
                 {section.title.startsWith('Online')
-                  ? 'No users online.'
-                  : 'No users offline.'}
+                  ? 'No one is online right now in this recent set.'
+                  : 'No recently active users found in this set.'}
               </Text>
             ) : null
           }
@@ -299,7 +302,7 @@ function OnlineUsersSidebar({ visible, onClose, currentUserId }) {
             filteredOnline.length === 0 &&
             filteredOffline.length === 0 &&
             !!term ? (
-              <Text style={styles.noUsersTxt}>No users found</Text>
+              <Text style={styles.noUsersTxt}>No matching users in this recent set</Text>
             ) : null
           }
           showsVerticalScrollIndicator={false}
