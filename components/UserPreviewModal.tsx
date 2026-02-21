@@ -162,7 +162,8 @@ export default function UserPreviewModal({ visible, userId, onClose, onUserBlock
   const badgeList = enforceSelectedBadges(selectedBadges.length ? selectedBadges : allBadges, user);
 
   const sendMessage = async () => {
-    if (!currentUserId || !message.trim()) return;
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) return;
 
     const otherUid = user?.id;
     if (!currentUserId || !otherUid || otherUid === currentUserId) {
@@ -197,7 +198,7 @@ export default function UserPreviewModal({ visible, userId, onClose, onUserBlock
       .collection('messages')
       .add({
         userId: currentUserId,
-        text: message.trim(),
+        text: trimmedMessage,
         timestamp: firestore.FieldValue.serverTimestamp(),
         reactions: [],
         mediaUrl: '',

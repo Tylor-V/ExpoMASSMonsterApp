@@ -273,7 +273,6 @@ const DMsInboxScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
 
   const openUser = async (user: any) => {
-    if (!currentUserId) return;
     const otherUid = user?.id;
     if (!currentUserId || !otherUid || otherUid === currentUserId) {
       Alert.alert('Unable to start DM', 'Please try again.');
