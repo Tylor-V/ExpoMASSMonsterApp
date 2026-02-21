@@ -41,6 +41,31 @@ const DMsInboxScreen = ({ navigation }) => {
   const searchTerm = search.trim();
   const term = searchTerm.toLowerCase();
 
+  const toMillis = (value: any) => {
+    if (typeof value?.toMillis === 'function') return value.toMillis();
+    return typeof value === 'number' ? value : 0;
+  };
+
+  const resolveThreadId = useCallback(async (otherUserId: string) => {
+    const idA = `${currentUserId}_${otherUserId}`;
+    const idB = `${otherUserId}_${currentUserId}`;
+    const [docA, docB] = await Promise.all([
+      firestore().collection('dms').doc(idA).get(),
+      firestore().collection('dms').doc(idB).get(),
+    ]);
+
+    if (docA.exists && docB.exists) {
+      const aData = docA.data() || {};
+      const bData = docB.data() || {};
+      const aTs = toMillis(aData.updatedAt) || toMillis(aData.createdAt);
+      const bTs = toMillis(bData.updatedAt) || toMillis(bData.createdAt);
+      return aTs >= bTs ? idA : idB;
+    }
+    if (docA.exists) return idA;
+    if (docB.exists) return idB;
+    return idA;
+  }, [currentUserId]);
+
   const buildThreads = useCallback(async (threadDocs) => {
     const hydrated = await Promise.all(threadDocs.map(async doc => {
       try {
@@ -124,7 +149,34 @@ const DMsInboxScreen = ({ navigation }) => {
         return null;
       }
     }));
-    return hydrated.filter(Boolean).sort((a, b) => b.updatedAt - a.updatedAt);
+    const dedupedByPair = new Map<string, any>();
+    hydrated.filter(Boolean).forEach((thread: any) => {
+      const uidA = String(currentUserId || '');
+      const uidB = String(thread?.otherUser?.uid || '');
+      const pairKey = uidA && uidB ? [uidA, uidB].sort().join('_') : thread.threadId;
+      const existing = dedupedByPair.get(pairKey);
+      if (!existing) {
+        dedupedByPair.set(pairKey, thread);
+        return;
+      }
+
+      const existingUpdated = Number(existing.updatedAt || 0);
+      const candidateUpdated = Number(thread.updatedAt || 0);
+      if (candidateUpdated !== existingUpdated) {
+        if (candidateUpdated > existingUpdated) {
+          dedupedByPair.set(pairKey, thread);
+        }
+        return;
+      }
+
+      const existingScore = (existing.otherUser?.uid ? 1 : 0) + (existing.lastMsg?.text ? 1 : 0);
+      const candidateScore = (thread.otherUser?.uid ? 1 : 0) + (thread.lastMsg?.text ? 1 : 0);
+      if (candidateScore > existingScore) {
+        dedupedByPair.set(pairKey, thread);
+      }
+    });
+
+    return Array.from(dedupedByPair.values()).sort((a, b) => b.updatedAt - a.updatedAt);
   }, [currentUserId]);
 
   useEffect(() => {
@@ -221,25 +273,16 @@ const DMsInboxScreen = ({ navigation }) => {
 
   const openUser = async (user: any) => {
     if (!currentUserId) return;
-    const idA = `${currentUserId}_${user.id}`;
-    const idB = `${user.id}_${currentUserId}`;
-    let threadId = idA;
-    let doc = await firestore().collection('dms').doc(idA).get();
-    if (!doc.exists) {
-      doc = await firestore().collection('dms').doc(idB).get();
-      if (doc.exists) {
-        threadId = idB;
-      }
-    }
+    const threadId = await resolveThreadId(user.id);
+    const doc = await firestore().collection('dms').doc(threadId).get();
     if (!doc.exists) {
       await firestore()
         .collection('dms')
-        .doc(idA)
+        .doc(threadId)
         .set({
           participants: [currentUserId, user.id],
           updatedAt: firestore.FieldValue.serverTimestamp(),
         });
-      threadId = idA;
     }
     requestAnimationFrame(() =>
       navigation.navigate('DMChat', {

@@ -61,6 +61,34 @@ function buildSocialUrl(platform: string, handle: string) {
 }
 
 const ONLINE_THRESHOLD = 10 * 60 * 1000;
+const toMillis = (value: any) => {
+  if (typeof value?.toMillis === 'function') return value.toMillis();
+  return typeof value === 'number' ? value : 0;
+};
+
+const resolveThreadId = async (currentUserId: string, otherUserId: string) => {
+  const idA = `${currentUserId}_${otherUserId}`;
+  const idB = `${otherUserId}_${currentUserId}`;
+  const [docA, docB] = await Promise.all([
+    firestore().collection('dms').doc(idA).get(),
+    firestore().collection('dms').doc(idB).get(),
+  ]);
+
+  if (docA.exists && docB.exists) {
+    const aData = docA.data() || {};
+    const bData = docB.data() || {};
+    const aTs = toMillis(aData.updatedAt) || toMillis(aData.createdAt);
+    const bTs = toMillis(bData.updatedAt) || toMillis(bData.createdAt);
+    return {
+      threadId: aTs >= bTs ? idA : idB,
+      docExists: true,
+    };
+  }
+
+  if (docA.exists) return { threadId: idA, docExists: true };
+  if (docB.exists) return { threadId: idB, docExists: true };
+  return { threadId: idA, docExists: false };
+};
 
 export default function UserPreviewModal({ visible, userId, onClose, onUserBlocked, onUserReported }) {
   const [user, setUser] = useState<any>(null);
@@ -136,19 +164,10 @@ export default function UserPreviewModal({ visible, userId, onClose, onUserBlock
   const sendMessage = async () => {
     if (!currentUserId || !message.trim()) return;
 
-    const idA = `${currentUserId}_${user.id}`;
-    const idB = `${user.id}_${currentUserId}`;
-    let threadDoc = await firestore().collection('dms').doc(idA).get();
-    let threadId = idA;
-    if (!threadDoc.exists) {
-      threadDoc = await firestore().collection('dms').doc(idB).get();
-      if (threadDoc.exists) {
-        threadId = idB;
-      }
-    }
+    const { threadId, docExists } = await resolveThreadId(currentUserId, user.id);
 
     const threadRef = firestore().collection('dms').doc(threadId);
-    if (threadDoc.exists) {
+    if (docExists) {
       try {
         await threadRef.update({
           updatedAt: firestore.FieldValue.serverTimestamp(),
