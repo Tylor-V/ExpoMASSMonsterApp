@@ -325,6 +325,10 @@ const DMChatScreen = ({ navigation, route }) => {
       if (error?.code !== 'firestore/not-found') {
         throw error;
       }
+      if (!currentUserId || !otherUid || otherUid === currentUserId) {
+        Alert.alert('Unable to start DM', 'Please try again.');
+        return;
+      }
       await threadRef.set({
         participants: [currentUserId, otherUid],
         updatedAt: firestore.FieldValue.serverTimestamp(),

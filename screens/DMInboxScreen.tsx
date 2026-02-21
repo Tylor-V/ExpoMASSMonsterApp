@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -273,38 +274,19 @@ const DMsInboxScreen = ({ navigation }) => {
 
   const openUser = async (user: any) => {
     if (!currentUserId) return;
-<<<<<<< ours
-<<<<<<< ours
-<<<<<<< ours
-    const threadId = await resolveThreadId(user.id);
-    const doc = await firestore().collection('dms').doc(threadId).get();
-=======
     const otherUid = user?.id;
     if (!currentUserId || !otherUid || otherUid === currentUserId) {
       Alert.alert('Unable to start DM', 'Please try again.');
       return;
     }
-=======
->>>>>>> theirs
-=======
->>>>>>> theirs
-    const idA = `${currentUserId}_${user.id}`;
-    const idB = `${user.id}_${currentUserId}`;
-    let threadId = idA;
-    let doc = await firestore().collection('dms').doc(idA).get();
-    if (!doc.exists) {
-      doc = await firestore().collection('dms').doc(idB).get();
-      if (doc.exists) {
-        threadId = idB;
-      }
-    }
->>>>>>> theirs
+    const threadId = await resolveThreadId(otherUid);
+    const doc = await firestore().collection('dms').doc(threadId).get();
     if (!doc.exists) {
       await firestore()
         .collection('dms')
         .doc(threadId)
         .set({
-          participants: [currentUserId, user.id],
+          participants: [currentUserId, otherUid],
           updatedAt: firestore.FieldValue.serverTimestamp(),
         });
     }
@@ -312,7 +294,7 @@ const DMsInboxScreen = ({ navigation }) => {
       navigation.navigate('DMChat', {
         threadId,
         otherUser: {
-          uid: user.id,
+          uid: otherUid,
           firstName: user.firstName,
           lastName: user.lastName,
           profilePicUrl: user.profilePicUrl,
