@@ -164,7 +164,30 @@ export default function UserPreviewModal({ visible, userId, onClose, onUserBlock
   const sendMessage = async () => {
     if (!currentUserId || !message.trim()) return;
 
+<<<<<<< ours
+<<<<<<< ours
+<<<<<<< ours
     const { threadId, docExists } = await resolveThreadId(currentUserId, user.id);
+=======
+    const idA = `${currentUserId}_${otherUid}`;
+    const idB = `${otherUid}_${currentUserId}`;
+=======
+    const idA = `${currentUserId}_${user.id}`;
+    const idB = `${user.id}_${currentUserId}`;
+>>>>>>> theirs
+=======
+    const idA = `${currentUserId}_${user.id}`;
+    const idB = `${user.id}_${currentUserId}`;
+>>>>>>> theirs
+    let threadDoc = await firestore().collection('dms').doc(idA).get();
+    let threadId = idA;
+    if (!threadDoc.exists) {
+      threadDoc = await firestore().collection('dms').doc(idB).get();
+      if (threadDoc.exists) {
+        threadId = idB;
+      }
+    }
+>>>>>>> theirs
 
     const threadRef = firestore().collection('dms').doc(threadId);
     if (docExists) {
