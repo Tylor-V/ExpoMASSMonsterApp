@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import * as WebBrowser from 'expo-web-browser';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -9,7 +8,6 @@ import {
   Dimensions,
   FlatList,
   LayoutChangeEvent,
-  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -30,6 +28,7 @@ import { TAB_BAR_HEIGHT } from '../components/SwipeableTabs';
 import { addToCart as addCartItem } from '../firebase/cartHelpers';
 import { useCart } from '../hooks/useCart';
 import { createShopifyCheckout, useShopifyCollections, useShopifyProducts } from '../hooks/useShopify';
+import { openCheckoutUrl } from '../src/lib/shopify/openCheckoutUrl';
 import { colors, fonts, radius } from '../theme';
 import {
   ANIM_BUTTON_POP,
@@ -616,16 +615,7 @@ function StoreScreen({ navigation }) {
       return;
     }
     try {
-      const supported = await Linking.canOpenURL(url);
-      if (supported) {
-        try {
-          await Linking.openURL(url);
-        } catch {
-          await WebBrowser.openBrowserAsync(url);
-        }
-      } else {
-        await WebBrowser.openBrowserAsync(url);
-      }
+      await openCheckoutUrl(url);
     } catch (err) {
       Alert.alert('Checkout failed', 'Could not open checkout. Please try again.');
       console.error('Failed to open Shopify checkout URL', err);
