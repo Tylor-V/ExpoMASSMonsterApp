@@ -25,7 +25,6 @@ import ProductImage from '../components/ProductImage';
 import RatingRow from '../components/RatingRow';
 import RollingNumber from '../components/RollingNumber';
 import { TAB_BAR_HEIGHT } from '../components/SwipeableTabs';
-import { addToCart as addCartItem } from '../firebase/cartHelpers';
 import { useCart } from '../hooks/useCart';
 import { createShopifyCheckout, useShopifyCollections, useShopifyProducts } from '../hooks/useShopify';
 import { openCheckoutUrl } from '../src/lib/shopify/openCheckoutUrl';
@@ -61,6 +60,17 @@ const getPriceValue = (item: any) => {
   const value = typeof amount === 'number' ? amount : Number(amount);
   return Number.isFinite(value) ? value : null;
 };
+
+
+const buildCartControlItem = (item: any) => ({
+  id: item.id,
+  title: getProductTitle(item),
+  price: getPriceValue(item) ?? 0,
+  image: item.images?.[0],
+  quantity: 1,
+  variantId: item.variantId,
+  variantTitle: item.variantTitle,
+});
 
 const isPurchasableItem = (item: any) => {
   const priceValue = getPriceValue(item);
@@ -370,25 +380,7 @@ function StoreScreen({ navigation }) {
     ]).start();
   }, [cartQuantity, cartAnim, dotAnim]);
 
-  const addToCart = async (item: any) => {
-    if (!isPurchasableItem(item)) {
-      Alert.alert('Unavailable', 'This item is currently unavailable.');
-      return;
-    }
-    try {
-      await addCartItem({
-        id: item.id,
-        title: getProductTitle(item),
-        price: getPriceValue(item) ?? 0,
-        image: item.images?.[0],
-        quantity: 1,
-        variantId: item.variantId, // <-- add this
-        variantTitle: item.variantTitle, // optional
-      });
-    } catch (err) {
-      console.error('Failed to add item to cart', err);
-    }
-  };
+
 
   const nextImg = () => {
     if (!modalItem) return;
@@ -566,15 +558,7 @@ function StoreScreen({ navigation }) {
             </Text>
             <CategoryIconRow ratings={ratings} />
             <AddToCartControl
-              item={{
-                id: item.id,
-                title: itemTitle,
-                price: priceValue ?? 0,
-                image: item.images?.[0],
-                quantity: 1,
-                variantId: item.variantId, // <-- add this
-                variantTitle: item.variantTitle, // optional
-              }}
+              item={buildCartControlItem(item)}
               style={styles.addControl}
               disabled={!isPurchasable}
             />
@@ -796,26 +780,17 @@ function StoreScreen({ navigation }) {
                 )}
                 <ProductDescriptionTabs description={modalItem.description ?? ''} />
               </ScrollView>
-              <Pressable
+              <View
                 style={[
                   styles.modalAdd,
                   !modalPurchasable && styles.modalAddDisabled,
                 ]}
-                onPress={() => {
-                  if (!modalPurchasable) return;
-                  addToCart({
-                    ...modalItem,
-                    variantId: modalItem.variantId,
-                    variantTitle: modalItem.variantTitle,
-                  });
-                  closeModal();
-                }}
-                disabled={!modalPurchasable}
               >
-                <Text style={styles.modalAddText}>
-                  {modalPurchasable ? 'Add to Cart' : 'Unavailable'}
-                </Text>
-              </Pressable>
+                <AddToCartControl
+                  item={buildCartControlItem(modalItem)}
+                  disabled={!modalPurchasable}
+                />
+              </View>
             </Animated.View>
           )}
         </Animated.View>

@@ -12,7 +12,7 @@ import {
 import { colors, fonts } from '../theme';
 import useCarousel from '../hooks/useCarousel';
 import CarouselNavigator from './CarouselNavigator';
-import AddCartButton from './AddCartButton';
+import AddToCartControl from './AddToCartControl';
 import ProductImage from './ProductImage';
 
 const { width } = Dimensions.get('window');
@@ -48,7 +48,7 @@ const FeaturedCard = memo(({ item, onSelect }: CardProps) => {
           </Text>
         </View>
       </Pressable>
-      <AddCartButton
+      <AddToCartControl
         item={{
           id: item.id,
           title: item.title,

@@ -15,7 +15,12 @@ type AddToCartControlProps = {
 function AddToCartControl({ item, disabled = false, style }: AddToCartControlProps) {
   const { items, setItems } = useCart();
   const sanitizedId = useMemo(() => sanitizeId(item.id), [item.id]);
-  const quantity = items.find(i => i.id === sanitizedId)?.quantity || 0;
+  const existingCartItem = useMemo(
+    () => items.find(i => i.id === sanitizedId || i.id === item.id),
+    [item.id, items, sanitizedId],
+  );
+  const cartDocId = existingCartItem?.id ?? sanitizedId;
+  const quantity = existingCartItem?.quantity || 0;
   const [localQty, setLocalQty] = useState(quantity);
 
   const fadeAnim = useRef(new Animated.Value(quantity > 0 ? 1 : 0)).current;
@@ -55,13 +60,16 @@ function AddToCartControl({ item, disabled = false, style }: AddToCartControlPro
     if (disabled) return;
     bounce(rightScale);
     const newQty = localQty + 1;
+    const previousItems = items;
     setLocalQty(newQty);
     setItems(prev =>
-      prev.map(i => (i.id === sanitizedId ? { ...i, quantity: newQty } : i)),
+      prev.map(i => (i.id === cartDocId ? { ...i, quantity: newQty } : i)),
     );
     try {
-      await updateCartItem(item.id, newQty);
+      await updateCartItem(cartDocId, newQty);
     } catch (err) {
+      setLocalQty(quantity);
+      setItems(previousItems);
       console.error('Failed to update cart item', err);
     }
   };
@@ -70,23 +78,28 @@ function AddToCartControl({ item, disabled = false, style }: AddToCartControlPro
     if (e?.stopPropagation) e.stopPropagation();
     bounce(leftScale);
     const newQty = localQty - 1;
+    const previousItems = items;
     setLocalQty(newQty);
     setItems(prev => {
       const mapped = prev.map(i =>
-        i.id === sanitizedId ? { ...i, quantity: newQty } : i,
+        i.id === cartDocId ? { ...i, quantity: newQty } : i,
       );
       return newQty <= 0 ? mapped.filter(i => i.quantity > 0) : mapped;
     });
     if (newQty <= 0) {
       try {
-        await removeCartItem(item.id);
+        await removeCartItem(cartDocId);
       } catch (err) {
+        setLocalQty(quantity);
+        setItems(previousItems);
         console.error('Failed to remove cart item', err);
       }
     } else {
       try {
-        await updateCartItem(item.id, newQty);
+        await updateCartItem(cartDocId, newQty);
       } catch (err) {
+        setLocalQty(quantity);
+        setItems(previousItems);
         console.error('Failed to update cart item', err);
       }
     }

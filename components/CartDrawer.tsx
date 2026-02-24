@@ -87,6 +87,8 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
   const panResponder = React.useMemo(
     () =>
       PanResponder.create({
+        onStartShouldSetPanResponder: () => visible,
+        onStartShouldSetPanResponderCapture: () => visible,
         onMoveShouldSetPanResponder: (_, gestureState) =>
           visible && gestureState.dy > 6 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
         onPanResponderGrant: () => {
@@ -95,13 +97,18 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
           overlayOpacity.stopAnimation();
         },
         onPanResponderMove: (_, gestureState) => {
+          if (gestureState.dy <= 0) {
+            slideAnim.setValue(0);
+            overlayOpacity.setValue(1);
+            return;
+          }
           const clampedDy = Math.max(0, Math.min(gestureState.dy, collapsedOffset));
           slideAnim.setValue(clampedDy);
           overlayOpacity.setValue(Math.max(0, 1 - clampedDy / collapsedOffset));
         },
         onPanResponderRelease: (_, gestureState) => {
           isDraggingRef.current = false;
-          if (gestureState.dy > collapsedOffset * 0.35 || gestureState.vy > 0.8) {
+          if (gestureState.dy > collapsedOffset * 0.25 || gestureState.vy > 0.7) {
             onClose();
             return;
           }
@@ -286,15 +293,17 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
           { height: cardHeight, transform: [{ translateY: slideAnim }] },
         ]}
       >
-        <View style={styles.dragHandleWrap} {...panResponder.panHandlers}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={onClose}
-            hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
-            style={styles.dragBar}
-          />
+        <View style={styles.header} {...panResponder.panHandlers}>
+          <View style={styles.dragHandleWrap}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={onClose}
+              hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
+              style={styles.dragBar}
+            />
+          </View>
+          <Text style={styles.title}>Your Cart</Text>
         </View>
-        <Text style={styles.title}>Your Cart</Text>
         <View style={{ flex: 1 }}>
           <ScrollView
             contentContainerStyle={{ paddingBottom: 24, flexGrow: 1 }}
@@ -444,6 +453,9 @@ const styles = StyleSheet.create({
   dragHandleWrap: {
     alignItems: 'center',
     paddingTop: 4,
+    paddingBottom: 4,
+  },
+  header: {
     paddingBottom: 4,
   },
   title: {
