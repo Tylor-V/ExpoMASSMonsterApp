@@ -54,7 +54,6 @@ const LoginScreen: React.FC = () => {
     }
 
     const sanitizedEmail = email.trim().toLowerCase();
-    const sanitizedPassword = password.trim();
     const previousUid = auth().currentUser?.uid;
     setLoading(true);
 
@@ -62,7 +61,7 @@ const LoginScreen: React.FC = () => {
       await signInWithEmailAndPassword(
         auth(),
         sanitizedEmail,
-        sanitizedPassword,
+        password,
       );
     } catch (error: any) {
       if (error.code === 'auth/user-not-found') {
@@ -72,8 +71,17 @@ const LoginScreen: React.FC = () => {
         );
       } else if (error.code === 'auth/wrong-password') {
         Alert.alert('Wrong password', 'That password is incorrect.');
+      } else if (error.code === 'auth/too-many-requests') {
+        Alert.alert(
+          'Too many attempts',
+          'Too many attempts. Try again later or reset password.',
+        );
+      } else if (error.code === 'auth/network-request-failed') {
+        Alert.alert('Network error', 'Network error. Check connection and try again.');
+      } else if (error.code === 'auth/invalid-email') {
+        Alert.alert('Invalid email', 'Invalid email format.');
       } else {
-        Alert.alert('Login failed', error.message);
+        Alert.alert('Login failed', `Please try again. Details: ${error.code || 'unknown-error'}`);
       }
       if (isMountedRef.current) {
         setLoading(false);
@@ -176,7 +184,11 @@ const LoginScreen: React.FC = () => {
           placeholder="Email"
           placeholderTextColor={colors.background}
           autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
           keyboardType="email-address"
+          textContentType="username"
+          autoComplete="email"
           value={email}
           onChangeText={setEmail}
           onFocus={() => {
@@ -202,6 +214,11 @@ const LoginScreen: React.FC = () => {
           placeholder="Password"
           placeholderTextColor={colors.background}
           secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          textContentType="password"
+          autoComplete="password"
           value={password}
           onChangeText={setPassword}
           onFocus={() => {

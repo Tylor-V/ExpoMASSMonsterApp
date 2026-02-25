@@ -12,7 +12,7 @@ const SettingsScreen = () => {
   const { goBack, handleNavigate } = useSettingsNavigation();
   const insets = useSafeAreaInsets();
   const { user } = useAppContext();
-  const isModerator = user?.role === 'moderator';
+  const isModerator = user?.role === 'moderator' || user?.role === 'admin';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>

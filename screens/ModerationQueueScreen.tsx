@@ -44,7 +44,7 @@ const ModerationQueueScreen = () => {
   const navigation = useNavigation<any>();
   const { user } = useAppContext();
   const currentUserId = user?.uid;
-  const isModerator = user?.role === 'moderator';
+  const isModerator = user?.role === 'moderator' || user?.role === 'admin';
 
   const [loading, setLoading] = useState(true);
   const [reports, setReports] = useState<ReportItem[]>([]);

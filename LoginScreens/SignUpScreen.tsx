@@ -43,10 +43,9 @@ const SignUpScreen: React.FC = () => {
     const sanitizedEmail = email.trim().toLowerCase();
     const sanitizedFirst = firstName.trim();
     const sanitizedLast = lastName.trim();
-    const sanitizedPassword = password.trim();
     const previousUid = auth().currentUser?.uid;
 
-    if (!sanitizedEmail || !sanitizedPassword || !sanitizedFirst || !sanitizedLast) {
+    if (!sanitizedEmail || !password || !sanitizedFirst || !sanitizedLast) {
       Alert.alert('Error', 'Please enter all fields.');
       return;
     }
@@ -54,7 +53,7 @@ const SignUpScreen: React.FC = () => {
       const userCredential = await createUserWithEmailAndPassword(
         auth(),
         sanitizedEmail,
-        sanitizedPassword,
+        password,
       );
       await clearUserCache(previousUid);
 
@@ -118,13 +117,20 @@ const SignUpScreen: React.FC = () => {
         Alert.alert('Email in use', 'That email address is already in use!');
       } else if (error.code === 'auth/invalid-email') {
         Alert.alert('Invalid email', 'That email address is invalid!');
+      } else if (error.code === 'auth/too-many-requests') {
+        Alert.alert(
+          'Too many attempts',
+          'Too many attempts. Try again later or reset password.',
+        );
+      } else if (error.code === 'auth/network-request-failed') {
+        Alert.alert('Network error', 'Network error. Check connection and try again.');
       } else if (error.code === 'auth/weak-password') {
         Alert.alert(
           'Weak password',
           'Password should be at least 6 characters.',
         );
       } else {
-        Alert.alert('Sign Up failed', error.message);
+        Alert.alert('Sign Up failed', `Please try again. Details: ${error.code || 'unknown-error'}`);
       }
     }
   };
@@ -242,7 +248,11 @@ const SignUpScreen: React.FC = () => {
           placeholder="Email"
           placeholderTextColor={colors.background}
           autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
           keyboardType="email-address"
+          textContentType="username"
+          autoComplete="email"
           value={email}
           onChangeText={setEmail}
           onFocus={() => {
@@ -269,6 +279,11 @@ const SignUpScreen: React.FC = () => {
           placeholder="Password"
           placeholderTextColor={colors.background}
           secureTextEntry
+          autoCapitalize="none"
+          autoCorrect={false}
+          spellCheck={false}
+          textContentType="password"
+          autoComplete="password"
           value={password}
           onChangeText={setPassword}
           onFocus={() => {
