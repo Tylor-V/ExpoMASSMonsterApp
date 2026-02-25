@@ -24,6 +24,7 @@ const routes = [
 
 const MainAppScreen = ({ navigation, news, newsLoaded, newsOpen, setNewsOpen }) => {
   const [tabIndex, setTabIndex] = useState(1); // Start on Calendar tab
+  const [swipeEnabled, setSwipeEnabled] = useState(true);
   // -- NEW STATE --
   const [isCourseOpen, setIsCourseOpen] = useState(false);
 
@@ -71,8 +72,8 @@ const MainAppScreen = ({ navigation, news, newsLoaded, newsOpen, setNewsOpen }) 
 
   const ProfileScene = useCallback(() => <ProfileScreen />, []);
   const StoreScene = useCallback(
-    () => <StoreScreen navigation={navigation} />,
-    [navigation],
+    () => <StoreScreen navigation={navigation} setTabSwipeEnabled={setSwipeEnabled} />,
+    [navigation, setSwipeEnabled],
   );
   const CalendarScene = useCallback(
     () => (
@@ -108,6 +109,7 @@ const MainAppScreen = ({ navigation, news, newsLoaded, newsOpen, setNewsOpen }) 
           activeTintColor="#FFCC00"
           inactiveTintColor="#aaa"
           tabBarVisible={!isCourseOpen}
+          swipeEnabled={swipeEnabled}
         />
 
         {/* NEWS MODAL */}

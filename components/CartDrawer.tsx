@@ -87,10 +87,12 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
   const panResponder = React.useMemo(
     () =>
       PanResponder.create({
-        onStartShouldSetPanResponder: () => visible,
-        onStartShouldSetPanResponderCapture: () => visible,
+        onStartShouldSetPanResponder: () => false,
+        onStartShouldSetPanResponderCapture: () => false,
         onMoveShouldSetPanResponder: (_, gestureState) =>
-          visible && gestureState.dy > 6 && Math.abs(gestureState.dy) > Math.abs(gestureState.dx),
+          visible &&
+          gestureState.dy > 10 &&
+          Math.abs(gestureState.dy) > Math.abs(gestureState.dx) * 1.5,
         onPanResponderGrant: () => {
           isDraggingRef.current = true;
           slideAnim.stopAnimation();
@@ -293,12 +295,12 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
           { height: cardHeight, transform: [{ translateY: slideAnim }] },
         ]}
       >
-        <View style={styles.header} {...panResponder.panHandlers}>
-          <View style={styles.dragHandleWrap}>
+        <View style={styles.header}>
+          <View style={styles.dragHandleWrap} {...panResponder.panHandlers}>
             <Pressable
               accessibilityRole="button"
               onPress={onClose}
-              hitSlop={{ top: 12, bottom: 12, left: 16, right: 16 }}
+              hitSlop={{ top: 16, bottom: 16, left: 24, right: 24 }}
               style={styles.dragBar}
             />
           </View>

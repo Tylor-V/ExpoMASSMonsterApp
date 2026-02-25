@@ -47,6 +47,7 @@ interface SwipeableTabsProps {
   inactiveTintColor?: string;
   tabBarVisible?: boolean;
   animationEnabled?: boolean;
+  swipeEnabled?: boolean;
 }
 
 const AnimatedIcon = Animated.createAnimatedComponent(Icon);
@@ -107,6 +108,7 @@ export default function SwipeableTabs({
   inactiveTintColor = '#000',
   tabBarVisible = true,
   animationEnabled = false,
+  swipeEnabled = true,
 }: SwipeableTabsProps) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -176,6 +178,7 @@ export default function SwipeableTabs({
         data={routes}
         horizontal
         pagingEnabled
+        scrollEnabled={swipeEnabled}
         showsHorizontalScrollIndicator={false}
         renderItem={({ item }) => (
           <View style={{ width, flex: 1 }}>{renderScene(item)}</View>

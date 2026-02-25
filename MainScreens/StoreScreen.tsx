@@ -265,7 +265,12 @@ const CategoryIconRow = React.memo(({ ratings }: { ratings: CategoryRatings }) =
   );
 });
 
-function StoreScreen({ navigation }) {
+type StoreScreenProps = {
+  navigation: any;
+  setTabSwipeEnabled?: (enabled: boolean) => void;
+};
+
+function StoreScreen({ navigation, setTabSwipeEnabled }: StoreScreenProps) {
   const {
     collections,
     loading: loadingCollections,
@@ -324,6 +329,12 @@ function StoreScreen({ navigation }) {
   const slideAnim = useRef(new Animated.Value(drawerHeight)).current;
   const [imgIndex, setImgIndex] = useState(0);
   const [cartOpen, setCartOpen] = useState(false);
+
+  useEffect(() => {
+    setTabSwipeEnabled?.(!(cartOpen || renderModal));
+  }, [cartOpen, renderModal, setTabSwipeEnabled]);
+
+  useEffect(() => () => setTabSwipeEnabled?.(true), [setTabSwipeEnabled]);
   const pendingModalTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const modalRatings = useMemo(
     () => parseCategoryRatings(modalItem?.description),
@@ -1094,8 +1105,7 @@ const styles = StyleSheet.create({
   modalPriceUnavailable: {
     color: colors.gray,
   },
-  // Allow more room for longer product descriptions
-  modalDescScroll: { maxHeight: 260, marginHorizontal: 12, marginBottom: 0 },
+  modalDescScroll: { flex: 1, minHeight: 0, marginHorizontal: 12, marginBottom: 0 },
   modalRatings: { marginBottom: 8 },
   modalAdd: {
     backgroundColor: colors.gold,
