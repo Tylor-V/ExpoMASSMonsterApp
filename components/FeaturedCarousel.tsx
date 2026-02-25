@@ -37,28 +37,32 @@ const FeaturedCard = memo(({ item, onSelect }: CardProps) => {
 
   return (
     <View style={styles.card}>
-      <Pressable style={styles.touch} onPress={() => onSelect(item)}>
-        <ProductImage uri={imageUrl} style={styles.image} contentFit="cover" />
-        <View style={styles.body}>
-          <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
-            {item.title}
-          </Text>
-          <Text style={styles.price}>
-            ${parseFloat(item.priceRange?.minVariantPrice.amount || '0').toFixed(2)}
-          </Text>
+      <View style={styles.cardInner}>
+        <Pressable style={styles.touch} onPress={() => onSelect(item)}>
+          <ProductImage uri={imageUrl} style={styles.image} contentFit="cover" />
+          <View style={styles.body}>
+            <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
+              {item.title}
+            </Text>
+            <Text style={styles.price}>
+              ${parseFloat(item.priceRange?.minVariantPrice.amount || '0').toFixed(2)}
+            </Text>
+          </View>
+        </Pressable>
+        <View style={styles.footer}>
+          <AddToCartControl
+            item={{
+              id: item.id,
+              title: item.title,
+              price: parseFloat(item.priceRange?.minVariantPrice.amount || '0'),
+              image: item.images?.[0],
+              quantity: 1,
+              variantId: item.variantId,
+              variantTitle: item.variantTitle,
+            }}
+          />
         </View>
-      </Pressable>
-      <AddToCartControl
-        item={{
-          id: item.id,
-          title: item.title,
-          price: parseFloat(item.priceRange?.minVariantPrice.amount || '0'),
-          image: item.images?.[0],
-          quantity: 1,
-          variantId: item.variantId,
-          variantTitle: item.variantTitle,
-        }}
-      />
+      </View>
     </View>
   );
 });
@@ -145,6 +149,10 @@ const styles = StyleSheet.create({
     shadowRadius: 24,
     shadowOffset: { width: 0, height: 6 },
   },
+  cardInner: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
   touch: { flex: 1 },
   image: {
     width: '100%',
@@ -158,6 +166,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 12,
+  },
+  footer: {
+    paddingTop: 8,
+    paddingBottom: 10,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   title: {
     fontFamily: fonts.semiBold,

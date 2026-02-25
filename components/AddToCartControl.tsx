@@ -117,8 +117,8 @@ function AddToCartControl({ item, disabled = false, style }: AddToCartControlPro
     }
   };
 
-  const circleWidth = localQty >= 10 ? 40 : 30;
-  const containerWidth = circleWidth + 56;
+  const circleWidth = 40;
+  const containerWidth = 96;
 
   const inCart = localQty > 0;
   const disableIncrement = disabled;
@@ -137,7 +137,11 @@ function AddToCartControl({ item, disabled = false, style }: AddToCartControlPro
         pointerEvents={inCart ? 'auto' : 'none'}
         style={{ transform: [{ scale: leftScale }], opacity: fadeAnim }}
       >
-        <Pressable onPress={handleRemove} hitSlop={6} style={styles.btn}>
+        <Pressable
+          onPress={handleRemove}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={styles.btn}
+        >
           <Ionicons
             name={localQty <= 1 ? 'trash' : 'remove'}
             size={20}
@@ -177,7 +181,11 @@ function AddToCartControl({ item, disabled = false, style }: AddToCartControlPro
         pointerEvents={inCart && !disableIncrement ? 'auto' : 'none'}
         style={{ transform: [{ scale: rightScale }], opacity: fadeAnim }}
       >
-        <Pressable onPress={handleAdd} hitSlop={6} style={styles.btn}>
+        <Pressable
+          onPress={handleAdd}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          style={styles.btn}
+        >
           <Ionicons name="add" size={18} color={colors.black} />
         </Pressable>
       </Animated.View>
@@ -186,7 +194,7 @@ function AddToCartControl({ item, disabled = false, style }: AddToCartControlPro
 }
 
 const styles = StyleSheet.create({
-  container: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  container: { alignSelf: 'center', flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
   disabled: { opacity: 0.5 },
   circle: {
     height: 30,
