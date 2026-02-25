@@ -25,6 +25,8 @@ type Props = {
   showDots?: boolean;
   /** Overlay keeps the legacy absolute-fill behavior */
   layout?: 'overlay' | 'inline' | 'gutter';
+  /** In inline layout, optionally overlay arrows over the viewport */
+  overlayArrows?: boolean;
   /** When in gutter layout, flip arrow to next direction */
   invertArrows?: boolean;
 };
@@ -44,6 +46,7 @@ export default function CarouselNavigator({
   showArrows = true,
   showDots = true,
   layout = 'overlay',
+  overlayArrows = layout === 'overlay',
   invertArrows = false,
 }: Props) {
   const dots = Array.from({ length: maxDots ? Math.min(length, maxDots) : length });
@@ -71,15 +74,28 @@ export default function CarouselNavigator({
     );
   }
   return (
-    <View pointerEvents="box-none" style={isOverlay ? styles.container : styles.inlineContainer}>
+    <View
+      pointerEvents="box-none"
+      style={[
+        isOverlay ? styles.container : styles.inlineContainer,
+        !isOverlay && overlayArrows && !showDots && styles.inlineOverlayContainer,
+      ]}
+    >
       {showArrows && (
-        <View pointerEvents="box-none" style={isOverlay ? styles.arrowOverlay : styles.inlineArrowRow}>
+        <View
+          pointerEvents="box-none"
+          style={isOverlay || overlayArrows ? styles.arrowOverlay : styles.inlineArrowRow}
+        >
           <TouchableOpacity
             testID="prev-arrow"
             style={[
-              isOverlay ? styles.arrow : styles.inlineArrow,
-              isOverlay && { left: leftOffset, transform: [{ translateY: -arrowOffset }] },
+              isOverlay || overlayArrows ? styles.arrow : styles.inlineArrow,
+              (isOverlay || overlayArrows) && {
+                left: leftOffset,
+                transform: [{ translateY: -arrowOffset }],
+              },
             ]}
+            pointerEvents="auto"
             onPress={() => onIndexChange(cur => cur - 1)}
             disabled={index === 0}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -94,9 +110,13 @@ export default function CarouselNavigator({
           <TouchableOpacity
             testID="next-arrow"
             style={[
-              isOverlay ? styles.arrow : styles.inlineArrow,
-              isOverlay && { right: rightOffset, transform: [{ translateY: -arrowOffset }] },
+              isOverlay || overlayArrows ? styles.arrow : styles.inlineArrow,
+              (isOverlay || overlayArrows) && {
+                right: rightOffset,
+                transform: [{ translateY: -arrowOffset }],
+              },
             ]}
+            pointerEvents="auto"
             onPress={() => onIndexChange(cur => cur + 1)}
             disabled={index === length - 1}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -141,6 +161,9 @@ const styles = StyleSheet.create({
   inlineContainer: {
     width: '100%',
     alignItems: 'center',
+  },
+  inlineOverlayContainer: {
+    ...StyleSheet.absoluteFillObject,
   },
   arrowOverlay: {
     ...StyleSheet.absoluteFillObject,

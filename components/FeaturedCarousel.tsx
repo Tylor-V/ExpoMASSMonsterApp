@@ -92,28 +92,49 @@ function FeaturedCarousel({ products, onSelect, style, arrowSize = 24, dotSize =
 
   return (
     <View style={[styles.container, style]}>
-      <Animated.View style={[styles.inner, { transform: [{ translateX: slideAnim }] }]}>
-        <FlatList
-          testID="featured-carousel"
-          ref={ref}
-          data={products}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          snapToInterval={ITEM_LENGTH}
-          decelerationRate="fast"
-          scrollEnabled={false}
-          keyExtractor={keyExtractor}
-          renderItem={renderItem}
-          getItemLayout={getItemLayout}
-          style={{ width: ITEM_LENGTH }}
-        />
-      </Animated.View>
+      <View style={styles.viewportWrap}>
+        <Animated.View style={[styles.inner, { transform: [{ translateX: slideAnim }] }]}>
+          <FlatList
+            testID="featured-carousel"
+            ref={ref}
+            data={products}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            snapToInterval={ITEM_LENGTH}
+            decelerationRate="fast"
+            scrollEnabled={false}
+            keyExtractor={keyExtractor}
+            renderItem={renderItem}
+            getItemLayout={getItemLayout}
+            style={{ width: ITEM_LENGTH }}
+          />
+        </Animated.View>
+        {products.length > 1 && (
+          <CarouselNavigator
+            index={index}
+            length={products.length}
+            onIndexChange={goToIndex}
+            layout="inline"
+            overlayArrows
+            showDots={false}
+            activeColor={colors.gold}
+            inactiveColor="#DADADA"
+            dotSize={dotSize}
+            arrowSize={arrowSize}
+            leftOffset={-arrowSize * 0.75}
+            rightOffset={-arrowSize * 0.75}
+          />
+        )}
+      </View>
       {products.length > 1 && (
         <CarouselNavigator
           index={index}
           length={products.length}
           onIndexChange={goToIndex}
           layout="inline"
+          overlayArrows={false}
+          showArrows={false}
+          showDots
           dotsRowStyle={styles.dotsRow}
           activeColor={colors.gold}
           inactiveColor="#DADADA"
@@ -133,6 +154,10 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     alignItems: 'center',
+  },
+  viewportWrap: {
+    width: '100%',
+    position: 'relative',
   },
   inner: { width: '100%' },
   card: {
@@ -186,5 +211,5 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: colors.gold,
   },
-  dotsRow: { marginTop: 10 },
+  dotsRow: { marginTop: 5 },
 });
