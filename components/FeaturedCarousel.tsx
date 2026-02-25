@@ -113,6 +113,7 @@ function FeaturedCarousel({ products, onSelect, style, arrowSize = 24, dotSize =
           index={index}
           length={products.length}
           onIndexChange={goToIndex}
+          layout="inline"
           dotsRowStyle={styles.dotsRow}
           activeColor={colors.gold}
           inactiveColor="#DADADA"
@@ -185,5 +186,5 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: colors.gold,
   },
-  dotsRow: { marginBottom: 24 },
+  dotsRow: { marginTop: 10 },
 });
