@@ -324,6 +324,7 @@ function StoreScreen({ navigation }) {
   const slideAnim = useRef(new Animated.Value(drawerHeight)).current;
   const [imgIndex, setImgIndex] = useState(0);
   const [cartOpen, setCartOpen] = useState(false);
+  const pendingModalTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const modalRatings = useMemo(
     () => parseCategoryRatings(modalItem?.description),
     [modalItem?.description],
@@ -394,16 +395,31 @@ function StoreScreen({ navigation }) {
     setImgIndex(i => (i - 1 + Math.max(total, 1)) % Math.max(total, 1));
   };
 
-  const handleSelectFeaturedItem = useCallback(
+  const openProductModal = useCallback(
     (item: any) => {
+      if (pendingModalTimeoutRef.current) {
+        clearTimeout(pendingModalTimeoutRef.current);
+        pendingModalTimeoutRef.current = null;
+      }
+
       if (cartOpen) {
         setCartOpen(false);
-        setTimeout(() => setModalItem(item), ANIM_MEDIUM);
+        pendingModalTimeoutRef.current = setTimeout(() => {
+          pendingModalTimeoutRef.current = null;
+          setModalItem(item);
+        }, ANIM_MEDIUM);
       } else {
         setModalItem(item);
       }
     },
     [cartOpen, setCartOpen, setModalItem],
+  );
+
+  const handleSelectFeaturedItem = useCallback(
+    (item: any) => {
+      openProductModal(item);
+    },
+    [openProductModal],
   );
 
   const showFeatured =
@@ -466,6 +482,15 @@ function StoreScreen({ navigation }) {
     }
   }, [modalItem, overlayOpacity, slideAnim, drawerHeight]);
 
+  useEffect(
+    () => () => {
+      if (pendingModalTimeoutRef.current) {
+        clearTimeout(pendingModalTimeoutRef.current);
+      }
+    },
+    [],
+  );
+
   const renderProduct = ({ item, index }: { item: any; index: number }) => {
     const row = Math.floor(index / 2);
     const start = row * CARD_ROW_HEIGHT;
@@ -518,14 +543,7 @@ function StoreScreen({ navigation }) {
           accessibilityRole="button"
           testID={`product-card-${item.id}`}
           style={styles.cardTouch}
-          onPress={() => {
-            if (cartOpen) {
-              setCartOpen(false);
-              setTimeout(() => setModalItem(item), ANIM_MEDIUM);
-            } else {
-              setModalItem(item);
-            }
-          }}
+          onPress={() => openProductModal(item)}
         >
           {(item?.title?.includes('New') || item?.title?.includes('Hot')) && (
             <View style={styles.pill}>
@@ -1040,7 +1058,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     borderColor: colors.accent,
     borderWidth: 1,
-    borderBottomWidth: -1,
+    borderBottomWidth: 0,
     height: '92%',
     paddingTop: 48,
     shadowColor: '#000',
