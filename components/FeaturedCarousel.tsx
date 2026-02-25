@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontFamily: fonts.bold,
     fontSize: 17,
-    color: colors.gold,
+    color: colors.accent,
   },
   dotsRow: { marginTop: 5 },
 });

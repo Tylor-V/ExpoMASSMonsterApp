@@ -961,7 +961,7 @@ const styles = StyleSheet.create({
   cardPrice: {
     fontWeight: 'bold',
     fontSize: 18,
-    color: colors.gold,
+    color: colors.accent,
     marginBottom: 2,
   },
   cardPriceUnavailable: {
@@ -1099,7 +1099,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     fontWeight: 'bold',
     fontSize: 20,
-    color: colors.gold,
+    color: colors.accent,
     marginBottom: 6,
   },
   modalPriceUnavailable: {
