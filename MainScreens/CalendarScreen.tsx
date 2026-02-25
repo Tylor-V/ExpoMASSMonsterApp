@@ -63,6 +63,7 @@ import {
   normalizeWorkoutPlan,
 } from '../utils/splitSharing';
 import { formatUserDisplayName } from '../utils/userDisplayName';
+import { isModeratorOrAdmin } from '../src/lib/roles';
 
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity);
 const MASS_LOGO = require('../assets/mass-logo.png');
@@ -1793,7 +1794,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   });
 
   const addNewsButton = useMemo(() => {
-    if (user?.role !== 'moderator') return null;
+    if (!isModeratorOrAdmin(user?.role)) return null;
     return (
       <Pressable
         onPress={() => setAddNewsOpen(true)}

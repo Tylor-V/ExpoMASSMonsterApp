@@ -8,7 +8,7 @@ import { NavigationContainer, StackActions, useNavigation } from '@react-navigat
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as NativeSplashScreen from 'expo-splash-screen';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import ForgotPasswordScreen from './LoginScreens/ForgotPasswordScreen';
 import LoginScreen from './LoginScreens/LoginScreen';
@@ -92,17 +92,23 @@ function AppStackScreen({ news, newsLoaded, newsOpen, setNewsOpen }) {
 }
 
 function GuardedAppStackScreen({ news, newsLoaded, newsOpen, setNewsOpen }) {
-  const { appReady, user } = useAppContext();
+  const { appReady, authUser, user, userError, retryUserLoad, signOut } = useAppContext();
   const navigation = useNavigation();
   const hasRedirected = useRef<string | null>(null);
 
+  const hasAuthUser = Boolean(authUser);
+  const hasUserDataLoadError =
+    hasAuthUser && userError?.code === 'USER_DATA_LOAD_FAILED';
+
   const targetRoute = !appReady
     ? null
-    : !user
-      ? 'AuthStack'
-      : !hasAcceptedLatest(user)
-        ? 'AcceptanceGate'
-        : null;
+    : hasUserDataLoadError
+      ? null
+      : !user
+        ? 'AuthStack'
+        : !hasAcceptedLatest(user)
+          ? 'AcceptanceGate'
+          : null;
 
   useEffect(() => {
     if (!targetRoute) {
@@ -123,6 +129,25 @@ function GuardedAppStackScreen({ news, newsLoaded, newsOpen, setNewsOpen }) {
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="small" />
         <Text style={styles.loadingText}>Loading…</Text>
+      </View>
+    );
+  }
+
+  if (hasUserDataLoadError) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorTitle}>Can’t load account data</Text>
+        <Text style={styles.errorBody}>
+          We couldn’t load your account details right now. Check your connection and try again.
+        </Text>
+        <View style={styles.errorActions}>
+          <Pressable style={styles.retryButton} onPress={() => retryUserLoad()}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </Pressable>
+          <Pressable style={styles.signOutButton} onPress={() => signOut()}>
+            <Text style={styles.signOutButtonText}>Sign Out</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }
@@ -156,6 +181,52 @@ const styles = StyleSheet.create({
   loadingText: {
     fontFamily: 'Inter',
     color: '#6b7280',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    gap: 12,
+  },
+  errorTitle: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 22,
+    color: '#111827',
+    textAlign: 'center',
+  },
+  errorBody: {
+    fontFamily: 'Inter',
+    fontSize: 15,
+    color: '#4b5563',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  errorActions: {
+    marginTop: 8,
+    gap: 10,
+  },
+  retryButton: {
+    backgroundColor: '#111827',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  retryButtonText: {
+    color: '#ffffff',
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 15,
+  },
+  signOutButton: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  signOutButtonText: {
+    color: '#111827',
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 15,
   },
 });
 

@@ -6,15 +6,16 @@ import React, {
   useState,
 } from 'react';
 import { Alert, AppState } from 'react-native';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
 import { firestore } from './firebase';
 import { auth } from './firebase';
 import {createOrUpdateUserProfile} from './firebaseUserProfile';
 
 const defaultState = {
   appReady: false,
-  user: null,
-  userError: null,
+  authUser: null as any,
+  user: null as any,
+  userError: null as any,
   userLoading: false,
   points: 0,
   workoutHistory: [],
@@ -22,9 +23,16 @@ const defaultState = {
   setAppStatus: (_: any) => {},
   setCalendarCarouselIndex: (_: number) => {},
   refreshUserData: async () => {},
+  retryUserLoad: async () => {},
+  signOut: async () => {},
 };
 
 const AppContext = createContext(defaultState);
+
+const USER_DATA_LOAD_ERROR = {
+  code: 'USER_DATA_LOAD_FAILED',
+  message: 'Unable to load account data. Please try again.',
+};
 
 const userDefaults = {
   role: 'member',
@@ -54,7 +62,7 @@ export function AppContextProvider({children}) {
   const [appReady, setAppReady] = useState(false);
   const [authUser, setAuthUser] = useState<any | null>(null);
   const [user, setUser] = useState<any | null>(null);
-  const [userError, setUserError] = useState<Error | null>(null);
+  const [userError, setUserError] = useState<any | null>(null);
   const [userLoading, setUserLoading] = useState(false);
   const [points, setPoints] = useState(0);
   const [workoutHistory, setWorkoutHistory] = useState([]); // Always an array
@@ -89,7 +97,7 @@ export function AppContextProvider({children}) {
       setPoints(0);
       setWorkoutHistory([]);
       setAppReady(true);
-      signOut(auth()).catch(() => {});
+      firebaseSignOut(auth()).catch(() => {});
       return;
     }
     setUser(built);
@@ -117,9 +125,8 @@ export function AppContextProvider({children}) {
         .get();
       applyUserData(currentUser, snap.data());
     } catch (error) {
-      setUserError(
-        error instanceof Error ? error : new Error('Failed to load user data.'),
-      );
+      console.error('Failed to load user data', error);
+      setUserError(USER_DATA_LOAD_ERROR);
     } finally {
       setUserLoading(false);
       setAppReady(true);
@@ -129,6 +136,17 @@ export function AppContextProvider({children}) {
   const refreshUserData = useCallback(async () => {
     await fetchUserData(authUser);
   }, [authUser, fetchUserData]);
+
+  const retryUserLoad = useCallback(async () => {
+    const currentUser = auth().currentUser;
+    if (currentUser) {
+      await fetchUserData(currentUser);
+    }
+  }, [fetchUserData]);
+
+  const signOutUser = useCallback(async () => {
+    await firebaseSignOut(auth());
+  }, []);
 
   // Subscribe to auth changes and load user data accordingly
   useEffect(() => {
@@ -146,34 +164,37 @@ export function AppContextProvider({children}) {
         return;
       }
       detachUserListener();
-      userUnsub = firestore()
-        .collection('users')
-        .doc(user.uid)
-        .onSnapshot(
-          doc => {
-            setUserError(null);
-            const data = doc.data();
-            if (data?.isBanned) {
-              Alert.alert('Account Disabled', 'Your account has been disabled.');
-              setUser(null);
-              setPoints(0);
-              setWorkoutHistory([]);
+      try {
+        userUnsub = firestore()
+          .collection('users')
+          .doc(user.uid)
+          .onSnapshot(
+            doc => {
+              setUserError(null);
+              const data = doc.data();
+              if (data?.isBanned) {
+                Alert.alert('Account Disabled', 'Your account has been disabled.');
+                setUser(null);
+                setPoints(0);
+                setWorkoutHistory([]);
+                setAppReady(true);
+                firebaseSignOut(auth()).catch(() => {});
+                return;
+              }
+              applyUserData(user, data);
               setAppReady(true);
-              signOut(auth()).catch(() => {});
-              return;
-            }
-            applyUserData(user, data);
-            setAppReady(true);
-          },
-          error => {
-            setUserError(
-              error instanceof Error
-                ? error
-                : new Error('Failed to sync user data.'),
-            );
-            setAppReady(true);
-          },
-        );
+            },
+            error => {
+              console.error('Failed to sync user data', error);
+              setUserError(USER_DATA_LOAD_ERROR);
+              setAppReady(true);
+            },
+          );
+      } catch (error) {
+        console.error('Failed to attach user listener', error);
+        setUserError(USER_DATA_LOAD_ERROR);
+        setAppReady(true);
+      }
     };
 
     const appStateSub = AppState.addEventListener('change', nextState => {
@@ -235,6 +256,7 @@ export function AppContextProvider({children}) {
     <AppContext.Provider
       value={{
         appReady,
+        authUser,
         user,
         userError,
         userLoading,
@@ -244,6 +266,8 @@ export function AppContextProvider({children}) {
         setAppStatus,
         setCalendarCarouselIndex,
         refreshUserData,
+        retryUserLoad,
+        signOut: signOutUser,
       }}>
       {children}
     </AppContext.Provider>

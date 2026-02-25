@@ -30,6 +30,7 @@ import ChatScreen from '../MainScreens/ChatScreen';
 import StoriesViewer from '../screens/StoriesViewer';
 import { colors, fonts } from '../theme';
 import { ANIM_MEDIUM } from '../utils/animations';
+import { isModeratorOrAdmin } from '../src/lib/roles';
 import OnlineUsersSidebar from './OnlineUsersSidebar';
 import ProfileImage from './ProfileImage';
 import ScreenContainer from './ScreenContainer';
@@ -292,7 +293,7 @@ const ChatBar: React.FC<ChatBarProps> = ({ isActive = true, onOpenDMInbox, onOpe
 
   const user = useCurrentUserDoc();
   const channels = useMemo(
-    () => (user?.role === 'moderator' ? [...BASE_CHANNELS, MOD_CHANNEL] : BASE_CHANNELS),
+    () => (isModeratorOrAdmin(user?.role) ? [...BASE_CHANNELS, MOD_CHANNEL] : BASE_CHANNELS),
     [user?.role],
   );
 
