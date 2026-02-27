@@ -593,12 +593,9 @@ const ProfileScreen = () => {
           </View>
         </Pressable>
         <View style={styles.headerRight}>
-          <TouchableOpacity
-            testID="open-map-btn"
-            style={{ marginRight: 12 }}
-          >
+          <View style={{ marginRight: 12, opacity: 0.45 }}>
             <Ionicons name="map" size={24} color="#000" />
-          </TouchableOpacity>
+          </View>
           <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
             <Ionicons name="menu" size={24} color="#000" />
           </TouchableOpacity>
