@@ -101,9 +101,6 @@ export default function HelpFaqScreen() {
     setOpen(prev => (prev === key ? null : key));
   };
 
-  const openLink = (url: string) => {
-    Linking.openURL(url).catch(err => console.error('Failed to open link', err));
-  };
 
   const contactSupport = () => {
     Linking.openURL('mailto:support@massmonster.com').catch(err =>
@@ -168,10 +165,10 @@ export default function HelpFaqScreen() {
           <Ionicons name="mail-outline" size={21} color="#000" style={{ marginRight: 8 }} />
           <Text style={styles.contactText}>Contact Support</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => openLink('/privacy')} accessibilityRole="link">
+        <TouchableOpacity onPress={() => navigation.navigate('TermsPrivacy')} accessibilityRole="link">
           <Text style={styles.footerLink}>Privacy Policy</Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => openLink('/terms')} accessibilityRole="link">
+        <TouchableOpacity onPress={() => navigation.navigate('TermsPrivacy')} accessibilityRole="link">
           <Text style={styles.footerLink}>Terms of Service</Text>
         </TouchableOpacity>
       </View>
