@@ -131,6 +131,10 @@ service cloud.firestore {
       allow read, write: if isUser(uid);
     }
 
+    match /users/{uid}/devices/{deviceId} {
+      allow read, write: if isUser(uid);
+    }
+
     match /users/{uid}/redemptions/{docId} {
       allow read, write: if isUser(uid);
     }
