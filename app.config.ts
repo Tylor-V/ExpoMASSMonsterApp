@@ -9,6 +9,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-audio',
     'expo-font',
     'expo-web-browser',
+    'expo-notifications',
   ],
   extra: {
     ...(config.extra ?? {}),

@@ -3,6 +3,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 import { Alert, AppState } from 'react-native';
@@ -10,6 +11,8 @@ import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth';
 import { firestore } from './firebase';
 import { auth } from './firebase';
 import {createOrUpdateUserProfile} from './firebaseUserProfile';
+import { hasAcceptedLatest } from '../utils/acceptance';
+import { ensurePushRegisteredAndSaved } from './pushNotifications';
 
 const defaultState = {
   appReady: false,
@@ -67,6 +70,8 @@ export function AppContextProvider({children}) {
   const [points, setPoints] = useState(0);
   const [workoutHistory, setWorkoutHistory] = useState([]); // Always an array
   const [calendarCarouselIndex, setCalendarCarouselIndex] = useState(0);
+  const pushRegisteredUidRef = useRef<string | null>(null);
+  const pushCleanupRef = useRef<(() => void) | null>(null);
 
   function setAppStatus({ user: u, points, workoutHistory }: any) {
     setUser(u ?? null);
@@ -251,6 +256,62 @@ export function AppContextProvider({children}) {
       detachUserListener();
     };
   }, [fetchUserData]);
+
+  useEffect(() => {
+    if (!appReady || !user?.uid || !hasAcceptedLatest(user)) {
+      return;
+    }
+
+    if (pushRegisteredUidRef.current === user.uid) {
+      return;
+    }
+
+    pushCleanupRef.current?.();
+    pushCleanupRef.current = null;
+
+    pushRegisteredUidRef.current = user.uid;
+    let cancelled = false;
+
+    ensurePushRegisteredAndSaved({
+      uid: user.uid,
+      accepted: true,
+      notificationPrefs: user.notificationPrefs,
+    })
+      .then(cleanup => {
+        if (cancelled) {
+          cleanup?.();
+          return;
+        }
+        pushCleanupRef.current = cleanup ?? null;
+      })
+      .catch(error => {
+        console.warn('Push notification registration failed', error);
+        if (pushRegisteredUidRef.current === user.uid) {
+          pushRegisteredUidRef.current = null;
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appReady, user]);
+
+  useEffect(() => {
+    if (authUser) {
+      return;
+    }
+    pushRegisteredUidRef.current = null;
+    pushCleanupRef.current?.();
+    pushCleanupRef.current = null;
+  }, [authUser]);
+
+  useEffect(
+    () => () => {
+      pushCleanupRef.current?.();
+      pushCleanupRef.current = null;
+    },
+    [],
+  );
 
   return (
     <AppContext.Provider
