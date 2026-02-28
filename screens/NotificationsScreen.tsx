@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,23 +6,47 @@ import {
   ScrollView,
   TouchableOpacity,
   Switch,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAppContext } from '../firebase/AppContext';
+import { updateProfileField } from '../firebase/userProfileHelpers';
 
-const NotificationRow = ({ icon, label, value, onValueChange }) => {
+const defaultNotificationPrefs = {
+  news: true,
+  deals: true,
+  role: true,
+  dm: true,
+  checkin: true,
+};
+
+type NotificationPrefs = typeof defaultNotificationPrefs;
+type NotificationPrefKey = keyof NotificationPrefs;
+
+type NotificationRowProps = {
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  label: string;
+  value: boolean;
+  onValueChange: (nextValue: boolean) => void;
+};
+
+const NotificationRow = ({ icon, label, value, onValueChange }: NotificationRowProps) => {
   const [pressed, setPressed] = useState(false);
   const handlePress = () => setPressed(true);
   const handleRelease = () => setPressed(false);
+
   return (
     <TouchableOpacity
       activeOpacity={1}
       onPressIn={handlePress}
       onPressOut={handleRelease}
+      onPress={() => onValueChange(!value)}
+      accessibilityRole="button"
       style={{ width: '100%' }}
     >
-      <View style={[styles.row, { backgroundColor: pressed ? '#F5F5F5' : '#FFFFFF' }]}> 
+      <View style={[styles.row, { backgroundColor: pressed ? '#F5F5F5' : '#FFFFFF' }]}>
         <Ionicons name={icon} size={24} color={'#232323'} />
         <Text style={styles.rowLabel}>{label}</Text>
         <Switch
@@ -38,14 +62,35 @@ const NotificationRow = ({ icon, label, value, onValueChange }) => {
 const NotificationsScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const [news, setNews] = useState(true);
-  const [deals, setDeals] = useState(true);
-  const [role, setRole] = useState(true);
-  const [dm, setDm] = useState(true);
-  const [checkin, setCheckin] = useState(true);
+  const { user } = useAppContext();
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPrefs>(defaultNotificationPrefs);
+
+  useEffect(() => {
+    setNotificationPrefs({
+      ...defaultNotificationPrefs,
+      ...(user?.notificationPrefs || {}),
+    });
+  }, [user?.notificationPrefs]);
+
+  const updatePreference = async (key: NotificationPrefKey, nextValue: boolean) => {
+    const previousPrefs = notificationPrefs;
+    const nextPrefs = {
+      ...notificationPrefs,
+      [key]: nextValue,
+    };
+
+    setNotificationPrefs(nextPrefs);
+
+    try {
+      await updateProfileField('notificationPrefs', nextPrefs);
+    } catch (err) {
+      setNotificationPrefs(previousPrefs);
+      Alert.alert('Couldn’t save', 'Please try again.');
+    }
+  };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}> 
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.headerBar}>
         <TouchableOpacity
           testID="notifications-back"
@@ -61,32 +106,32 @@ const NotificationsScreen = () => {
           <NotificationRow
             icon="megaphone-outline"
             label="News Notifications"
-            value={news}
-            onValueChange={setNews}
+            value={notificationPrefs.news}
+            onValueChange={(nextValue) => updatePreference('news', nextValue)}
           />
           <NotificationRow
             icon="pricetags-outline"
             label="Deals & Promos"
-            value={deals}
-            onValueChange={setDeals}
+            value={notificationPrefs.deals}
+            onValueChange={(nextValue) => updatePreference('deals', nextValue)}
           />
           <NotificationRow
             icon="at-outline"
             label="@Role Mentions"
-            value={role}
-            onValueChange={setRole}
+            value={notificationPrefs.role}
+            onValueChange={(nextValue) => updatePreference('role', nextValue)}
           />
           <NotificationRow
             icon="chatbubble-ellipses-outline"
             label="DM Notifications"
-            value={dm}
-            onValueChange={setDm}
+            value={notificationPrefs.dm}
+            onValueChange={(nextValue) => updatePreference('dm', nextValue)}
           />
           <NotificationRow
             icon="checkmark-done-outline"
             label="Check-In Reminders"
-            value={checkin}
-            onValueChange={setCheckin}
+            value={notificationPrefs.checkin}
+            onValueChange={(nextValue) => updatePreference('checkin', nextValue)}
           />
         </View>
       </ScrollView>
