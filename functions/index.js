@@ -12,7 +12,9 @@ const logger = require("firebase-functions/logger");
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const {sendNewsPushNotification} = require('./newsPushNotification');
-admin.initializeApp();
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 
 exports.deleteOldStories = functions.pubsub
   .schedule('every 15 minutes')
