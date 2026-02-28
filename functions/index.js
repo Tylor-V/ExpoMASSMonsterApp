@@ -11,6 +11,7 @@ const {onRequest} = require("firebase-functions/v2/https");
 const logger = require("firebase-functions/logger");
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const {sendNewsPushNotification} = require('./newsPushNotification');
 admin.initializeApp();
 
 exports.deleteOldStories = functions.pubsub
@@ -33,6 +34,8 @@ exports.deleteOldStories = functions.pubsub
     }
     return null;
   });
+
+exports.sendNewsPushNotification = sendNewsPushNotification;
 
 
 // Create and deploy your first functions
