@@ -73,11 +73,22 @@ const DEFAULT_REGION = {
   longitudeDelta: 0.02,
 };
 
+type CheckinLocationSource = 'places' | 'map' | 'geocode' | 'live';
+
+type UserLocationState = {
+  lat: number;
+  lng: number;
+  timestamp: number;
+  accuracy?: number | null;
+};
+
 const AccountabilityFormScreen = ({navigation}) => {
   const [gymName, setGymName] = useState('');
   const [coords, setCoords] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [userLoc, setUserLoc] = useState<{lat: number; lng: number} | null>(null);
+  const [userLoc, setUserLoc] = useState<UserLocationState | null>(null);
+  const [locationSource, setLocationSource] = useState<CheckinLocationSource | null>(null);
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [homeWorkout, setHomeWorkout] = useState(false);
   const insets = useSafeAreaInsets();
 
@@ -105,8 +116,13 @@ const AccountabilityFormScreen = ({navigation}) => {
           accuracy: Location.Accuracy.High,
         });
         if (!didCancel) {
-          const {latitude, longitude} = position.coords;
-          setUserLoc({lat: latitude, lng: longitude});
+          const {latitude, longitude, accuracy} = position.coords;
+          setUserLoc({
+            lat: latitude,
+            lng: longitude,
+            timestamp: position.timestamp,
+            accuracy,
+          });
           // Optionally, setCoords here if you want to default to user location
         }
       } catch (err) {
@@ -143,6 +159,7 @@ const AccountabilityFormScreen = ({navigation}) => {
 
   const handleGymNameChange = (text: string) => {
     setGymName(text);
+    setSelectedPlaceId(null);
     if (fetchTimeout.current) clearTimeout(fetchTimeout.current);
     if (text.length < 3) {
       setSuggestions([]);
@@ -160,6 +177,8 @@ const AccountabilityFormScreen = ({navigation}) => {
       const loc = data.result?.geometry?.location;
       if (loc) {
         setCoords({lat: loc.lat, lng: loc.lng});
+        setLocationSource('places');
+        setSelectedPlaceId(s.placeId || null);
       }
       setGymName(s.name);
     } catch (err) {
@@ -187,9 +206,16 @@ const AccountabilityFormScreen = ({navigation}) => {
         const position = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.High,
         });
-        const {latitude, longitude} = position.coords;
-        setUserLoc({lat: latitude, lng: longitude});
+        const {latitude, longitude, accuracy} = position.coords;
+        setUserLoc({
+          lat: latitude,
+          lng: longitude,
+          timestamp: position.timestamp,
+          accuracy,
+        });
         setCoords({lat: latitude, lng: longitude});
+        setLocationSource('live');
+        setSelectedPlaceId(null);
       } catch (err) {
         Alert.alert(
           'Location Error',
@@ -208,10 +234,17 @@ const AccountabilityFormScreen = ({navigation}) => {
       return;
     }
     let loc = coords;
+    let computedDistanceMiles: number | undefined;
+    let sourceForEntry = locationSource;
+    let placeIdForEntry = selectedPlaceId;
     if (!loc && !homeWorkout) {
       loc = await geocodeAddress(gymName);
       if (loc) {
         setCoords(loc);
+        setLocationSource('geocode');
+        setSelectedPlaceId(null);
+        sourceForEntry = 'geocode';
+        placeIdForEntry = null;
       } else {
         Alert.alert(
           'Required',
@@ -224,6 +257,23 @@ const AccountabilityFormScreen = ({navigation}) => {
       Alert.alert('Location', 'Please share your current location.');
       return;
     }
+    if (!homeWorkout && userLoc) {
+      const ageSec = (Date.now() - userLoc.timestamp) / 1000;
+      if (ageSec > 120) {
+        Alert.alert(
+          'Location too old',
+          'Your location is older than 2 minutes. Please tap Share Live Location and try again.',
+        );
+        return;
+      }
+      if (typeof userLoc.accuracy === 'number' && userLoc.accuracy > 100) {
+        Alert.alert(
+          'Location not accurate enough',
+          'Please enable precise location, tap Share Live Location, and retry.',
+        );
+        return;
+      }
+    }
     if (!homeWorkout && loc && userLoc) {
       const miles = distanceMiles(
         userLoc.lat,
@@ -231,6 +281,7 @@ const AccountabilityFormScreen = ({navigation}) => {
         loc.lat,
         loc.lng,
       );
+      computedDistanceMiles = miles;
       if (miles > 2) {
         Alert.alert(
           'Too Far',
@@ -250,6 +301,14 @@ const AccountabilityFormScreen = ({navigation}) => {
           gymName,
           coords: loc,
           homeWorkout,
+          metadata: {
+            source: sourceForEntry || undefined,
+            placeId: placeIdForEntry || undefined,
+            locationAccuracyMeters:
+              typeof userLoc?.accuracy === 'number' ? userLoc.accuracy : undefined,
+            locationAgeSec: userLoc ? Math.round((Date.now() - userLoc.timestamp) / 1000) : undefined,
+            distanceMiles: computedDistanceMiles,
+          },
         }),
       );
       Alert.alert('Success', 'Accountability check-in submitted!');
@@ -270,6 +329,12 @@ const AccountabilityFormScreen = ({navigation}) => {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleMapCoordinateChange = (latitude: number, longitude: number) => {
+    setCoords({lat: latitude, lng: longitude});
+    setLocationSource('map');
+    setSelectedPlaceId(null);
   };
 
   return (
@@ -371,10 +436,10 @@ const AccountabilityFormScreen = ({navigation}) => {
                 showsUserLocation={!!userLoc}
                 onPress={e =>
                   !submitting &&
-                  setCoords({
-                    lat: e.nativeEvent.coordinate.latitude,
-                    lng: e.nativeEvent.coordinate.longitude,
-                  })
+                  handleMapCoordinateChange(
+                    e.nativeEvent.coordinate.latitude,
+                    e.nativeEvent.coordinate.longitude,
+                  )
                 }
                 pointerEvents={submitting ? 'none' : 'auto'}>
                 {coords && (
@@ -383,10 +448,10 @@ const AccountabilityFormScreen = ({navigation}) => {
                     draggable={!submitting}
                     onDragEnd={e =>
                       !submitting &&
-                      setCoords({
-                        lat: e.nativeEvent.coordinate.latitude,
-                        lng: e.nativeEvent.coordinate.longitude,
-                      })
+                      handleMapCoordinateChange(
+                        e.nativeEvent.coordinate.latitude,
+                        e.nativeEvent.coordinate.longitude,
+                      )
                     }
                     pinColor="#FFCC00"
                   />

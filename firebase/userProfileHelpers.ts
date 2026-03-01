@@ -106,6 +106,13 @@ export async function addAccountabilityPoint(info?: {
   gymName?: string;
   coords?: { lat: number; lng: number } | null;
   homeWorkout?: boolean;
+  metadata?: {
+    source?: 'places' | 'map' | 'geocode' | 'live';
+    placeId?: string;
+    locationAccuracyMeters?: number;
+    locationAgeSec?: number;
+    distanceMiles?: number;
+  };
 }) {
   const uid = auth().currentUser?.uid;
   if (!uid) throw new Error('No user logged in');
@@ -123,6 +130,20 @@ export async function addAccountabilityPoint(info?: {
     gymName: info?.gymName || '',
     homeWorkout: !!info?.homeWorkout,
     coords: info?.coords || null,
+    source: info?.metadata?.source || null,
+    placeId: info?.metadata?.placeId || null,
+    locationAccuracyMeters:
+      typeof info?.metadata?.locationAccuracyMeters === 'number'
+        ? info.metadata.locationAccuracyMeters
+        : null,
+    locationAgeSec:
+      typeof info?.metadata?.locationAgeSec === 'number'
+        ? info.metadata.locationAgeSec
+        : null,
+    distanceMiles:
+      typeof info?.metadata?.distanceMiles === 'number'
+        ? info.metadata.distanceMiles
+        : null,
   };
 
   const userRef = firestore().collection('users').doc(uid);
