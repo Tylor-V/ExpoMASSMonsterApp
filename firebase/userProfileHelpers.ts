@@ -1,7 +1,7 @@
 // firebase/userProfileHelpers.ts
 import { firestore } from './firebase';
 import { auth } from './firebase';
-import { getDateKey, getTodayKey } from './dateHelpers';
+import { getTodayKey } from './dateHelpers';
 import { normalizeSharedSplitList } from '../utils/splitSharing';
 import { buildPublicUserPayload, upsertPublicUser } from './publicUserHelpers';
 
@@ -118,10 +118,6 @@ export async function addAccountabilityPoint(info?: {
   if (!uid) throw new Error('No user logged in');
 
   const todayKey = getTodayKey();
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayKey = getDateKey(yesterday);
-
   const entry = {
     date: todayKey,
     // Use client timestamp here because serverTimestamp cannot be nested
@@ -148,70 +144,27 @@ export async function addAccountabilityPoint(info?: {
 
   const userRef = firestore().collection('users').doc(uid);
   const checkinRef = userRef.collection('accountabilityCheckins').doc(todayKey);
+  const existing = await checkinRef.get();
+  if (existing.exists) {
+    return { submitted: true, alreadyCheckedIn: true };
+  }
 
-  const result = (await firestore().runTransaction(async transaction => {
-    const checkinDoc = await transaction.get(checkinRef);
-    if (checkinDoc.exists) {
-      return { didCheckIn: false, streak: null as number | null };
-    }
-
-    const doc = await transaction.get(userRef);
-    const data = doc.data() || {};
-    const existingStreak = data.accountabilityStreak || 0;
-    const nextStreak = data.lastAccountabilityDate === yesterdayKey ? existingStreak + 1 : 1;
-
-    transaction.set(
-      checkinRef,
-      {
-        date: todayKey,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-        entry,
-      },
-      { merge: false },
-    );
-
-    transaction.set(
-      userRef,
-      {
-        accountabilityPoints: firestore.FieldValue.increment(1),
-        workoutHistory: firestore.FieldValue.arrayUnion(entry),
-        accountabilityStreak: nextStreak,
-        lastAccountabilityDate: todayKey,
-      },
-      { merge: true },
-    );
-
-    return { didCheckIn: true, streak: nextStreak };
-  })) as { didCheckIn: boolean; streak: number | null };
-
-  if (!result.didCheckIn || result.streak === null) return;
-
-  await upsertPublicUser(
-    uid,
-    buildPublicUserPayload({ accountabilityStreak: result.streak }),
-    { merge: true },
+  await checkinRef.set(
+    {
+      date: todayKey,
+      createdAt: firestore.FieldValue.serverTimestamp(),
+      entry,
+    },
+    { merge: false },
   );
+
+  return { submitted: true, alreadyCheckedIn: false };
 }
 
 // Reset the accountability streak if the user has missed 3 days
 export async function checkAccountabilityStreak(uid: string, retryOptions: { suppressAlert?: boolean } = {}) {
-  const ref = firestore().collection('users').doc(uid);
-  const doc = await ref.get(retryOptions);
-  if (!doc.exists) return;
-  const data = doc.data() || {};
-  const streak = data.accountabilityStreak || 0;
-  const lastDate = data.lastAccountabilityDate;
-  if (!streak || !lastDate) return;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const last = new Date(lastDate);
-  last.setHours(0, 0, 0, 0);
-  const diff = Math.floor((today.getTime() - last.getTime()) / (24 * 60 * 60 * 1000));
-  if (diff >= 3) {
-    await ref.update({ accountabilityStreak: 0 }, retryOptions);
-    await upsertPublicUser(uid, buildPublicUserPayload({ accountabilityStreak: 0 }), { merge: true }, retryOptions);
-  }
+  void uid;
+  void retryOptions;
 }
 
 // Save or remove the user's custom workout split

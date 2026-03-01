@@ -36,6 +36,13 @@ service cloud.firestore {
         && request.resource.data.get('bannedBy', null) == resource.data.get('bannedBy', null);
     }
 
+    function accountabilityFieldsUnchanged() {
+      return request.resource.data.get('accountabilityPoints', null) == resource.data.get('accountabilityPoints', null)
+        && request.resource.data.get('accountabilityStreak', null) == resource.data.get('accountabilityStreak', null)
+        && request.resource.data.get('lastAccountabilityDate', null) == resource.data.get('lastAccountabilityDate', null)
+        && request.resource.data.get('workoutHistory', null) == resource.data.get('workoutHistory', null);
+    }
+
     function isModerator(uid) {
       return isSignedIn()
         && uid != null
@@ -94,7 +101,8 @@ service cloud.firestore {
         && isRoleSafeForSelfCreate();
       allow update: if (isSelf(uid)
           && protectedFieldsUnchanged()
-          && isRoleUnchangedOrDefaultMember())
+          && isRoleUnchangedOrDefaultMember()
+          && accountabilityFieldsUnchanged())
         || isModerator(request.auth.uid);
       allow delete: if isModerator(request.auth.uid);
     }
@@ -135,12 +143,22 @@ service cloud.firestore {
       allow read, write: if isUser(uid);
     }
 
-    match /users/{uid}/accountabilityCheckins/{docId} {
-      allow read, write: if isUser(uid);
+    match /users/{uid}/accountabilityCheckins/{dateKey} {
+      allow read: if isUser(uid);
+      allow create: if isUser(uid)
+        && !exists(/databases/$(database)/documents/users/$(uid)/accountabilityCheckins/$(dateKey));
+      allow update, delete: if false;
     }
 
-    match /users/{uid}/redemptions/{docId} {
-      allow read, write: if isUser(uid);
+    match /users/{uid}/redemptionRequests/{requestId} {
+      allow read: if isUser(uid);
+      allow create: if isUser(uid);
+      allow update, delete: if false;
+    }
+
+    match /users/{uid}/redemptions/{id} {
+      allow read: if isUser(uid) || isModerator(request.auth.uid);
+      allow write: if isModerator(request.auth.uid);
     }
 
     match /blocks/{blockId} {

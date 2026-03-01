@@ -296,7 +296,7 @@ const AccountabilityFormScreen = ({navigation}) => {
     setSubmitting(true);
 
     try {
-      await withTimeout(
+      const result = await withTimeout(
         addAccountabilityPoint({
           gymName,
           coords: loc,
@@ -311,7 +311,11 @@ const AccountabilityFormScreen = ({navigation}) => {
           },
         }),
       );
-      Alert.alert('Success', 'Accountability check-in submitted!');
+      if (result.alreadyCheckedIn) {
+        Alert.alert('Submitted', 'Already checked in today.');
+      } else {
+        Alert.alert('Submitted', 'Check-in submitted!');
+      }
       navigation.goBack();
     } catch (e) {
       if (

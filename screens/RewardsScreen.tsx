@@ -33,20 +33,21 @@ export default function RewardsScreen() {
 
   const handleRedeem = async (reward: RewardInfo) => {
     Alert.alert(
-      'Redeem Reward',
-      `Redeem ${reward.points} points for ${reward.name}?`,
+      'Request Reward',
+      `Submit a reward request for ${reward.name}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Redeem',
+          text: 'Submit',
           onPress: async () => {
             try {
               await redeemReward(reward);
+              Alert.alert('Request submitted', 'Your reward request was submitted.');
               setConfetti(true);
               setTimeout(() => setConfetti(false), 3000);
             } catch (err) {
               console.error('Failed to redeem reward', err);
-              Alert.alert('Error', 'Could not redeem reward.');
+              Alert.alert('Error', 'Could not submit reward request.');
             }
           },
         },
