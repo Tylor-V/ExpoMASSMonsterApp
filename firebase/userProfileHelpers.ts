@@ -1,7 +1,7 @@
 // firebase/userProfileHelpers.ts
 import { firestore } from './firebase';
 import { auth } from './firebase';
-import { getTodayKey } from './dateHelpers';
+import { getDateKey, getTodayKey } from './dateHelpers';
 import { normalizeSharedSplitList } from '../utils/splitSharing';
 import { buildPublicUserPayload, upsertPublicUser } from './publicUserHelpers';
 
@@ -110,8 +110,13 @@ export async function addAccountabilityPoint(info?: {
   const uid = auth().currentUser?.uid;
   if (!uid) throw new Error('No user logged in');
 
+  const todayKey = getTodayKey();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayKey = getDateKey(yesterday);
+
   const entry = {
-    date: getTodayKey(),
+    date: todayKey,
     // Use client timestamp here because serverTimestamp cannot be nested
     // inside arrayUnion entries
     ts: Date.now(),
@@ -121,33 +126,50 @@ export async function addAccountabilityPoint(info?: {
   };
 
   const userRef = firestore().collection('users').doc(uid);
-  const doc = await userRef.get();
-  const data = doc.data() || {};
+  const checkinRef = userRef.collection('accountabilityCheckins').doc(todayKey);
 
-  const todayKey = getTodayKey();
-  if (data.lastAccountabilityDate === todayKey) {
-    // Already checked in today, no additional points
-    return;
-  }
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayKey = yesterday.toLocaleDateString('en-CA');
+  const result = (await firestore().runTransaction(async transaction => {
+    const checkinDoc = await transaction.get(checkinRef);
+    if (checkinDoc.exists) {
+      return { didCheckIn: false, streak: null as number | null };
+    }
 
-  let streak = 1;
-  if (data.lastAccountabilityDate === yesterdayKey) {
-    streak = (data.accountabilityStreak || 0) + 1;
-  }
+    const doc = await transaction.get(userRef);
+    const data = doc.data() || {};
+    const existingStreak = data.accountabilityStreak || 0;
+    const nextStreak = data.lastAccountabilityDate === yesterdayKey ? existingStreak + 1 : 1;
 
-  await userRef.set(
-    {
-      accountabilityPoints: firestore.FieldValue.increment(1),
-      workoutHistory: firestore.FieldValue.arrayUnion(entry),
-      accountabilityStreak: streak,
-      lastAccountabilityDate: todayKey,
-    },
+    transaction.set(
+      checkinRef,
+      {
+        date: todayKey,
+        createdAt: firestore.FieldValue.serverTimestamp(),
+        entry,
+      },
+      { merge: false },
+    );
+
+    transaction.set(
+      userRef,
+      {
+        accountabilityPoints: firestore.FieldValue.increment(1),
+        workoutHistory: firestore.FieldValue.arrayUnion(entry),
+        accountabilityStreak: nextStreak,
+        lastAccountabilityDate: todayKey,
+      },
+      { merge: true },
+    );
+
+    return { didCheckIn: true, streak: nextStreak };
+  })) as { didCheckIn: boolean; streak: number | null };
+
+  if (!result.didCheckIn || result.streak === null) return;
+
+  await upsertPublicUser(
+    uid,
+    buildPublicUserPayload({ accountabilityStreak: result.streak }),
     { merge: true },
   );
-  await upsertPublicUser(uid, buildPublicUserPayload({ accountabilityStreak: streak }), { merge: true });
 }
 
 // Reset the accountability streak if the user has missed 3 days
