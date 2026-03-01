@@ -135,6 +135,10 @@ service cloud.firestore {
       allow read, write: if isUser(uid);
     }
 
+    match /users/{uid}/accountabilityCheckins/{docId} {
+      allow read, write: if isUser(uid);
+    }
+
     match /users/{uid}/redemptions/{docId} {
       allow read, write: if isUser(uid);
     }
