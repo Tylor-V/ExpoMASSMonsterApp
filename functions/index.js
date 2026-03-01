@@ -12,6 +12,8 @@ const logger = require("firebase-functions/logger");
 const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
 const {sendNewsPushNotification} = require('./newsPushNotification');
+const {awardAccountabilityCheckin} = require('./accountabilityAward');
+const {processRedemptionRequest} = require('./rewardsRedemption');
 if (!admin.apps.length) {
   admin.initializeApp();
 }
@@ -38,6 +40,8 @@ exports.deleteOldStories = functions.pubsub
   });
 
 exports.sendNewsPushNotification = sendNewsPushNotification;
+exports.awardAccountabilityCheckin = awardAccountabilityCheckin;
+exports.processRedemptionRequest = processRedemptionRequest;
 
 
 // Create and deploy your first functions
