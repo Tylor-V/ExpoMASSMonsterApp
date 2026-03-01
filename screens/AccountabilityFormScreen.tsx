@@ -260,8 +260,10 @@ const AccountabilityFormScreen = ({navigation}) => {
         e?.code === 'unavailable' ||
         e?.message?.toLowerCase().includes('timed out')
       ) {
-        Alert.alert('Success', 'Accountability check-in submitted!');
-        navigation.goBack();
+        Alert.alert(
+          'Check-in not confirmed',
+          'We couldn’t confirm your check-in due to a connection issue. Please try again. If you already checked in, the app will prevent duplicates.',
+        );
       } else {
         Alert.alert('Error', e.message || 'Could not submit form.');
       }
