@@ -23,6 +23,7 @@ import { auth, firestore } from '../firebase/firebase';
 import { pickPublicUser } from '../firebase/publicUserHelpers';
 import { postSystemMessage } from '../firebase/systemMessages';
 import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
+import { isModeratorOrAdmin } from '../src/lib/roles';
 import { colors } from '../theme';
 import { ANIM_MODAL } from '../utils/animations';
 import { getChatLevelColor } from '../utils/chatLevel';
@@ -95,7 +96,7 @@ export default function UserPreviewModal({ visible, userId, onClose, onUserBlock
   const navigation = useNavigation<any>();
   const currentUserId = auth().currentUser?.uid;
   const currentUser = useCurrentUserDoc();
-  const isModerator = currentUser?.role === 'moderator';
+  const isModerator = isModeratorOrAdmin(currentUser?.role);
   const scaleAnim = useRef(new Animated.Value(0.92)).current;
   const opacityAnim = useRef(new Animated.Value(0.7)).current;
 
