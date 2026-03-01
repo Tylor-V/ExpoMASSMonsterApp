@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Alert, Animated, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { addToCart, CartItem, removeCartItem, sanitizeId, updateCartItem } from '../firebase/cartHelpers';
 import { useCart } from '../hooks/useCart';
 import { colors, fonts } from '../theme';
@@ -113,6 +113,9 @@ function AddToCartControl({ item, disabled = false, style }: AddToCartControlPro
     try {
       await addToCart(item);
     } catch (err) {
+      setLocalQty(0);
+      setItems(prev => prev.filter(i => i.id !== sanitizedId));
+      Alert.alert('Couldn\'t add to cart. Please try again.');
       console.error('Failed to add item to cart', err);
     }
   };
