@@ -33,6 +33,7 @@ exports.processRedemptionRequest = functions.firestore
     const userRef = db.collection('users').doc(uid);
     const requestRef = snap.ref;
     const redemptionRef = userRef.collection('redemptions').doc(requestId);
+    const now = admin.firestore.Timestamp.now();
 
     await db.runTransaction(async (tx) => {
       const requestDoc = await tx.get(requestRef);
@@ -52,6 +53,52 @@ exports.processRedemptionRequest = functions.firestore
           reason: 'invalid_reward',
         });
         return;
+      }
+
+      const activeRewardRef = userRef.collection('activeRewards').doc(rewardId);
+
+      if (reward.type === 'shopify_discount') {
+        const activeRewardDoc = await tx.get(activeRewardRef);
+        const activeRewardData = activeRewardDoc.data() || {};
+        const activeUsedAt = activeRewardData.usedAt;
+        const activeExpiresAt = activeRewardData.expiresAt;
+
+        const hasActiveRewardLock = !!activeRewardDoc.exists &&
+          !activeUsedAt &&
+          (!activeExpiresAt || activeExpiresAt.toMillis() > now.toMillis());
+
+        if (hasActiveRewardLock) {
+          tx.update(requestRef, {
+            processedAt: admin.firestore.FieldValue.serverTimestamp(),
+            status: 'rejected',
+            reason: 'already_has_active_reward',
+          });
+          return;
+        }
+
+        const existingRedemptionQuery = userRef
+          .collection('redemptions')
+          .where('rewardId', '==', rewardId)
+          .limit(5);
+        const existingRedemptions = await tx.get(existingRedemptionQuery);
+        const hasActiveRedemption = existingRedemptions.docs.some((doc) => {
+          const data = doc.data() || {};
+          const usedAt = data.usedAt;
+          const expiresAt = data.expiresAt;
+          const isIssued = data.fulfillmentStatus === 'issued' || !!data.discountCode;
+          const isUnexpired = !expiresAt || expiresAt.toMillis() > now.toMillis();
+
+          return isIssued && !usedAt && isUnexpired;
+        });
+
+        if (hasActiveRedemption) {
+          tx.update(requestRef, {
+            processedAt: admin.firestore.FieldValue.serverTimestamp(),
+            status: 'rejected',
+            reason: 'already_has_active_reward',
+          });
+          return;
+        }
       }
 
       const userDoc = await tx.get(userRef);
@@ -80,6 +127,19 @@ exports.processRedemptionRequest = functions.firestore
         status: 'pending',
         requestId,
       }, {merge: true});
+
+      if (reward.type === 'shopify_discount') {
+        const expiresAtDate = new Date(
+          Date.now() + ((reward.expiresDays || 7) * 24 * 60 * 60 * 1000),
+        );
+        tx.set(activeRewardRef, {
+          rewardId,
+          requestId,
+          status: 'reserved',
+          expiresAt: admin.firestore.Timestamp.fromDate(expiresAtDate),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, {merge: true});
+      }
 
       tx.update(requestRef, {
         processedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -130,6 +190,15 @@ exports.processRedemptionRequest = functions.firestore
       discountCode,
       expiresAt: admin.firestore.Timestamp.fromDate(expiresAtDate),
       fulfillmentStatus: 'issued',
+    }, {merge: true});
+
+    await userRef.collection('activeRewards').doc(requestData.rewardId).set({
+      rewardId: requestData.rewardId,
+      requestId,
+      discountCode,
+      fulfillmentStatus: 'issued',
+      expiresAt: admin.firestore.Timestamp.fromDate(expiresAtDate),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     }, {merge: true});
 
     functions.logger.info('Issued Shopify discount code for redemption', {
