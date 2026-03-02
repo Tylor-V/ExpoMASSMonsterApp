@@ -16,6 +16,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ANIM_MEDIUM } from '../utils/animations';
 import { useCart } from '../hooks/useCart';
+import { getActiveIssuedDiscountCode } from '../hooks/useActiveDiscountCode';
 import { createShopifyCheckout } from '../hooks/useShopify';
 import { isShopifyConfigError } from '../src/lib/shopify/config';
 import { shopifyFetch } from '../src/lib/shopify/storefrontClient';
@@ -207,12 +208,14 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
         setCheckoutLoading(false);
         return;
       }
+      const discountCode = await getActiveIssuedDiscountCode();
       const url = await createShopifyCheckout(
         items.map(i => ({
           id: i.variantId, // variantId is required by Shopify
           quantity: i.quantity,
           variantId: i.variantId,
-        }))
+        })),
+        discountCode ? { discountCode } : undefined,
       );
       if (url) {
         await openCheckoutUrl(url);

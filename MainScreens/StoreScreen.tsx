@@ -26,6 +26,7 @@ import RatingRow from '../components/RatingRow';
 import RollingNumber from '../components/RollingNumber';
 import { TAB_BAR_HEIGHT } from '../components/SwipeableTabs';
 import { useCart } from '../hooks/useCart';
+import { getActiveIssuedDiscountCode } from '../hooks/useActiveDiscountCode';
 import { createShopifyCheckout, useShopifyCollections, useShopifyProducts } from '../hooks/useShopify';
 import { openCheckoutUrl } from '../src/lib/shopify/openCheckoutUrl';
 import { colors, fonts, radius } from '../theme';
@@ -610,12 +611,14 @@ function StoreScreen({ navigation, setTabSwipeEnabled }: StoreScreenProps) {
     }
     let url: string | null = null;
     try {
+      const discountCode = await getActiveIssuedDiscountCode();
       url = await createShopifyCheckout(
         cartItems.map(item => ({
           id: item.variantId || item.id,
           quantity: item.quantity,
           variantId: item.variantId,
         })),
+        discountCode ? { discountCode } : undefined,
       );
     } catch (error) {
       const message =

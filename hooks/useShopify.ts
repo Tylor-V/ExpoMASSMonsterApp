@@ -225,32 +225,32 @@ export async function createShopifyCheckout(
   let checkoutUrl = added?.cartLinesAdd?.cart?.checkoutUrl ?? null;
   const discountCode = opts.discountCode?.trim();
   if (discountCode && cartId) {
-    const discounted = await shopifyFetch<{
-      cartDiscountCodesUpdate: {
-        cart: { id: string; checkoutUrl: string | null } | null;
-        userErrors: { field: string[] | null; message: string }[];
-      };
-    }>(
-      `mutation cartDiscountCodesUpdate($cartId: ID!, $discountCodes: [String!]) {
-        cartDiscountCodesUpdate(cartId: $cartId, discountCodes: $discountCodes) {
-          cart { id checkoutUrl }
-          userErrors { field message }
-        }
-      }`,
-      { cartId, discountCodes: [discountCode] },
-    );
-    if (discounted?.cartDiscountCodesUpdate?.userErrors?.length) {
-      console.warn(
-        'Shopify cartDiscountCodesUpdate userErrors',
-        discounted.cartDiscountCodesUpdate.userErrors,
+    try {
+      const discounted = await shopifyFetch<{
+        cartDiscountCodesUpdate: {
+          cart: { id: string; checkoutUrl: string | null } | null;
+          userErrors: { field: string[] | null; message: string }[];
+        };
+      }>(
+        `mutation cartDiscountCodesUpdate($cartId: ID!, $discountCodes: [String!]) {
+          cartDiscountCodesUpdate(cartId: $cartId, discountCodes: $discountCodes) {
+            cart { id checkoutUrl }
+            userErrors { field message }
+          }
+        }`,
+        { cartId, discountCodes: [discountCode] },
       );
-      const message =
-        discounted.cartDiscountCodesUpdate.userErrors
-          .map(error => error.message)
-          .join(' | ') || 'Unable to apply discount code.';
-      throw new Error(message);
+      if (discounted?.cartDiscountCodesUpdate?.userErrors?.length) {
+        console.warn(
+          'Shopify cartDiscountCodesUpdate userErrors',
+          discounted.cartDiscountCodesUpdate.userErrors,
+        );
+      } else {
+        checkoutUrl = discounted?.cartDiscountCodesUpdate?.cart?.checkoutUrl ?? checkoutUrl;
+      }
+    } catch (error) {
+      console.warn('Failed to apply Shopify discount code during checkout', error);
     }
-    checkoutUrl = discounted?.cartDiscountCodesUpdate?.cart?.checkoutUrl ?? checkoutUrl;
   }
 
   return checkoutUrl;
