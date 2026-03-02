@@ -172,6 +172,7 @@ export function useShopifyProducts(
 
 export async function createShopifyCheckout(
   items: { id: string; quantity: number; variantId?: string }[],
+  opts: { discountCode?: string } = {},
 ): Promise<string | null> {
   const { config, missing } = getShopifyConfigStatus();
   if (!config) {
@@ -190,6 +191,9 @@ export async function createShopifyCheckout(
     `mutation cartCreate { cartCreate(input: {}) { cart { id checkoutUrl } userErrors { field message } } }`,
   );
   const cartId = created?.cartCreate?.cart?.id;
+  if (created?.cartCreate?.userErrors?.length) {
+    console.warn('Shopify cartCreate userErrors', created.cartCreate.userErrors);
+  }
   if (!cartId || created?.cartCreate?.userErrors?.length) {
     const message =
       created?.cartCreate?.userErrors?.map(error => error.message).join(' | ') ||
@@ -211,12 +215,45 @@ export async function createShopifyCheckout(
     { cartId, lines },
   );
   if (added?.cartLinesAdd?.userErrors?.length) {
+    console.warn('Shopify cartLinesAdd userErrors', added.cartLinesAdd.userErrors);
     const message =
       added?.cartLinesAdd?.userErrors?.map(error => error.message).join(' | ') ||
       'Unable to add cart lines.';
     throw new Error(message);
   }
-  return added?.cartLinesAdd?.cart?.checkoutUrl ?? null;
+
+  let checkoutUrl = added?.cartLinesAdd?.cart?.checkoutUrl ?? null;
+  const discountCode = opts.discountCode?.trim();
+  if (discountCode && cartId) {
+    const discounted = await shopifyFetch<{
+      cartDiscountCodesUpdate: {
+        cart: { id: string; checkoutUrl: string | null } | null;
+        userErrors: { field: string[] | null; message: string }[];
+      };
+    }>(
+      `mutation cartDiscountCodesUpdate($cartId: ID!, $discountCodes: [String!]) {
+        cartDiscountCodesUpdate(cartId: $cartId, discountCodes: $discountCodes) {
+          cart { id checkoutUrl }
+          userErrors { field message }
+        }
+      }`,
+      { cartId, discountCodes: [discountCode] },
+    );
+    if (discounted?.cartDiscountCodesUpdate?.userErrors?.length) {
+      console.warn(
+        'Shopify cartDiscountCodesUpdate userErrors',
+        discounted.cartDiscountCodesUpdate.userErrors,
+      );
+      const message =
+        discounted.cartDiscountCodesUpdate.userErrors
+          .map(error => error.message)
+          .join(' | ') || 'Unable to apply discount code.';
+      throw new Error(message);
+    }
+    checkoutUrl = discounted?.cartDiscountCodesUpdate?.cart?.checkoutUrl ?? checkoutUrl;
+  }
+
+  return checkoutUrl;
 }
 
 export { shopifyFetch };
