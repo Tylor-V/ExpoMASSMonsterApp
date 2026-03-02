@@ -1,12 +1,20 @@
 const functions = require('firebase-functions/v1');
 const admin = require('firebase-admin');
+const {createBasicDiscountCode} = require('./shopifyAdminClient');
 
 if (!admin.apps.length) {
   admin.initializeApp();
 }
 
 const REWARD_CATALOG = {
-  coupon5: {points: 30, name: '$5 Shop Coupon'},
+  coupon5: {
+    points: 5,
+    name: '$5 Off',
+    type: 'shopify_discount',
+    amount: 5,
+    currency: 'USD',
+    expiresDays: 7,
+  },
   mindset: {points: 200, name: 'Coral Club Mindset Pack'},
 };
 
@@ -78,6 +86,57 @@ exports.processRedemptionRequest = functions.firestore
         status: 'approved',
         redemptionId: requestId,
       });
+    });
+
+    const requestDoc = await requestRef.get();
+    const requestData = requestDoc.data() || {};
+
+    if (requestData.status !== 'approved') {
+      return null;
+    }
+
+    const reward = REWARD_CATALOG[requestData.rewardId];
+    if (reward?.type !== 'shopify_discount') {
+      return null;
+    }
+
+    const redemptionDoc = await redemptionRef.get();
+    const redemptionData = redemptionDoc.data() || {};
+
+    if (redemptionData.discountCode) {
+      functions.logger.info('Discount already issued; skipping', {uid, requestId});
+      return null;
+    }
+
+    const discountCode = `MM-${requestId.slice(0, 8).toUpperCase()}`;
+    const startsAt = new Date();
+    const expiresAtDate = new Date(
+      startsAt.getTime() + ((reward.expiresDays || 7) * 24 * 60 * 60 * 1000),
+    );
+    const expiresAt = expiresAtDate.toISOString();
+
+    await createBasicDiscountCode({
+      code: discountCode,
+      title: `${reward.name} (${requestId.slice(0, 8).toUpperCase()})`,
+      valueType: 'FIXED_AMOUNT',
+      value: reward.amount,
+      startsAt: startsAt.toISOString(),
+      endsAt: expiresAt,
+      usageLimit: 1,
+      oncePerCustomer: false,
+    });
+
+    await redemptionRef.set({
+      discountCode,
+      expiresAt: admin.firestore.Timestamp.fromDate(expiresAtDate),
+      fulfillmentStatus: 'issued',
+    }, {merge: true});
+
+    functions.logger.info('Issued Shopify discount code for redemption', {
+      uid,
+      requestId,
+      rewardId: requestData.rewardId,
+      expiresAt,
     });
 
     return null;
