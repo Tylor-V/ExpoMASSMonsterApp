@@ -209,7 +209,7 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
         return;
       }
       const discountCode = await getActiveIssuedDiscountCode();
-      const url = await createShopifyCheckout(
+      const checkoutResult = await createShopifyCheckout(
         items.map(i => ({
           id: i.variantId, // variantId is required by Shopify
           quantity: i.quantity,
@@ -217,8 +217,14 @@ function CartDrawer({ visible, onClose }: CartDrawerProps) {
         })),
         discountCode ? { discountCode } : undefined,
       );
-      if (url) {
-        await openCheckoutUrl(url);
+      if (checkoutResult.discountApplied === false) {
+        Alert.alert(
+          'Discount not applied',
+          "We couldn't apply your reward discount, but you can still checkout.",
+        );
+      }
+      if (checkoutResult.url) {
+        await openCheckoutUrl(checkoutResult.url);
         // Optionally: listen for return/close to refresh cart
       } else {
         Alert.alert('Checkout failed', 'Could not start checkout. Please try again.');

@@ -173,7 +173,7 @@ export function useShopifyProducts(
 export async function createShopifyCheckout(
   items: { id: string; quantity: number; variantId?: string }[],
   opts: { discountCode?: string } = {},
-): Promise<string | null> {
+): Promise<{ url: string | null; discountApplied: boolean | null; discountError: string | null }> {
   const { config, missing } = getShopifyConfigStatus();
   if (!config) {
     throw createShopifyConfigError(missing);
@@ -223,6 +223,8 @@ export async function createShopifyCheckout(
   }
 
   let checkoutUrl = added?.cartLinesAdd?.cart?.checkoutUrl ?? null;
+  let discountApplied: boolean | null = null;
+  let discountError: string | null = null;
   const discountCode = opts.discountCode?.trim();
   if (discountCode && cartId) {
     try {
@@ -241,19 +243,26 @@ export async function createShopifyCheckout(
         { cartId, discountCodes: [discountCode] },
       );
       if (discounted?.cartDiscountCodesUpdate?.userErrors?.length) {
+        discountApplied = false;
+        discountError = discounted.cartDiscountCodesUpdate.userErrors
+          .map(error => error.message)
+          .join(' | ');
         console.warn(
           'Shopify cartDiscountCodesUpdate userErrors',
           discounted.cartDiscountCodesUpdate.userErrors,
         );
       } else {
+        discountApplied = true;
         checkoutUrl = discounted?.cartDiscountCodesUpdate?.cart?.checkoutUrl ?? checkoutUrl;
       }
     } catch (error) {
+      discountApplied = false;
+      discountError = error instanceof Error ? error.message : 'Unable to apply discount code.';
       console.warn('Failed to apply Shopify discount code during checkout', error);
     }
   }
 
-  return checkoutUrl;
+  return { url: checkoutUrl, discountApplied, discountError };
 }
 
 export { shopifyFetch };

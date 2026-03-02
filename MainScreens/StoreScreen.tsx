@@ -609,10 +609,10 @@ function StoreScreen({ navigation, setTabSwipeEnabled }: StoreScreenProps) {
       Alert.alert('Invalid cart', 'Some items are missing variant info or quantity.');
       return;
     }
-    let url: string | null = null;
+    let checkoutResult: Awaited<ReturnType<typeof createShopifyCheckout>> | null = null;
     try {
       const discountCode = await getActiveIssuedDiscountCode();
-      url = await createShopifyCheckout(
+      checkoutResult = await createShopifyCheckout(
         cartItems.map(item => ({
           id: item.variantId || item.id,
           quantity: item.quantity,
@@ -620,12 +620,19 @@ function StoreScreen({ navigation, setTabSwipeEnabled }: StoreScreenProps) {
         })),
         discountCode ? { discountCode } : undefined,
       );
+      if (checkoutResult.discountApplied === false) {
+        Alert.alert(
+          'Discount not applied',
+          "We couldn't apply your reward discount, but you can still checkout.",
+        );
+      }
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Could not start checkout. Please try again.';
       Alert.alert('Checkout failed', message);
       return;
     }
+    const url = checkoutResult?.url ?? null;
     if (!url) {
       Alert.alert('Checkout failed', 'Could not start checkout. Please try again.');
       return;
