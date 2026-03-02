@@ -29,9 +29,12 @@ export default function RewardsScreen() {
   const history = useRewardHistory();
   const [showFAQ, setShowFAQ] = useState(false);
   const [confetti, setConfetti] = useState(false);
+  const [redeemingId, setRedeemingId] = useState<string | null>(null);
   const progress = Math.min(1, (points % 50) / 50);
 
   const handleRedeem = async (reward: RewardInfo) => {
+    if (redeemingId !== null) return;
+
     Alert.alert(
       'Request Reward',
       `Submit a reward request for ${reward.name}?`,
@@ -40,6 +43,9 @@ export default function RewardsScreen() {
         {
           text: 'Submit',
           onPress: async () => {
+            if (redeemingId !== null) return;
+
+            setRedeemingId(reward.id);
             try {
               await redeemReward(reward);
               Alert.alert('Request submitted', 'Your reward request was submitted.');
@@ -48,6 +54,8 @@ export default function RewardsScreen() {
             } catch (err) {
               console.error('Failed to redeem reward', err);
               Alert.alert('Error', 'Could not submit reward request.');
+            } finally {
+              setRedeemingId(null);
             }
           },
         },
@@ -55,24 +63,30 @@ export default function RewardsScreen() {
     );
   };
 
-  const renderReward = ({ item }: { item: RewardInfo }) => (
-    <View style={styles.rewardCard}>
-      <Text style={styles.rewardName}>{item.name}</Text>
-      <View style={styles.rewardFooter}>
-        <Text style={styles.rewardPoints}>{item.points} pts</Text>
-        <Pressable
-          style={[
-            styles.redeemBtn,
-            { opacity: points >= item.points ? 1 : 0.5 },
-          ]}
-          disabled={points < item.points}
-          onPress={() => handleRedeem(item)}
-        >
-          <Text style={styles.redeemTxt}>Redeem</Text>
-        </Pressable>
+  const renderReward = ({ item }: { item: RewardInfo }) => {
+    const isRedeeming = redeemingId !== null;
+    const isCurrentRedeeming = redeemingId === item.id;
+    const isDisabled = isRedeeming || points < item.points;
+
+    return (
+      <View style={styles.rewardCard}>
+        <Text style={styles.rewardName}>{item.name}</Text>
+        <View style={styles.rewardFooter}>
+          <Text style={styles.rewardPoints}>{item.points} pts</Text>
+          <Pressable
+            style={[
+              styles.redeemBtn,
+              { opacity: isDisabled ? 0.5 : 1 },
+            ]}
+            disabled={isDisabled}
+            onPress={() => handleRedeem(item)}
+          >
+            <Text style={styles.redeemTxt}>{isCurrentRedeeming ? 'Submitting…' : 'Redeem'}</Text>
+          </Pressable>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
