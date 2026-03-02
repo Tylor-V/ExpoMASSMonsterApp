@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Alert,
   FlatList,
@@ -13,6 +13,7 @@ import {
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAppContext } from '../firebase/AppContext';
+import { auth, firestore } from '../firebase/firebase';
 import { redeemReward, RewardInfo } from '../firebase/rewardsHelpers';
 import { useRewardHistory } from '../hooks/useRewardHistory';
 import { colors, fonts } from '../theme';
@@ -25,12 +26,50 @@ const REWARDS: RewardInfo[] = [
 export default function RewardsScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
-  const { points } = useAppContext();
+  const { points, user } = useAppContext();
   const history = useRewardHistory();
   const [showFAQ, setShowFAQ] = useState(false);
   const [confetti, setConfetti] = useState(false);
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
+  const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const progress = Math.min(1, (points % 50) / 50);
+
+  useEffect(() => {
+    const uid = user?.uid || auth().currentUser?.uid;
+    if (!uid) {
+      setRecentRequests([]);
+      return;
+    }
+
+    const unsub = firestore()
+      .collection('users')
+      .doc(uid)
+      .collection('redemptionRequests')
+      .orderBy('requestedAt', 'desc')
+      .limit(10)
+      .onSnapshot(
+        snap => {
+          const list = snap.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
+          setRecentRequests(list);
+        },
+        () => setRecentRequests([]),
+      );
+
+    return () => unsub();
+  }, [user?.uid]);
+
+  const getRejectedReason = (reason?: string) => {
+    switch (reason) {
+      case 'insufficient_points':
+        return 'Not enough points';
+      case 'invalid_reward':
+        return 'Invalid reward';
+      case 'already_has_active_reward':
+        return 'You already have an active discount';
+      default:
+        return 'Could not process';
+    }
+  };
 
   const handleRedeem = async (reward: RewardInfo) => {
     if (redeemingId !== null) return;
@@ -125,6 +164,21 @@ export default function RewardsScreen() {
         )}
         ListFooterComponent={() => (
           <View>
+            <Text style={styles.sectionTitle}>Recent Requests</Text>
+            {recentRequests.map(request => {
+              const status = request.status || 'pending';
+              return (
+                <View key={request.id} style={styles.historyRow}>
+                  <View style={styles.requestContent}>
+                    <Text style={styles.historyName}>{request.rewardId || 'Unknown reward'}</Text>
+                    {status === 'rejected' ? (
+                      <Text style={styles.requestReason}>{getRejectedReason(request.reason)}</Text>
+                    ) : null}
+                  </View>
+                  <Text style={styles.historyStatus}>{status}</Text>
+                </View>
+              );
+            })}
             <Text style={styles.sectionTitle}>Your Redemptions</Text>
             {history.map(h => (
               <View key={h.id} style={styles.historyRow}>
@@ -273,6 +327,8 @@ const styles = StyleSheet.create({
   },
   historyName: { fontFamily: fonts.semiBold, fontSize: 14, color: colors.black },
   historyStatus: { fontFamily: fonts.regular, fontSize: 13, color: colors.gray },
+  requestContent: { flex: 1, marginRight: 8 },
+  requestReason: { fontFamily: fonts.regular, fontSize: 12, color: colors.gray },
   modalBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
   faqCard: { backgroundColor: colors.white, padding: 20, borderRadius: 16, width: '80%' },
   faqTitle: { fontWeight: 'bold', fontSize: 18, marginBottom: 8, color: colors.black, textAlign: 'center' },
