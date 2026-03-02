@@ -18,7 +18,7 @@ import { useRewardHistory } from '../hooks/useRewardHistory';
 import { colors, fonts } from '../theme';
 
 const REWARDS: RewardInfo[] = [
-  { id: 'coupon5', name: '$5 Shop Coupon', points: 30 },
+  { id: 'coupon5', name: '$5 Shop Coupon', points: 5 },
   { id: 'mindset', name: 'Coral Club Mindset Pack', points: 200 },
 ];
 
