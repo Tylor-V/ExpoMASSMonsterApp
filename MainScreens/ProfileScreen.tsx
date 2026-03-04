@@ -165,6 +165,7 @@ const ProfileScreen = () => {
   const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
   const [showBadgeCaption, setShowBadgeCaption] = useState(false);
   const shakeAnim = useRef(new Animated.Value(0)).current;
+  const badgeCaptionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const windowHeight = Dimensions.get('window').height;
   const DEFAULT_DRAWER_HEIGHT = Math.min(windowHeight * 0.7, 420);
@@ -189,8 +190,20 @@ const ProfileScreen = () => {
       Animated.timing(shakeAnim, { toValue: 0, duration: ANIM_INSTANT, useNativeDriver: true }),
     ]).start();
     setShowBadgeCaption(true);
-    setTimeout(() => setShowBadgeCaption(false), 1300);
+    if (badgeCaptionTimeoutRef.current) {
+      clearTimeout(badgeCaptionTimeoutRef.current);
+    }
+    badgeCaptionTimeoutRef.current = setTimeout(() => {
+      setShowBadgeCaption(false);
+      badgeCaptionTimeoutRef.current = null;
+    }, 1300);
   };
+
+  useEffect(() => () => {
+    if (badgeCaptionTimeoutRef.current) {
+      clearTimeout(badgeCaptionTimeoutRef.current);
+    }
+  }, []);
 
   const [todayStr, setTodayStr] = useState(getTodayKey());
   const hasCheckinToday =

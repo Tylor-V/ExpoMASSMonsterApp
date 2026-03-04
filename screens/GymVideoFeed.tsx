@@ -66,6 +66,7 @@ export default function GymVideoFeed({ navigation }) {
   const [uploading, setUploading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const flatListRef = useRef(null);
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 85 }).current;
   const [currentUserRole, setCurrentUserRole] = useState('member');
   const currentUserId = auth().currentUser?.uid;
   const currentUser = useCurrentUserDoc();
@@ -351,7 +352,8 @@ export default function GymVideoFeed({ navigation }) {
   );
 
   const handleViewableItemsChanged = useRef(({ viewableItems }) => {
-    if (viewableItems.length) setActiveIndex(viewableItems[0].index || 0);
+    const nextIndex = viewableItems?.[0]?.index ?? 0;
+    setActiveIndex(prev => (prev === nextIndex ? prev : nextIndex));
   }).current;
 
   const keyExtractor = useCallback((item: any) => item.id, []);
@@ -396,8 +398,12 @@ export default function GymVideoFeed({ navigation }) {
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         onViewableItemsChanged={handleViewableItemsChanged}
-        viewabilityConfig={{ itemVisiblePercentThreshold: 85 }}
+        viewabilityConfig={viewabilityConfig}
         showsVerticalScrollIndicator={false}
+        initialNumToRender={1}
+        maxToRenderPerBatch={2}
+        windowSize={3}
+        removeClippedSubviews
       />
       <TouchableOpacity
         style={[styles.uploadBtn, { bottom: insets.bottom + 48 }]}

@@ -8,6 +8,8 @@ interface ProductImageProps {
   contentFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
 }
 
+const prefetchedUris = new Set<string>();
+
 export default function ProductImage({ uri, style, contentFit = 'cover' }: ProductImageProps) {
   const [loaded, setLoaded] = useState(false);
   const imageStyle = StyleSheet.flatten(style);
@@ -17,12 +19,15 @@ export default function ProductImage({ uri, style, contentFit = 'cover' }: Produ
   // available immediately when the component mounts or is reused in a list.
   useEffect(() => {
     setLoaded(false);
-    if (uri && typeof Image.prefetch === 'function') {
+    if (uri && typeof Image.prefetch === 'function' && !prefetchedUris.has(uri)) {
+      prefetchedUris.add(uri);
       // Fire-and-forget; the component will use the cached image once loaded.
       const result = Image.prefetch(uri);
       // Image.prefetch returns a promise on native but can return void in tests.
       if (result && typeof (result as any).catch === 'function') {
-        (result as any).catch(() => {});
+        (result as any).catch(() => {
+          prefetchedUris.delete(uri);
+        });
       }
     }
   }, [uri]);
