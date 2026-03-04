@@ -31,6 +31,7 @@ export default function RewardsScreen() {
   const [showFAQ, setShowFAQ] = useState(false);
   const [confetti, setConfetti] = useState(false);
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
+  const [couponConfirmReward, setCouponConfirmReward] = useState<RewardInfo | null>(null);
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const progress = Math.min(1, (points % 50) / 50);
 
@@ -71,8 +72,33 @@ export default function RewardsScreen() {
     }
   };
 
+  const isCouponReward = (reward: RewardInfo) =>
+    reward.id === 'coupon5' || (reward as RewardInfo & { type?: string }).type === 'shopify_discount';
+
+  const submitRewardRequest = async (reward: RewardInfo) => {
+    if (redeemingId !== null) return;
+
+    setRedeemingId(reward.id);
+    try {
+      await redeemReward(reward);
+      Alert.alert('Request submitted', 'Your reward request was submitted.');
+      setConfetti(true);
+      setTimeout(() => setConfetti(false), 3000);
+    } catch (err) {
+      console.error('Failed to redeem reward', err);
+      Alert.alert('Error', 'Could not submit reward request.');
+    } finally {
+      setRedeemingId(null);
+    }
+  };
+
   const handleRedeem = async (reward: RewardInfo) => {
     if (redeemingId !== null) return;
+
+    if (isCouponReward(reward)) {
+      setCouponConfirmReward(reward);
+      return;
+    }
 
     Alert.alert(
       'Request Reward',
@@ -82,24 +108,18 @@ export default function RewardsScreen() {
         {
           text: 'Submit',
           onPress: async () => {
-            if (redeemingId !== null) return;
-
-            setRedeemingId(reward.id);
-            try {
-              await redeemReward(reward);
-              Alert.alert('Request submitted', 'Your reward request was submitted.');
-              setConfetti(true);
-              setTimeout(() => setConfetti(false), 3000);
-            } catch (err) {
-              console.error('Failed to redeem reward', err);
-              Alert.alert('Error', 'Could not submit reward request.');
-            } finally {
-              setRedeemingId(null);
-            }
+            await submitRewardRequest(reward);
           },
         },
       ],
     );
+  };
+
+  const handleCouponConfirmRedeem = async () => {
+    if (!couponConfirmReward || redeemingId !== null) return;
+    const reward = couponConfirmReward;
+    setCouponConfirmReward(null);
+    await submitRewardRequest(reward);
   };
 
   const renderReward = ({ item }: { item: RewardInfo }) => {
@@ -120,7 +140,7 @@ export default function RewardsScreen() {
             disabled={isDisabled}
             onPress={() => handleRedeem(item)}
           >
-            <Text style={styles.redeemTxt}>{isCurrentRedeeming ? 'Submitting…' : 'Redeem'}</Text>
+            <Text style={styles.redeemTxt}>{isCurrentRedeeming ? 'Submitting\u2026' : 'Redeem'}</Text>
           </Pressable>
         </View>
       </View>
@@ -195,6 +215,48 @@ export default function RewardsScreen() {
       {confetti && (
         <ConfettiCannon count={40} origin={{ x: 200, y: 0 }} fadeOut />
       )}
+      <Modal
+        visible={couponConfirmReward !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCouponConfirmReward(null)}
+      >
+        <Pressable
+          style={styles.modalBg}
+          onPress={() => {
+            if (redeemingId === null) setCouponConfirmReward(null);
+          }}
+        >
+          <Pressable style={styles.couponConfirmCard} onPress={() => {}}>
+            <Text style={styles.couponConfirmTitle}>Unlock $5 Off</Text>
+            <Text style={styles.couponConfirmSubtitle}>Expires 7 days after redeeming</Text>
+            <View style={styles.couponChipRow}>
+              <View style={styles.couponChip}>
+                <Text style={styles.couponChipText}>Expires 7 days</Text>
+              </View>
+              <View style={styles.couponChip}>
+                <Text style={styles.couponChipText}>Single-use</Text>
+              </View>
+            </View>
+            <View style={styles.couponConfirmActions}>
+              <Pressable
+                style={styles.couponCancelBtn}
+                disabled={redeemingId !== null}
+                onPress={() => setCouponConfirmReward(null)}
+              >
+                <Text style={styles.couponCancelTxt}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.couponBtn, styles.couponConfirmRedeemBtn, { opacity: redeemingId !== null ? 0.5 : 1 }]}
+                disabled={redeemingId !== null}
+                onPress={handleCouponConfirmRedeem}
+              >
+                <Text style={styles.couponTxt}>Redeem</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
       <Modal visible={showFAQ} transparent animationType="fade">
         <Pressable style={styles.modalBg} onPress={() => setShowFAQ(false)}>
           <View style={styles.faqCard}>
@@ -290,6 +352,68 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   couponTxt: { fontWeight: 'bold', color: colors.black },
+  couponConfirmCard: {
+    backgroundColor: colors.white,
+    width: '84%',
+    maxWidth: 360,
+    borderRadius: 18,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+  },
+  couponConfirmTitle: {
+    fontFamily: fonts.semiBold,
+    fontSize: 22,
+    color: colors.black,
+    textAlign: 'center',
+  },
+  couponConfirmSubtitle: {
+    fontFamily: fonts.regular,
+    fontSize: 14,
+    color: colors.textDark,
+    textAlign: 'center',
+    marginTop: 6,
+  },
+  couponChipRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 12,
+  },
+  couponChip: {
+    borderWidth: 1,
+    borderColor: colors.grayOutline,
+    backgroundColor: colors.translucentWhite,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginHorizontal: 4,
+  },
+  couponChipText: {
+    fontFamily: fonts.regular,
+    fontSize: 12,
+    color: colors.textDark,
+  },
+  couponConfirmActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 14,
+  },
+  couponCancelBtn: {
+    borderWidth: 1,
+    borderColor: colors.grayOutline,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginRight: 8,
+  },
+  couponCancelTxt: {
+    fontFamily: fonts.semiBold,
+    fontSize: 13,
+    color: colors.textDark,
+  },
+  couponConfirmRedeemBtn: {
+    marginBottom: 0,
+    minWidth: 80,
+  },
   sectionTitle: {
     fontWeight: 'bold',
     fontSize: 20,
@@ -334,3 +458,8 @@ const styles = StyleSheet.create({
   faqTitle: { fontWeight: 'bold', fontSize: 18, marginBottom: 8, color: colors.black, textAlign: 'center' },
   faqText: { fontFamily: fonts.regular, fontSize: 14, color: colors.textDark, textAlign: 'center' },
 });
+
+
+
+
+
