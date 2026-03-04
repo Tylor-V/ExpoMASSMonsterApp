@@ -71,7 +71,7 @@ export default function SplashScreen({navigation}) {
       useNativeDriver: true,
     }).start(() => {
       if (isLoggedIn) {
-        navigation.replace('AcceptanceGate');
+        navigation.replace('AppStack');
       } else {
         navigation.replace('AuthStack');
       }
@@ -84,19 +84,18 @@ export default function SplashScreen({navigation}) {
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth(), async user => {
+      setIsLoggedIn(!!user);
+      setAuthChecked(true);
+
+      if (!user) {
+        return;
+      }
+
       try {
-        if (user) {
-          await fixUserLevel(user.uid);
-          await checkAccountabilityStreak(user.uid);
-          setIsLoggedIn(true);
-        } else {
-          setIsLoggedIn(false);
-        }
+        await fixUserLevel(user.uid);
+        await checkAccountabilityStreak(user.uid);
       } catch (err) {
         console.error('Splash auth bootstrap failed', err);
-        setIsLoggedIn(!!user);
-      } finally {
-        setAuthChecked(true);
       }
     });
     return unsub;
@@ -158,7 +157,7 @@ export default function SplashScreen({navigation}) {
       {!authChecked && (
         <View style={styles.loadingBox}>
           <ActivityIndicator size="small" color={colors.yellow} />
-          <Text style={styles.loadingText}>Checking Login…</Text>
+          <Text style={styles.loadingText}>Checking Login...</Text>
         </View>
       )}
     </Animated.View>

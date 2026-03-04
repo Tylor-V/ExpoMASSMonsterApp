@@ -107,9 +107,9 @@ const SignUpScreen: React.FC = () => {
       // Replace the AuthStack with the main application stack
       const parentNavigation = navigation.getParent();
       if (parentNavigation) {
-        parentNavigation.dispatch(StackActions.replace('AcceptanceGate'));
+        parentNavigation.dispatch(StackActions.replace('AppStack'));
       } else {
-        navigation.dispatch(StackActions.replace('AcceptanceGate'));
+        navigation.dispatch(StackActions.replace('AppStack'));
       }
     } catch (error: any) {
       console.error('SignUp failed:', error);

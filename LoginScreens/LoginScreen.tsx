@@ -69,8 +69,12 @@ const LoginScreen: React.FC = () => {
           'User not found',
           'No user found for that email. Please sign up.',
         );
+      } else if (error.code === 'auth/invalid-credential') {
+        Alert.alert('Invalid credentials', 'Incorrect email or password.');
       } else if (error.code === 'auth/wrong-password') {
         Alert.alert('Wrong password', 'That password is incorrect.');
+      } else if (error.code === 'auth/user-disabled') {
+        Alert.alert('Account disabled', 'This account has been disabled.');
       } else if (error.code === 'auth/too-many-requests') {
         Alert.alert(
           'Too many attempts',
@@ -110,9 +114,9 @@ const LoginScreen: React.FC = () => {
     } finally {
       const parentNavigation = navigation.getParent();
       if (parentNavigation) {
-        parentNavigation.dispatch(StackActions.replace('AcceptanceGate'));
+        parentNavigation.dispatch(StackActions.replace('AppStack'));
       } else {
-        navigation.dispatch(StackActions.replace('AcceptanceGate'));
+        navigation.dispatch(StackActions.replace('AppStack'));
       }
       if (isMountedRef.current) {
         setLoading(false);
