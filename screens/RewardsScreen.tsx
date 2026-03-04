@@ -23,6 +23,23 @@ const REWARDS: RewardInfo[] = [
   { id: 'mindset', name: 'Coral Club Mindset Pack', points: 200 },
 ];
 
+const REWARD_NAME_BY_ID = REWARDS.reduce<Record<string, string>>((acc, reward) => {
+  acc[reward.id] = reward.name;
+  return acc;
+}, {});
+
+const toMillis = (value: any): number | null => {
+  if (!value) return null;
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (value instanceof Date) return value.getTime();
+  if (typeof value?.toDate === 'function') {
+    const date = value.toDate();
+    return date instanceof Date ? date.getTime() : null;
+  }
+  if (typeof value?.seconds === 'number') return value.seconds * 1000;
+  return null;
+};
+
 export default function RewardsScreen() {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
@@ -68,9 +85,47 @@ export default function RewardsScreen() {
         return 'Invalid reward';
       case 'already_has_active_reward':
         return 'You already have an active discount';
+      case 'issue_failed':
+        return "We couldn't issue the discount. Try again later.";
       default:
         return 'Could not process';
     }
+  };
+
+  const getRequestStatusLabel = (status?: string) => {
+    switch (status) {
+      case 'processing':
+        return 'Processing';
+      case 'approved':
+        return 'Approved';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return 'Pending';
+    }
+  };
+
+  const getRewardNameById = (rewardId?: string) => {
+    if (!rewardId) return 'Unknown reward';
+    return REWARD_NAME_BY_ID[rewardId] || rewardId;
+  };
+
+  const getRedemptionStatusLabel = (redemption: {
+    status?: string;
+    fulfillmentStatus?: string;
+    expiresAt?: any;
+    usedAt?: any;
+  }) => {
+    if (redemption.usedAt) return 'Used';
+
+    const expiresAtMillis = toMillis(redemption.expiresAt);
+    if (expiresAtMillis !== null && expiresAtMillis <= Date.now()) return 'Expired';
+
+    if (redemption.fulfillmentStatus === 'issued') return 'Issued';
+    if (redemption.status === 'approved') return 'Approved';
+    if (redemption.status === 'rejected') return 'Rejected';
+    if (redemption.status === 'processing') return 'Processing';
+    return 'Pending';
   };
 
   const isCouponReward = (reward: RewardInfo) =>
@@ -189,15 +244,16 @@ export default function RewardsScreen() {
             <Text style={styles.sectionTitle}>Recent Requests</Text>
             {recentRequests.map(request => {
               const status = request.status || 'pending';
+              const statusLabel = getRequestStatusLabel(status);
               return (
                 <View key={request.id} style={styles.historyRow}>
                   <View style={styles.requestContent}>
-                    <Text style={styles.historyName}>{request.rewardId || 'Unknown reward'}</Text>
+                    <Text style={styles.historyName}>{getRewardNameById(request.rewardId)}</Text>
                     {status === 'rejected' ? (
                       <Text style={styles.requestReason}>{getRejectedReason(request.reason)}</Text>
                     ) : null}
                   </View>
-                  <Text style={styles.historyStatus}>{status}</Text>
+                  <Text style={styles.historyStatus}>{statusLabel}</Text>
                 </View>
               );
             })}
@@ -205,7 +261,7 @@ export default function RewardsScreen() {
             {history.map(h => (
               <View key={h.id} style={styles.historyRow}>
                 <Text style={styles.historyName}>{h.name}</Text>
-                <Text style={styles.historyStatus}>{h.status || 'pending'}</Text>
+                <Text style={styles.historyStatus}>{getRedemptionStatusLabel(h)}</Text>
               </View>
             ))}
           </View>
