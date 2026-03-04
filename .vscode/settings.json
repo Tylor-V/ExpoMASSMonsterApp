@@ -5,5 +5,6 @@
     "source.sortMembers": "explicit"
   },
   "terminal.integrated.cwd": "C:\\Users\\ice42\\ExpoMASSMonsterApp",
-  "chatgpt.openOnStartup": true
+  "chatgpt.openOnStartup": true,
+  "chatgpt.runCodexInWindowsSubsystemForLinux": true
 }
