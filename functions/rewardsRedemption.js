@@ -18,6 +18,11 @@ const REWARD_CATALOG = {
   mindset: {points: 200, name: 'Coral Club Mindset Pack'},
 };
 
+function isDiscountCodeConflictError(error) {
+  const message = error instanceof Error ? error.message : String(error || '');
+  return /already|taken|exists|duplicate/i.test(message);
+}
+
 exports.processRedemptionRequest = functions.firestore
   .document('users/{uid}/redemptionRequests/{requestId}')
   .onCreate(async (snap, context) => {
@@ -34,10 +39,13 @@ exports.processRedemptionRequest = functions.firestore
     const requestRef = snap.ref;
     const redemptionRef = userRef.collection('redemptions').doc(requestId);
     const now = admin.firestore.Timestamp.now();
+    let shopifyPhase = null;
 
     await db.runTransaction(async (tx) => {
       const requestDoc = await tx.get(requestRef);
       const requestData = requestDoc.data() || {};
+
+      shopifyPhase = null;
 
       if (requestData.processedAt) {
         return;
@@ -55,9 +63,21 @@ exports.processRedemptionRequest = functions.firestore
         return;
       }
 
-      const activeRewardRef = userRef.collection('activeRewards').doc(rewardId);
+      const userDoc = await tx.get(userRef);
+      const userData = userDoc.data() || {};
+      const currentPoints = userData.accountabilityPoints || 0;
+
+      if (currentPoints < reward.points) {
+        tx.update(requestRef, {
+          processedAt: admin.firestore.FieldValue.serverTimestamp(),
+          status: 'rejected',
+          reason: 'insufficient_points',
+        });
+        return;
+      }
 
       if (reward.type === 'shopify_discount') {
+        const activeRewardRef = userRef.collection('activeRewards').doc(rewardId);
         const activeRewardDoc = await tx.get(activeRewardRef);
         const activeRewardData = activeRewardDoc.data() || {};
         const activeUsedAt = activeRewardData.usedAt;
@@ -99,18 +119,13 @@ exports.processRedemptionRequest = functions.firestore
           });
           return;
         }
-      }
 
-      const userDoc = await tx.get(userRef);
-      const userData = userDoc.data() || {};
-      const currentPoints = userData.accountabilityPoints || 0;
+        tx.set(requestRef, {
+          status: 'processing',
+          startedAt: admin.firestore.FieldValue.serverTimestamp(),
+        }, {merge: true});
 
-      if (currentPoints < reward.points) {
-        tx.update(requestRef, {
-          processedAt: admin.firestore.FieldValue.serverTimestamp(),
-          status: 'rejected',
-          reason: 'insufficient_points',
-        });
+        shopifyPhase = {rewardId, reward};
         return;
       }
 
@@ -128,18 +143,127 @@ exports.processRedemptionRequest = functions.firestore
         requestId,
       }, {merge: true});
 
-      if (reward.type === 'shopify_discount') {
-        const expiresAtDate = new Date(
-          Date.now() + ((reward.expiresDays || 7) * 24 * 60 * 60 * 1000),
-        );
-        tx.set(activeRewardRef, {
-          rewardId,
+      tx.update(requestRef, {
+        processedAt: admin.firestore.FieldValue.serverTimestamp(),
+        status: 'approved',
+        redemptionId: requestId,
+      });
+    });
+
+    if (!shopifyPhase) {
+      return null;
+    }
+
+    const {rewardId, reward} = shopifyPhase;
+    const activeRewardRef = userRef.collection('activeRewards').doc(rewardId);
+    const discountCode = `MM-${requestId.slice(0, 8).toUpperCase()}`;
+    const startsAt = new Date();
+    const expiresAtDate = new Date(
+      startsAt.getTime() + ((reward.expiresDays || 7) * 24 * 60 * 60 * 1000),
+    );
+    const expiresAt = expiresAtDate.toISOString();
+
+    try {
+      await createBasicDiscountCode({
+        code: discountCode,
+        title: `${reward.name} (${requestId.slice(0, 8).toUpperCase()})`,
+        valueType: 'FIXED_AMOUNT',
+        value: reward.amount,
+        startsAt: startsAt.toISOString(),
+        endsAt: expiresAt,
+        usageLimit: 1,
+        oncePerCustomer: false,
+      });
+    } catch (error) {
+      if (!isDiscountCodeConflictError(error)) {
+        const message = error instanceof Error ? error.message : 'unknown_issue_error';
+        functions.logger.error('Failed to issue Shopify discount code', {
+          uid,
           requestId,
-          status: 'reserved',
-          expiresAt: admin.firestore.Timestamp.fromDate(expiresAtDate),
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        }, {merge: true});
+          rewardId,
+          issue: message,
+        });
+
+        await db.runTransaction(async (tx) => {
+          const requestDoc = await tx.get(requestRef);
+          const requestData = requestDoc.data() || {};
+          if (requestData.processedAt) {
+            return;
+          }
+
+          const existingRedemption = await tx.get(redemptionRef);
+          if (existingRedemption.exists) {
+            return;
+          }
+
+          tx.update(requestRef, {
+            processedAt: admin.firestore.FieldValue.serverTimestamp(),
+            status: 'rejected',
+            reason: 'issue_failed',
+          });
+        });
+
+        return null;
       }
+
+      functions.logger.warn('Discount code already exists; continuing finalize', {
+        uid,
+        requestId,
+        rewardId,
+      });
+    }
+
+    await db.runTransaction(async (tx) => {
+      const requestDoc = await tx.get(requestRef);
+      const requestData = requestDoc.data() || {};
+
+      shopifyPhase = null;
+
+      if (requestData.processedAt) {
+        return;
+      }
+
+      const existingRedemption = await tx.get(redemptionRef);
+      if (!existingRedemption.exists) {
+        const userDoc = await tx.get(userRef);
+        const userData = userDoc.data() || {};
+        const currentPoints = userData.accountabilityPoints || 0;
+
+        if (currentPoints < reward.points) {
+          tx.update(requestRef, {
+            processedAt: admin.firestore.FieldValue.serverTimestamp(),
+            status: 'rejected',
+            reason: 'insufficient_points',
+          });
+          return;
+        }
+
+        tx.update(userRef, {
+          accountabilityPoints: admin.firestore.FieldValue.increment(-reward.points),
+        });
+      }
+
+      tx.set(redemptionRef, {
+        rewardId,
+        name: reward.name,
+        points: reward.points,
+        cost: reward.points,
+        date: admin.firestore.FieldValue.serverTimestamp(),
+        status: 'pending',
+        requestId,
+        discountCode,
+        expiresAt: admin.firestore.Timestamp.fromDate(expiresAtDate),
+        fulfillmentStatus: 'issued',
+      }, {merge: true});
+
+      tx.set(activeRewardRef, {
+        rewardId,
+        requestId,
+        discountCode,
+        fulfillmentStatus: 'issued',
+        expiresAt: admin.firestore.Timestamp.fromDate(expiresAtDate),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, {merge: true});
 
       tx.update(requestRef, {
         processedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -148,65 +272,13 @@ exports.processRedemptionRequest = functions.firestore
       });
     });
 
-    const requestDoc = await requestRef.get();
-    const requestData = requestDoc.data() || {};
-
-    if (requestData.status !== 'approved') {
-      return null;
-    }
-
-    const reward = REWARD_CATALOG[requestData.rewardId];
-    if (reward?.type !== 'shopify_discount') {
-      return null;
-    }
-
-    const redemptionDoc = await redemptionRef.get();
-    const redemptionData = redemptionDoc.data() || {};
-
-    if (redemptionData.discountCode) {
-      functions.logger.info('Discount already issued; skipping', {uid, requestId});
-      return null;
-    }
-
-    const discountCode = `MM-${requestId.slice(0, 8).toUpperCase()}`;
-    const startsAt = new Date();
-    const expiresAtDate = new Date(
-      startsAt.getTime() + ((reward.expiresDays || 7) * 24 * 60 * 60 * 1000),
-    );
-    const expiresAt = expiresAtDate.toISOString();
-
-    await createBasicDiscountCode({
-      code: discountCode,
-      title: `${reward.name} (${requestId.slice(0, 8).toUpperCase()})`,
-      valueType: 'FIXED_AMOUNT',
-      value: reward.amount,
-      startsAt: startsAt.toISOString(),
-      endsAt: expiresAt,
-      usageLimit: 1,
-      oncePerCustomer: false,
-    });
-
-    await redemptionRef.set({
-      discountCode,
-      expiresAt: admin.firestore.Timestamp.fromDate(expiresAtDate),
-      fulfillmentStatus: 'issued',
-    }, {merge: true});
-
-    await userRef.collection('activeRewards').doc(requestData.rewardId).set({
-      rewardId: requestData.rewardId,
-      requestId,
-      discountCode,
-      fulfillmentStatus: 'issued',
-      expiresAt: admin.firestore.Timestamp.fromDate(expiresAtDate),
-      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    }, {merge: true});
-
     functions.logger.info('Issued Shopify discount code for redemption', {
       uid,
       requestId,
-      rewardId: requestData.rewardId,
+      rewardId,
       expiresAt,
     });
 
     return null;
   });
+
