@@ -2,7 +2,7 @@ import { Ionicons as Icon } from '@expo/vector-icons';
 import { CommonActions, useNavigation } from '@react-navigation/native';
 import { signOut } from 'firebase/auth';
 import React from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import SettingsRow from '../components/SettingsRow';
@@ -52,6 +52,9 @@ const SettingsScreen = () => {
     }
   };
 
+  const shouldHideOption = (routeName?: string) =>
+    Platform.OS === 'ios' && routeName === 'DonateSupport';
+
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.headerBar}>
@@ -63,8 +66,12 @@ const SettingsScreen = () => {
       <ScrollView>
         {settingsGroups.map((group, groupIndex) => (
           <View key={groupIndex}>
-            {group.map((option) => (
-              option.label === 'Sign Out' ? (
+            {group.map((option) => {
+              if (shouldHideOption(option.routeName)) {
+                return null;
+              }
+
+              return option.label === 'Sign Out' ? (
                 <SettingsRow
                   key={option.label}
                   icon={option.icon}
@@ -76,7 +83,7 @@ const SettingsScreen = () => {
                 />
               ) : option.disabled || !option.routeName ? (
                 <View key={option.label} style={styles.disabledRow}>
-                  <Icon name={option.icon} size={24} color={option.iconColor || '#232323'} />
+                  <Icon name={option.icon as any} size={24} color={option.iconColor || '#232323'} />
                   <Text style={styles.disabledLabel}>{option.label}</Text>
                   <Text style={styles.comingSoonText}>Coming soon</Text>
                 </View>
@@ -90,8 +97,8 @@ const SettingsScreen = () => {
                   chevronColor={option.chevronColor}
                   onPress={handleNavigate(option.routeName)}
                 />
-              )
-            ))}
+              );
+            })}
             {groupIndex < settingsGroups.length - 1 && <View style={styles.groupSpacer} />}
           </View>
         ))}
@@ -115,7 +122,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   headerBar: {
-    height: 56,
+    minHeight: 56,
     backgroundColor: '#232323',
     flexDirection: 'row',
     alignItems: 'center',
@@ -123,6 +130,9 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     marginRight: 16,
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
   },
   headerTitle: {
     color: '#FFFFFF',
@@ -140,7 +150,7 @@ const styles = StyleSheet.create({
   disabledRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: 56,
+    minHeight: 56,
     paddingHorizontal: 16,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,

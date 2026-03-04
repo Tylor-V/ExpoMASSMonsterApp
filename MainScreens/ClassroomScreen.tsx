@@ -5,6 +5,7 @@ import {
   Animated,
   Dimensions,
   FlatList,
+  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -111,6 +112,8 @@ function ClassroomScreen({ isActive = true, onRequestTabChange, onCourseOpenChan
   const anim = useRef(new Animated.Value(0)).current;
   const hasMembership = hasActiveMembership(user);
   const isAuthenticated = !!user;
+
+  const showMembershipStoreCta = Platform.OS !== 'ios';
 
   const isCourseAccessible = (access: string) => {
     if (access === 'public') return isAuthenticated;
@@ -228,10 +231,12 @@ function ClassroomScreen({ isActive = true, onRequestTabChange, onCourseOpenChan
                       </Text>
                       <Text style={styles.lockedBody}>
                         {isAuthenticated
-                          ? 'This course is available to active members. Update your membership to continue.'
+                          ? showMembershipStoreCta
+                            ? 'This course is available to active members. Update your membership to continue.'
+                            : 'This course is available to active members. Manage membership access from your account settings.'
                           : 'Create an account or sign in to unlock the full classroom experience.'}
                       </Text>
-                      {isAuthenticated && (
+                      {isAuthenticated && showMembershipStoreCta && (
                         <TouchableOpacity
                           style={styles.lockedAction}
                           onPress={() => {

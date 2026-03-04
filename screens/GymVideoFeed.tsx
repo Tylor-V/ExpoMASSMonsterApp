@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Video } from 'expo-video';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,32 +16,45 @@ const { height, width } = Dimensions.get('window');
 
 const FeedVideo = React.memo(
   ({ uri, isActive }: { uri: string; isActive: boolean }) => {
-    const ref = useRef<Video>(null);
+    const player = useVideoPlayer({ uri }, playerInstance => {
+      playerInstance.loop = true;
+      playerInstance.muted = false;
+    });
 
     useEffect(() => {
-      if (isActive) {
-        try {
-          ref.current?.play();
-        } catch {
-          // ignore play errors
-        }
-      } else {
-        try {
-          ref.current?.pause();
-        } catch {
-          // ignore pause errors
-        }
+      let subscription: { remove?: () => void } | null = null;
+      try {
+        subscription = player.addListener?.('statusChange', ({ status, error }: any) => {
+          if (status === 'error') {
+            console.error('Video playback error', error);
+          }
+        }) as { remove?: () => void } | null;
+      } catch {
+        subscription = null;
       }
-    }, [isActive]);
+      return () => {
+        subscription?.remove?.();
+      };
+    }, [player]);
+
+    useEffect(() => {
+      try {
+        if (isActive) {
+          player.play();
+        } else {
+          player.pause();
+        }
+      } catch {
+        // ignore player state transitions
+      }
+    }, [isActive, player]);
 
     return (
-      <Video
-        ref={ref}
-        source={{ uri }}
+      <VideoView
+        player={player}
         style={styles.video}
         contentFit="cover"
-        isLooping
-        onError={(e) => console.error('Video playback error', e)}
+        nativeControls={false}
       />
     );
   }
@@ -341,6 +354,8 @@ export default function GymVideoFeed({ navigation }) {
     if (viewableItems.length) setActiveIndex(viewableItems[0].index || 0);
   }).current;
 
+  const keyExtractor = useCallback((item: any) => item.id, []);
+
   if (loading) return (
     <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }] }>
       <ActivityIndicator color="#FFCC00" size="large" />
@@ -371,7 +386,6 @@ export default function GymVideoFeed({ navigation }) {
     </View>
   );
 
-  const keyExtractor = useCallback((item: any) => item.id, []);
 
   return (
     <View style={styles.container}>
@@ -463,3 +477,4 @@ const styles = StyleSheet.create({
   uploadTxt: { color: '#232323', fontWeight: 'bold', fontSize: 16, marginLeft: 7 },
   backBtn: { position: 'absolute', left: 19, padding: 7, zIndex: 22 },
 });
+

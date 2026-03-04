@@ -1,6 +1,6 @@
 const db: any = { users: {} };
 
-const currentUser = { uid: 'test-uid' };
+const currentUser = { uid: 'test-uid', email: 'test@example.com', displayName: 'Test User' };
 
 function getNested(path: string[]): any {
   let node: any = db;
@@ -235,3 +235,4 @@ export function __getDoc(path: string[]) {
 }
 
 export default { auth, firestore };
+

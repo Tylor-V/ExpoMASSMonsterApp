@@ -97,6 +97,10 @@ const DMChatScreen = ({ navigation, route }) => {
     targetType: 'dmMessage',
   });
   const [localBlockedIds, setLocalBlockedIds] = useState<string[]>([]);
+  const messages = React.useMemo(
+    () => dedupeById([...olderMessages, ...liveMessages]),
+    [olderMessages, liveMessages],
+  );
   const scrollToLatest = (animated: boolean = true) => {
     if (flatListRef.current && visibleMessages.length > 0) {
       try {
@@ -131,7 +135,6 @@ const DMChatScreen = ({ navigation, route }) => {
   const initialScrollDone = useRef(false);
   const prevMessagesRef = useRef<any[]>([]);
   const hasLoadedOlderRef = useRef(false);
-  const messages = React.useMemo(() => dedupeById([...olderMessages, ...liveMessages]), [olderMessages, liveMessages]);
 
   useEffect(() => {
     initialLastReadLoaded.current = false;
@@ -428,7 +431,7 @@ const DMChatScreen = ({ navigation, route }) => {
       <View style={{ flex: 1, paddingTop: insets.top, paddingBottom: insets.bottom }}>
       {/* Header */}
       <View style={styles.headerRow}>
-        <TouchableOpacity onPress={handleBack}>
+        <TouchableOpacity onPress={handleBack} style={styles.backBtn}>
           <Icon name="chevron-back" size={32} color={colors.accent} />
         </TouchableOpacity>
         <TouchableOpacity
@@ -797,10 +800,16 @@ const localStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white,
+    minHeight: 56,
     paddingVertical: 14,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
     borderColor: colors.grayLight,
+  },
+  backBtn: {
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   headerText: {
     color: colors.textDark,
@@ -841,3 +850,4 @@ const localStyles = StyleSheet.create({
 const styles = { ...chatStyles, ...localStyles };
 
 export default DMChatScreen;
+

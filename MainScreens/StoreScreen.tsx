@@ -895,7 +895,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center' },
-  iconBtn: { padding: 6 },
+  iconBtn: { padding: 6, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   logo: {
     width: width * 0.5,
     height: 70,

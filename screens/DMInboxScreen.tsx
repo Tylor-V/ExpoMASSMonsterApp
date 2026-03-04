@@ -429,17 +429,19 @@ const DMsInboxScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
   },
   backBtn: {
     marginBottom: 10,
-    width: 40,
+    minWidth: 44,
+    minHeight: 44,
+    justifyContent: 'center',
     alignItems: 'flex-start',
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 10,
     borderBottomWidth: 1.2,
     borderColor: colors.grayLight,
     paddingBottom: 7,
@@ -459,7 +461,7 @@ const styles = StyleSheet.create({
     borderColor: colors.grayLight,
     borderWidth: 1,
     borderRadius: 16,
-    height: 38,
+    minHeight: 42,
     marginTop: 8,
     marginBottom: 10,
     marginHorizontal: 4,

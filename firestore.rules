@@ -107,6 +107,22 @@ service cloud.firestore {
       allow delete: if isModerator(request.auth.uid);
     }
 
+    match /accountDeletionRequests/{uid} {
+      allow read: if isSelf(uid);
+      allow create: if isSelf(uid)
+        && request.resource.data.uid == uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.requestSource is string
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'status',
+          'requestedAt',
+          'reauthenticatedAt',
+          'requestSource'
+        ]);
+      allow update, delete: if false;
+    }
+
     match /publicUsers/{uid} {
       allow read: if isSignedIn();
       // Public role mirrors must also be locked against self-escalation.
@@ -231,3 +247,4 @@ service cloud.firestore {
     }
   }
 }
+

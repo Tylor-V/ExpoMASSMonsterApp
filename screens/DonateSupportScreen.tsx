@@ -15,38 +15,39 @@ import { useCurrentUserDoc } from '../hooks/useCurrentUserDoc';
 import { colors, fonts } from '../theme';
 
 const DonateSupportScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const user = useCurrentUserDoc();
   const [pressDonate, setPressDonate] = useState(false);
   const [pressInvite, setPressInvite] = useState(false);
+  const isIos = Platform.OS === 'ios';
 
   const openDonate = () => {
     setPressDonate(true);
     setTimeout(() => {
       setPressDonate(false);
       Linking.openURL('https://massmonster.life/donate').catch(err =>
-        console.error('Failed to open donate link', err)
+        console.error('Failed to open donate link', err),
       );
     }, 120);
   };
 
   const inviteFriend = () => {
     const code = user?.referralCode || user?.uid || '';
-    const body = `Join me on MASS Monster! Build muscle, stay motivated, and unlock real rewards. Download the app and use my code ${code}. massmonster.life`;
+    const body = `Join me on MASS Monster. Build muscle, stay motivated, and unlock rewards. Use my code ${code}. massmonster.life`;
     setPressInvite(true);
     setTimeout(() => {
       setPressInvite(false);
       const sms = Platform.OS === 'ios' ? 'sms:&body=' : 'sms:?body=';
       Linking.openURL(`${sms}${encodeURIComponent(body)}`).catch(err =>
-        console.error('Failed to open SMS app', err)
+        console.error('Failed to open SMS app', err),
       );
     }, 120);
   };
 
   const openEmail = () => {
     Linking.openURL('mailto:support@massmonster.com').catch(err =>
-      console.error('Failed to open email app', err)
+      console.error('Failed to open email app', err),
     );
   };
 
@@ -65,7 +66,7 @@ const DonateSupportScreen = () => {
         >
           <Ionicons name="chevron-back" size={26} color={colors.white} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>DONATE & SUPPORT</Text>
+        <Text style={styles.headerTitle}>SUPPORT</Text>
       </View>
       <ScrollView
         contentContainerStyle={{
@@ -74,30 +75,40 @@ const DonateSupportScreen = () => {
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={{ marginTop: 14 }}>
-          <Text style={styles.sectionTitle}>Support MASS Monster</Text>
-          <Text style={styles.bodyText}>
-            We’re building MASS Monster for the community, not profit. Your
-            donation goes directly toward new features, better content, and
-            real-world rewards. Thank you for helping us grow stronger together.
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={openDonate}
-          activeOpacity={1}
-          style={[
-            styles.donateBtn,
-            { transform: [{ scale: pressDonate ? 1.07 : 1 }] },
-          ]}
-        >
-          <Ionicons name="heart" size={22} color="#E43F5A" style={{ marginRight: 8 }} />
-          <Text style={styles.donateTxt}>Donate Now</Text>
-        </TouchableOpacity>
-        <View style={{ marginTop: 32 }}>
+        {!isIos ? (
+          <View style={{ marginTop: 14 }}>
+            <Text style={styles.sectionTitle}>Support MASS Monster</Text>
+            <Text style={styles.bodyText}>
+              We are building MASS Monster for the community. Donations help us ship faster updates,
+              better content, and real-world rewards.
+            </Text>
+            <TouchableOpacity
+              onPress={openDonate}
+              activeOpacity={1}
+              style={[
+                styles.donateBtn,
+                { transform: [{ scale: pressDonate ? 1.07 : 1 }] },
+              ]}
+            >
+              <Ionicons name="heart" size={22} color="#E43F5A" style={{ marginRight: 8 }} />
+              <Text style={styles.donateTxt}>Donate Now</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={{ marginTop: 14 }}>
+            <Text style={styles.sectionTitle}>Support MASS Monster</Text>
+            <Text style={styles.bodyText}>
+              Thanks for supporting MASS Monster. On iOS, support us by inviting friends,
+              sharing feedback, and helping grow the community.
+            </Text>
+          </View>
+        )}
+
+        <View style={{ marginTop: 16 }}>
           <Text style={styles.refTitle}>Refer a Friend</Text>
           <Text style={styles.bodyText}>
             Share MASS Monster with friends and help our community grow. When
-            they join, you both earn bonus points!
+            they join, you both earn bonus points.
           </Text>
           <TouchableOpacity
             onPress={inviteFriend}
@@ -120,7 +131,7 @@ const DonateSupportScreen = () => {
           <Text style={styles.faqLink}>View FAQ</Text>
         </TouchableOpacity>
         <Text style={styles.footer}>
-          Thank you for supporting the MASS Monster movement 💪
+          Thank you for supporting the MASS Monster movement.
         </Text>
       </ScrollView>
     </View>
@@ -133,7 +144,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
   headerBar: {
-    height: 56,
+    minHeight: 56,
     backgroundColor: '#111',
     flexDirection: 'row',
     alignItems: 'center',
@@ -146,6 +157,9 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     marginRight: 16,
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
   },
   headerTitle: {
     fontFamily: fonts.bold,
@@ -180,9 +194,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255,215,0,0.88)',
-    height: 54,
+    minHeight: 54,
     borderRadius: 27,
-    marginVertical: 20,
+    marginVertical: 12,
     shadowColor: '#000',
     shadowOpacity: 0.15,
     shadowRadius: 3,
@@ -199,7 +213,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#111',
-    height: 50,
+    minHeight: 50,
     borderRadius: 27,
     marginTop: 8,
   },
