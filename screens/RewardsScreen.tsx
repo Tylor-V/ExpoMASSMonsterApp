@@ -30,6 +30,7 @@ export default function RewardsScreen() {
   const history = useRewardHistory();
   const [showFAQ, setShowFAQ] = useState(false);
   const [confetti, setConfetti] = useState(false);
+  const [isRedeeming, setIsRedeeming] = useState(false);
   const [redeemingId, setRedeemingId] = useState<string | null>(null);
   const [couponConfirmReward, setCouponConfirmReward] = useState<RewardInfo | null>(null);
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
@@ -76,8 +77,9 @@ export default function RewardsScreen() {
     reward.id === 'coupon5' || (reward as RewardInfo & { type?: string }).type === 'shopify_discount';
 
   const submitRewardRequest = async (reward: RewardInfo) => {
-    if (redeemingId !== null) return;
+    if (isRedeeming) return;
 
+    setIsRedeeming(true);
     setRedeemingId(reward.id);
     try {
       await redeemReward(reward);
@@ -89,11 +91,12 @@ export default function RewardsScreen() {
       Alert.alert('Error', 'Could not submit reward request.');
     } finally {
       setRedeemingId(null);
+      setIsRedeeming(false);
     }
   };
 
   const handleRedeem = async (reward: RewardInfo) => {
-    if (redeemingId !== null) return;
+    if (isRedeeming) return;
 
     if (isCouponReward(reward)) {
       setCouponConfirmReward(reward);
@@ -116,14 +119,13 @@ export default function RewardsScreen() {
   };
 
   const handleCouponConfirmRedeem = async () => {
-    if (!couponConfirmReward || redeemingId !== null) return;
+    if (!couponConfirmReward || isRedeeming) return;
     const reward = couponConfirmReward;
     setCouponConfirmReward(null);
     await submitRewardRequest(reward);
   };
 
   const renderReward = ({ item }: { item: RewardInfo }) => {
-    const isRedeeming = redeemingId !== null;
     const isCurrentRedeeming = redeemingId === item.id;
     const isDisabled = isRedeeming || points < item.points;
 
@@ -224,7 +226,7 @@ export default function RewardsScreen() {
         <Pressable
           style={styles.modalBg}
           onPress={() => {
-            if (redeemingId === null) setCouponConfirmReward(null);
+            if (!isRedeeming) setCouponConfirmReward(null);
           }}
         >
           <Pressable style={styles.couponConfirmCard} onPress={() => {}}>
@@ -241,17 +243,17 @@ export default function RewardsScreen() {
             <View style={styles.couponConfirmActions}>
               <Pressable
                 style={styles.couponCancelBtn}
-                disabled={redeemingId !== null}
+                disabled={isRedeeming}
                 onPress={() => setCouponConfirmReward(null)}
               >
                 <Text style={styles.couponCancelTxt}>Cancel</Text>
               </Pressable>
               <Pressable
-                style={[styles.couponBtn, styles.couponConfirmRedeemBtn, { opacity: redeemingId !== null ? 0.5 : 1 }]}
-                disabled={redeemingId !== null}
+                style={[styles.couponBtn, styles.couponConfirmRedeemBtn, { opacity: isRedeeming ? 0.5 : 1 }]}
+                disabled={isRedeeming}
                 onPress={handleCouponConfirmRedeem}
               >
-                <Text style={styles.couponTxt}>Redeem</Text>
+                <Text style={styles.couponTxt}>{isRedeeming ? 'Submitting...' : 'Redeem'}</Text>
               </Pressable>
             </View>
           </Pressable>
@@ -458,8 +460,3 @@ const styles = StyleSheet.create({
   faqTitle: { fontWeight: 'bold', fontSize: 18, marginBottom: 8, color: colors.black, textAlign: 'center' },
   faqText: { fontFamily: fonts.regular, fontSize: 14, color: colors.textDark, textAlign: 'center' },
 });
-
-
-
-
-

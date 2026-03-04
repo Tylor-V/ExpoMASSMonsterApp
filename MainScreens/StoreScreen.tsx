@@ -330,6 +330,7 @@ function StoreScreen({ navigation, setTabSwipeEnabled }: StoreScreenProps) {
   const slideAnim = useRef(new Animated.Value(drawerHeight)).current;
   const [imgIndex, setImgIndex] = useState(0);
   const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   useEffect(() => {
     setTabSwipeEnabled?.(!(cartOpen || renderModal));
@@ -599,6 +600,9 @@ function StoreScreen({ navigation, setTabSwipeEnabled }: StoreScreenProps) {
   };
 
   const handleCheckout = async () => {
+    if (checkoutLoading) {
+      return;
+    }
     if (!cartItems || cartItems.length === 0) {
       Alert.alert('Cart is empty', 'Add items to your cart before checking out.');
       return;
@@ -609,39 +613,45 @@ function StoreScreen({ navigation, setTabSwipeEnabled }: StoreScreenProps) {
       Alert.alert('Invalid cart', 'Some items are missing variant info or quantity.');
       return;
     }
+
     let checkoutResult: Awaited<ReturnType<typeof createShopifyCheckout>> | null = null;
+    setCheckoutLoading(true);
     try {
-      const discountCode = await getActiveIssuedDiscountCode();
-      checkoutResult = await createShopifyCheckout(
-        cartItems.map(item => ({
-          id: item.variantId || item.id,
-          quantity: item.quantity,
-          variantId: item.variantId,
-        })),
-        discountCode ? { discountCode } : undefined,
-      );
-      if (checkoutResult.discountApplied === false) {
-        Alert.alert(
-          'Discount not applied',
-          "We couldn't apply your reward discount, but you can still checkout.",
+      try {
+        const discountCode = await getActiveIssuedDiscountCode();
+        checkoutResult = await createShopifyCheckout(
+          cartItems.map(item => ({
+            id: item.variantId || item.id,
+            quantity: item.quantity,
+            variantId: item.variantId,
+          })),
+          discountCode ? { discountCode } : undefined,
         );
+        if (checkoutResult.discountApplied === false) {
+          Alert.alert(
+            'Discount not applied',
+            "We couldn't apply your reward discount, but you can still checkout.",
+          );
+        }
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Could not start checkout. Please try again.';
+        Alert.alert('Checkout failed', message);
+        return;
       }
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Could not start checkout. Please try again.';
-      Alert.alert('Checkout failed', message);
-      return;
-    }
-    const url = checkoutResult?.url ?? null;
-    if (!url) {
-      Alert.alert('Checkout failed', 'Could not start checkout. Please try again.');
-      return;
-    }
-    try {
-      await openCheckoutUrl(url);
-    } catch (err) {
-      Alert.alert('Checkout failed', 'Could not open checkout. Please try again.');
-      console.error('Failed to open Shopify checkout URL', err);
+      const url = checkoutResult?.url ?? null;
+      if (!url) {
+        Alert.alert('Checkout failed', 'Could not start checkout. Please try again.');
+        return;
+      }
+      try {
+        await openCheckoutUrl(url);
+      } catch (err) {
+        Alert.alert('Checkout failed', 'Could not open checkout. Please try again.');
+        console.error('Failed to open Shopify checkout URL', err);
+      }
+    } finally {
+      setCheckoutLoading(false);
     }
   };
 
@@ -861,11 +871,14 @@ function StoreScreen({ navigation, setTabSwipeEnabled }: StoreScreenProps) {
         {/* Only show checkout button if cart drawer is closed */}
         {cartQuantity > 0 && (
           <Pressable
-            style={styles.checkoutBarBtn}
+            style={[styles.checkoutBarBtn, checkoutLoading && styles.checkoutBarBtnDisabled]}
             onPress={handleCheckout}
             accessibilityRole="button"
+            disabled={checkoutLoading}
           >
-            <Text style={styles.checkoutBarBtnText}>Checkout</Text>
+            <Text style={styles.checkoutBarBtnText}>
+              {checkoutLoading ? 'Opening...' : 'Checkout'}
+            </Text>
           </Pressable>
         )}
       </Pressable>
@@ -1182,6 +1195,9 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingVertical: 2,
     paddingHorizontal: 8,
+  },
+  checkoutBarBtnDisabled: {
+    opacity: 0.5,
   },
   checkoutBarBtnText: {
     fontWeight: 'bold',
