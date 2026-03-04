@@ -42,22 +42,35 @@ describe('ChatBar gym feed button', () => {
   });
 });
 
-jest.mock('../../firebase/firebase', () => ({
-  firestore: () => ({
-    collection: () => ({
-      get: () => Promise.resolve({ docs: [] }),
-      doc: () => ({
-        collection: () => ({
-          orderBy: () => ({
-            limit: () => ({ get: () => Promise.resolve({ empty: true, docs: [] }) }),
-          }),
+jest.mock('../../firebase/firebase', () => {
+  const emptyDocs = { docs: [], empty: true, size: 0 };
+  const makeWhereResult = () => ({
+    get: () => Promise.resolve(emptyDocs),
+    onSnapshot: (cb: any) => {
+      cb(emptyDocs);
+      return jest.fn();
+    },
+  });
+  const makeCollection = () => ({
+    get: () => Promise.resolve(emptyDocs),
+    where: () => makeWhereResult(),
+    doc: () => ({
+      collection: () => ({
+        orderBy: () => ({
+          limit: () => ({ get: () => Promise.resolve(emptyDocs) }),
         }),
+        where: () => ({ get: () => Promise.resolve(emptyDocs) }),
       }),
     }),
-  }),
-  auth: () => ({ currentUser: { uid: 'user1' } }),
-  storage: () => ({ ref: () => ({}) }),
-}));
+  });
+  return {
+    firestore: () => ({
+      collection: () => makeCollection(),
+    }),
+    auth: () => ({ currentUser: { uid: 'user1' } }),
+    storage: () => ({ ref: () => ({}) }),
+  };
+});
 
 describe('ChatBar pinned button', () => {
   it('renders gray thumbtack and no badge when no pinned messages', () => {

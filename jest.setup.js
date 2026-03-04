@@ -50,9 +50,17 @@ jest.mock('react-native-gesture-handler', () => {
   };
 });
 
-jest.mock('react-native-reanimated', () =>
-  require('./__mocks__/react-native-reanimated.js')
+jest.mock('react-native-reanimated', () => {
+  const mockReanimated = require('react-native-reanimated/mock');
+  mockReanimated.default.call = () => {};
+  return mockReanimated;
+});
+
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
+
+jest.mock('./firebase/firebase', () => require('./__mocks__/firebase'));
 
 jest.mock("@react-native-community/netinfo", () => require("@react-native-community/netinfo/jest/netinfo-mock.js"));
 

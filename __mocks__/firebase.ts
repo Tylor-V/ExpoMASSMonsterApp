@@ -20,12 +20,15 @@ function ensureNested(path: string[]): any {
   return node;
 }
 
+function randomId() {
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
 class Document {
   path: string[];
   ref: any;
   constructor(path: string[]) {
     this.path = path;
-    // Expose a ref property to mimic Firestore's DocumentReference structure
     this.ref = this;
   }
   async get() {
@@ -58,24 +61,84 @@ class Document {
 
 class Collection {
   path: string[];
+  filters: Array<(data: any) => boolean> = [];
+  orderByField?: string;
+  orderByDirection: 'asc' | 'desc' = 'asc';
+  limitCount?: number;
   constructor(path: string[]) {
     this.path = path;
   }
-  doc(id: string) {
-    return new Document([...this.path, id]);
+  private clone() {
+    const next = new Collection(this.path.slice());
+    next.filters = this.filters.slice();
+    next.orderByField = this.orderByField;
+    next.orderByDirection = this.orderByDirection;
+    next.limitCount = this.limitCount;
+    return next;
+  }
+  doc(id?: string) {
+    return new Document([...this.path, id || randomId()]);
+  }
+  where(field: string, op: any, value: any) {
+    if (op !== '==') return this.clone();
+    const next = this.clone();
+    next.filters.push(data => getFieldValue(data, field) === value);
+    return next;
+  }
+  orderBy(field: string, direction: 'asc' | 'desc' = 'asc') {
+    const next = this.clone();
+    next.orderByField = field;
+    next.orderByDirection = direction === 'desc' ? 'desc' : 'asc';
+    return next;
+  }
+  limit(count: number) {
+    const next = this.clone();
+    next.limitCount = count;
+    return next;
+  }
+  onSnapshot(cb: any) {
+    this.get().then(cb);
+    return () => {};
+  }
+  async add(data: any) {
+    const doc = this.doc();
+    await doc.set(data);
+    return doc;
   }
   async get() {
     const col = getNested(this.path) || {};
-    const docs = Object.entries(col).map(([id, data]) => ({
+    let docs = Object.entries(col).map(([id, data]) => ({
       id,
       data: () => ({ ...(data as any) }),
       ref: new Document([...this.path, id]),
     }));
+    if (this.filters.length) {
+      docs = docs.filter(doc => this.filters.every(fn => fn(doc.data())));
+    }
+    if (this.orderByField) {
+      const field = this.orderByField;
+      const dir = this.orderByDirection === 'desc' ? -1 : 1;
+      docs.sort((a, b) => {
+        const av = getFieldValue(a.data(), field);
+        const bv = getFieldValue(b.data(), field);
+        if (av === bv) return 0;
+        return (av > bv ? 1 : -1) * dir;
+      });
+    }
+    if (typeof this.limitCount === 'number') {
+      docs = docs.slice(0, this.limitCount);
+    }
     return {
       docs,
+      empty: docs.length === 0,
+      size: docs.length,
       forEach: (cb: any) => docs.forEach(d => cb(d)),
     };
   }
+}
+
+function getFieldValue(obj: any, path: string) {
+  return path.split('.').reduce((acc, key) => (acc == null ? acc : acc[key]), obj);
 }
 
 function applyField(obj: any, parts: string[], value: any) {
@@ -140,6 +203,13 @@ export function firestore() {
   return {
     collection: (name: string) => new Collection([name]),
     batch,
+    runTransaction: async (fn: any) =>
+      fn({
+        get: (ref: any) => ref.get(),
+        set: (ref: any, data: any, options?: any) => ref.set(data, options),
+        update: (ref: any, data: any) => ref.update(data),
+        delete: (ref: any) => ref.delete(),
+      }),
   } as any;
 }
 
