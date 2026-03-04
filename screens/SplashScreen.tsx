@@ -1,8 +1,8 @@
 import { Asset } from 'expo-asset';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as NativeSplashScreen from 'expo-splash-screen';
 import { VideoView, useVideoPlayer } from 'expo-video';
-import { Image } from 'expo-image';
 import { onAuthStateChanged } from 'firebase/auth';
 import React, { useEffect, useRef } from 'react';
 import {
@@ -23,27 +23,58 @@ import { ANIM_SLOW, SPLASH_TIMEOUT } from '../utils/animations';
 
 const splashVideo = require('../assets/mass-splash.mp4');
 const splashPlaceholder = require('../assets/app-icon.png');
-const {width, height} = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
-export default function SplashScreen({navigation}) {
+type SplashFinishOptions = {
+  force?: boolean;
+  allowSkip?: boolean;
+};
+
+export default function SplashScreen({ navigation }) {
   const [authChecked, setAuthChecked] = React.useState(false);
   const [isLoggedIn, setIsLoggedIn] = React.useState(false);
   const [videoReady, setVideoReady] = React.useState(false);
-  const {appReady} = useAppContext();
+  const [videoFinished, setVideoFinished] = React.useState(false);
+  const [videoFailed, setVideoFailed] = React.useState(false);
+  const { appReady } = useAppContext();
 
   const hasNavigated = useRef(false);
   const fadeAnim = useRef(new Animated.Value(1)).current;
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const authCheckedRef = useRef(false);
-  const player = useVideoPlayer(splashVideo, player => {
-    player.loop = false;
-    player.addListener('playToEnd', () => handleFinish());
-    player.addListener('statusChange', ({ status, error }) => {
-      if (status === 'error') handleFinish(true);
-    });
+  const player = useVideoPlayer(splashVideo, playerInstance => {
+    playerInstance.loop = false;
   });
 
-  // Preload the splash video so the first frame shows immediately
+  const handleFinish = React.useCallback(
+    (options: SplashFinishOptions = {}) => {
+      const { force = false, allowSkip = false } = options;
+      if (!authChecked || hasNavigated.current) return;
+      if (!force && !allowSkip && !videoFinished) return;
+      if (!force && isLoggedIn && !appReady) return;
+
+      hasNavigated.current = true;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: ANIM_SLOW,
+        useNativeDriver: true,
+      }).start(() => {
+        if (isLoggedIn) {
+          navigation.replace('AppStack');
+        } else {
+          navigation.replace('AuthStack');
+        }
+      });
+    },
+    [appReady, authChecked, fadeAnim, isLoggedIn, navigation, videoFinished],
+  );
+
+  // Preload the splash video so the first frame can render without stutter.
   useEffect(() => {
     let mounted = true;
     Asset.loadAsync(splashVideo)
@@ -56,27 +87,28 @@ export default function SplashScreen({navigation}) {
     };
   }, []);
 
-  // When splash video ends or tap to skip, navigate accordingly
-  const handleFinish = React.useCallback((force = false) => {
-    if (!authChecked || hasNavigated.current) return;
-    if (!force && isLoggedIn && !appReady) return;
-    hasNavigated.current = true;
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = undefined;
+  useEffect(() => {
+    let playToEndSub: { remove?: () => void } | null = null;
+    let statusSub: { remove?: () => void } | null = null;
+
+    try {
+      playToEndSub = player.addListener('playToEnd', () => {
+        setVideoFinished(true);
+      }) as { remove?: () => void };
+      statusSub = player.addListener('statusChange', ({ status }) => {
+        if (status === 'error') {
+          setVideoFailed(true);
+        }
+      }) as { remove?: () => void };
+    } catch {
+      setVideoFailed(true);
     }
-    Animated.timing(fadeAnim, {
-      toValue: 0,
-      duration: ANIM_SLOW,
-      useNativeDriver: true,
-    }).start(() => {
-      if (isLoggedIn) {
-        navigation.replace('AppStack');
-      } else {
-        navigation.replace('AuthStack');
-      }
-    });
-  }, [appReady, authChecked, fadeAnim, isLoggedIn, navigation]);
+
+    return () => {
+      playToEndSub?.remove?.();
+      statusSub?.remove?.();
+    };
+  }, [player]);
 
   useEffect(() => {
     authCheckedRef.current = authChecked;
@@ -101,7 +133,7 @@ export default function SplashScreen({navigation}) {
     return unsub;
   }, []);
 
-  // Fallback timeout in case auth or app data hangs
+  // Fallback timeout in case auth or app data hangs.
   useEffect(() => {
     const tryForcedFinish = () => {
       if (hasNavigated.current) return;
@@ -109,7 +141,7 @@ export default function SplashScreen({navigation}) {
         timeoutRef.current = setTimeout(tryForcedFinish, 250);
         return;
       }
-      handleFinish(true);
+      handleFinish({ force: true });
     };
 
     timeoutRef.current = setTimeout(tryForcedFinish, SPLASH_TIMEOUT);
@@ -118,28 +150,36 @@ export default function SplashScreen({navigation}) {
     };
   }, [handleFinish]);
 
-  // If auth and data fetching finish after the video ends, navigate automatically
+  // Only auto-finish once the splash video has completed or playback fails.
   useEffect(() => {
-    if (authChecked && !hasNavigated.current) {
-      if (!isLoggedIn || appReady) {
-        handleFinish();
-      }
+    if (!authChecked || hasNavigated.current) {
+      return;
     }
-  }, [authChecked, appReady, isLoggedIn]);
+    if (videoFailed) {
+      handleFinish({ force: true });
+      return;
+    }
+    if (videoFinished) {
+      handleFinish();
+    }
+  }, [appReady, authChecked, handleFinish, isLoggedIn, videoFailed, videoFinished]);
 
   useEffect(() => {
-    if (videoReady) {
-      try {
-        player.play();
-      } catch {
-        handleFinish(true);
-      }
-      NativeSplashScreen.hideAsync().catch(() => null);
+    if (!videoReady) {
+      return;
     }
-  }, [videoReady]);
+
+    try {
+      player.play();
+    } catch {
+      setVideoFailed(true);
+    }
+
+    NativeSplashScreen.hideAsync().catch(() => null);
+  }, [player, videoReady]);
 
   return (
-    <Animated.View style={[styles.container, {opacity: fadeAnim}]}>
+    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       {videoReady ? (
         <VideoView player={player} style={styles.video} contentFit="cover" />
       ) : (
@@ -151,7 +191,7 @@ export default function SplashScreen({navigation}) {
       />
       <TouchableOpacity
         style={StyleSheet.absoluteFill}
-        onPress={() => handleFinish()}
+        onPress={() => handleFinish({ allowSkip: true })}
         activeOpacity={1}
       />
       {!authChecked && (
@@ -171,7 +211,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  video: {width, height, position: 'absolute', top: 0, left: 0},
+  video: { width, height, position: 'absolute', top: 0, left: 0 },
   loadingBox: {
     position: 'absolute',
     bottom: 60,
@@ -186,3 +226,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+

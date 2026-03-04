@@ -23,13 +23,19 @@ describe('SwipeableTabs', () => {
     const { getByTestId } = render(
       <SwipeableTabs routes={routes} scenes={scenes} onTabChange={onTabChange} />,
     );
-    fireEvent.scroll(getByTestId('swipeable-tabs-list'), {
+
+    const list = getByTestId('swipeable-tabs-list');
+    const eventPayload = {
       nativeEvent: {
         contentOffset: { x: 300, y: 0 },
         layoutMeasurement: { width: 300, height: 800 },
         contentSize: { width: 600, height: 800 },
       },
-    });
+    };
+
+    fireEvent.scroll(list, eventPayload);
+    fireEvent(list, 'momentumScrollEnd', eventPayload);
+
     expect(onTabChange).toHaveBeenCalledWith(1);
   });
 

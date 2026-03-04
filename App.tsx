@@ -8,7 +8,7 @@ import { NavigationContainer, StackActions, useNavigation } from '@react-navigat
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as NativeSplashScreen from 'expo-splash-screen';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import ForgotPasswordScreen from './LoginScreens/ForgotPasswordScreen';
 import LoginScreen from './LoginScreens/LoginScreen';
@@ -38,6 +38,7 @@ import { preloadGlobals } from './utils/preloadTools';
 import { useNews } from './hooks/useNews';
 import { useAppContext } from './firebase/AppContext';
 import { hasAcceptedLatest } from './utils/acceptance';
+import { ANIM_NAVIGATION } from './utils/animations';
 
 // Keep the native splash screen visible until the first render
 NativeSplashScreen.preventAutoHideAsync().catch(err =>
@@ -60,7 +61,15 @@ function AuthStackScreen() {
 
 function AppStackScreen({ news, newsLoaded, newsOpen, setNewsOpen }) {
   return (
-    <AppStack.Navigator screenOptions={{ headerShown: false }}>
+    <AppStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        gestureEnabled: true,
+        fullScreenGestureEnabled: Platform.OS === 'ios',
+        animation: Platform.OS === 'ios' ? 'default' : 'fade_from_bottom',
+        animationDuration: Platform.OS === 'ios' ? ANIM_NAVIGATION : undefined,
+        contentStyle: { backgroundColor: '#000000' },
+      }}>
       <AppStack.Screen name="MainApp">
         {(props) => (
           <MainAppScreen
@@ -128,7 +137,7 @@ function GuardedAppStackScreen({ news, newsLoaded, newsOpen, setNewsOpen }) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="small" />
-        <Text style={styles.loadingText}>Loading…</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
@@ -136,9 +145,9 @@ function GuardedAppStackScreen({ news, newsLoaded, newsOpen, setNewsOpen }) {
   if (hasUserDataLoadError) {
     return (
       <View style={styles.errorContainer}>
-        <Text style={styles.errorTitle}>Can’t load account data</Text>
+        <Text style={styles.errorTitle}>Can't load account data</Text>
         <Text style={styles.errorBody}>
-          We couldn’t load your account details right now. Check your connection and try again.
+          We couldn't load your account details right now. Check your connection and try again.
         </Text>
         <View style={styles.errorActions}>
           <Pressable style={styles.retryButton} onPress={() => retryUserLoad()}>
@@ -156,7 +165,7 @@ function GuardedAppStackScreen({ news, newsLoaded, newsOpen, setNewsOpen }) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="small" />
-        <Text style={styles.loadingText}>Loading…</Text>
+        <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
@@ -238,21 +247,14 @@ export default function App() {
   });
   const { news, loading } = useNews();
   const [newsOpen, setNewsOpen] = useState(true);
-  const [assetsLoaded, setAssetsLoaded] = useState(false);
 
   useEffect(() => {
-    preloadGlobals().finally(() => setAssetsLoaded(true));
+    preloadGlobals().catch(err => {
+      console.warn('Global preload failed', err);
+    });
   }, []);
 
-  useEffect(() => {
-    if (fontsLoaded && assetsLoaded) {
-      NativeSplashScreen.hideAsync().catch(err =>
-        console.error('Failed to hide splash', err)
-      );
-    }
-  }, [fontsLoaded, assetsLoaded]);
-
-  if (!fontsLoaded || !assetsLoaded) {
+  if (!fontsLoaded) {
     return null;
   }
 
@@ -261,16 +263,36 @@ export default function App() {
       <AppContextProvider>
         <CartProvider>
           <NavigationContainer>
-            <RootStack.Navigator screenOptions={{ headerShown: false }}>
-              <RootStack.Screen name="Splash" component={SplashScreen} />
-              <RootStack.Screen name="AuthStack" component={AuthStackScreen} />
+            <RootStack.Navigator
+              screenOptions={{
+                headerShown: false,
+                animation: Platform.OS === 'ios' ? 'fade' : 'fade_from_bottom',
+                gestureEnabled: false,
+                contentStyle: { backgroundColor: '#000000' },
+              }}>
+              <RootStack.Screen
+                name="Splash"
+                component={SplashScreen}
+                options={{ animationDuration: ANIM_NAVIGATION }}
+              />
+              <RootStack.Screen
+                name="AuthStack"
+                component={AuthStackScreen}
+                options={{ animationDuration: ANIM_NAVIGATION }}
+              />
               <RootStack.Screen
                 name="AcceptanceGate"
                 component={AcceptanceGateScreen}
+                options={{ animation: 'slide_from_right', gestureEnabled: false }}
               />
               <RootStack.Screen
                 name="AcceptanceWebView"
                 component={InAppWebViewScreen}
+                options={{
+                  animation: Platform.OS === 'ios' ? 'slide_from_bottom' : 'fade_from_bottom',
+                  gestureEnabled: true,
+                  presentation: Platform.OS === 'ios' ? 'modal' : 'card',
+                }}
               />
               <RootStack.Screen name="AppStack">
                 {() => (

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Platform, StatusBar, StyleSheet, View } from 'react-native';
 import ChatBar from '../components/ChatBar';
 import NewsModal from '../components/NewsModal';
@@ -22,24 +22,47 @@ const routes = [
   { key: 'profile', title: 'Profile', icon: 'person-outline' },
 ];
 
-const MainAppScreen = ({ navigation, news, newsLoaded, newsOpen, setNewsOpen }) => {
-  const [tabIndex, setTabIndex] = useState(1); // Start on Calendar tab
-  const [swipeEnabled, setSwipeEnabled] = useState(true);
-  // -- NEW STATE --
-  const [isCourseOpen, setIsCourseOpen] = useState(false);
+const DEFAULT_TAB_INDEX = 1;
 
-  // Modal/Popup state
+const resolveRequestedTab = (value: any) => {
+  if (typeof value !== 'number' || Number.isNaN(value)) {
+    return null;
+  }
+  const rounded = Math.round(value);
+  return Math.min(Math.max(rounded, 0), routes.length - 1);
+};
+
+const MainAppScreen = ({ navigation, route, news, newsLoaded, newsOpen, setNewsOpen }) => {
+  const initialTab = resolveRequestedTab(route?.params?.tabIndex) ?? DEFAULT_TAB_INDEX;
+  const [tabIndex, setTabIndex] = useState(initialTab);
+  const [swipeEnabled, setSwipeEnabled] = useState(true);
+  const [isCourseOpen, setIsCourseOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
 
   const user = useCurrentUserDoc();
   usePresence();
 
-  // Stories viewer state (can add userId, initialIndex for advanced use)
+  const handleCourseOpenChange = useCallback((open: boolean) => setIsCourseOpen(open), []);
 
-  // ---------
-  // Pass a callback to ClassroomScreen so it can inform us if a course is open/closed
-  const handleCourseOpenChange = useCallback((open) => setIsCourseOpen(open), []);
-  // ---------
+  const handleTabChange = useCallback((index: number) => {
+    setTabIndex(index);
+    if (index !== 2) {
+      setIsCourseOpen(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const requestedTab = resolveRequestedTab(route?.params?.tabIndex);
+    if (requestedTab === null) {
+      return;
+    }
+
+    if (requestedTab !== tabIndex) {
+      handleTabChange(requestedTab);
+    }
+
+    navigation.setParams({ tabIndex: undefined });
+  }, [handleTabChange, navigation, route?.params?.tabIndex, tabIndex]);
 
   const ChatScene = useCallback(
     () => (
@@ -49,15 +72,8 @@ const MainAppScreen = ({ navigation, news, newsLoaded, newsOpen, setNewsOpen }) 
         onOpenGymFeed={() => navigation.navigate('GymVideoFeed')}
       />
     ),
-    [tabIndex, navigation]
+    [navigation, tabIndex],
   );
-
-  const handleTabChange = useCallback((index: number) => {
-    setTabIndex(index);
-    if (index !== 2) {
-      setIsCourseOpen(false);
-    }
-  }, []);
 
   const ClassroomScene = useCallback(
     () => (
@@ -67,19 +83,17 @@ const MainAppScreen = ({ navigation, news, newsLoaded, newsOpen, setNewsOpen }) 
         onCourseOpenChange={handleCourseOpenChange}
       />
     ),
-    [handleCourseOpenChange, handleTabChange, tabIndex]
+    [handleCourseOpenChange, handleTabChange, tabIndex],
   );
 
   const ProfileScene = useCallback(() => <ProfileScreen />, []);
   const StoreScene = useCallback(
     () => <StoreScreen navigation={navigation} setTabSwipeEnabled={setSwipeEnabled} />,
-    [navigation, setSwipeEnabled],
+    [navigation],
   );
   const CalendarScene = useCallback(
-    () => (
-      <CalendarScreen news={news} newsLoaded={newsLoaded} user={user} />
-    ),
-    [news, newsLoaded, user]
+    () => <CalendarScreen news={news} newsLoaded={newsLoaded} user={user} />,
+    [news, newsLoaded, user],
   );
 
   const scenes = useMemo(
@@ -90,17 +104,13 @@ const MainAppScreen = ({ navigation, news, newsLoaded, newsOpen, setNewsOpen }) 
       store: StoreScene,
       calendar: CalendarScene,
     }),
-    [ChatScene, ClassroomScene, ProfileScene, StoreScene, CalendarScene]
+    [CalendarScene, ChatScene, ClassroomScene, ProfileScene, StoreScene],
   );
 
   return (
     <View style={styles.safeArea}>
-      <StatusBar
-        barStyle={Platform.OS === 'ios' ? 'light-content' : 'light-content'}
-        backgroundColor={BACKGROUND_COLOR}
-      />
+      <StatusBar barStyle="light-content" backgroundColor={BACKGROUND_COLOR} />
       <View style={styles.container}>
-        {/* Main Tabs */}
         <SwipeableTabs
           routes={routes}
           scenes={scenes}
@@ -109,10 +119,10 @@ const MainAppScreen = ({ navigation, news, newsLoaded, newsOpen, setNewsOpen }) 
           activeTintColor="#FFCC00"
           inactiveTintColor="#aaa"
           tabBarVisible={!isCourseOpen}
+          animationEnabled={Platform.OS === 'ios'}
           swipeEnabled={swipeEnabled}
         />
 
-        {/* NEWS MODAL */}
         <NewsModal
           visible={newsOpen}
           onClose={() => setNewsOpen(false)}
@@ -121,13 +131,11 @@ const MainAppScreen = ({ navigation, news, newsLoaded, newsOpen, setNewsOpen }) 
           loading={!newsLoaded}
         />
 
-        {/* PROFILE MODAL */}
         <ProfileModal
           visible={profileOpen}
           onClose={() => setProfileOpen(false)}
           user={user}
         />
-
       </View>
     </View>
   );

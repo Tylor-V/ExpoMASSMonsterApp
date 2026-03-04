@@ -143,7 +143,7 @@ export default function SwipeableTabs({
   useEffect(() => {
     scrollRef.current?.scrollToOffset({ offset: width * tabIndex, animated: animationEnabled });
     scrollX.value = width * tabIndex;
-  }, [tabIndex, width, animationEnabled]);
+  }, [animationEnabled, scrollX, tabIndex, width]);
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: event => {
@@ -159,17 +159,24 @@ export default function SwipeableTabs({
         onTabChange?.(settledIndex);
       }
     },
-    [width, onTabChange],
+    [onTabChange, width],
   );
 
-  const jumpTo = (key: string) => {
-    const idx = routes.findIndex(r => r.key === key);
-    scrollRef.current?.scrollToOffset({ offset: width * idx, animated: animationEnabled });
-    if (!animationEnabled) {
-      tabIndexRef.current = idx;
-      onTabChange?.(idx);
-    }
-  };
+  const jumpTo = useCallback(
+    (key: string) => {
+      const idx = routes.findIndex(r => r.key === key);
+      if (idx < 0 || idx === tabIndexRef.current) {
+        return;
+      }
+
+      scrollRef.current?.scrollToOffset({ offset: width * idx, animated: animationEnabled });
+      if (!animationEnabled) {
+        tabIndexRef.current = idx;
+        onTabChange?.(idx);
+      }
+    },
+    [animationEnabled, onTabChange, routes, width],
+  );
 
   return (
     <View style={{ flex: 1 }}>
@@ -179,10 +186,12 @@ export default function SwipeableTabs({
         horizontal
         pagingEnabled
         scrollEnabled={swipeEnabled}
+        bounces={false}
+        overScrollMode="never"
+        decelerationRate="fast"
+        keyboardDismissMode="on-drag"
         showsHorizontalScrollIndicator={false}
-        renderItem={({ item }) => (
-          <View style={{ width, flex: 1 }}>{renderScene(item)}</View>
-        )}
+        renderItem={({ item }) => <View style={{ width, flex: 1 }}>{renderScene(item)}</View>}
         keyExtractor={item => item.key}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
@@ -205,8 +214,7 @@ export default function SwipeableTabs({
                 onPress={() => jumpTo(route.key)}
                 style={styles.tabItem}
                 accessibilityRole="button"
-                accessibilityLabel={route.title}
-              >
+                accessibilityLabel={route.title}>
                 <TabIcon
                   index={i}
                   name={route.icon}
