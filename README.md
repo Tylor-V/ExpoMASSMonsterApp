@@ -9,18 +9,38 @@ Custom fitness platform built with Expo and React Native. The app delivers cours
    npm install
    ```
 2. Create a `.env` file (copy from `.env.example`) and add the Shopify Storefront values (domain, API version, token, and optional test handle).
-3. Launch the app
+3. Quick UI checks in Expo Go
    ```bash
-   npx expo start -c
+   npm run start:go
    ```
-   Open the project with Expo Go or an emulator for iOS or Android.
+   You can also use `npm start` for the same Expo Go path.
+4. Production-bound QA in a development build (required before production submission)
+   ```bash
+   npm run build:ios:dev
+   npm run build:android:dev
+   npm run start:dev-client
+   ```
 
+### Pre-release checklist
+1. Validate core flows on real iOS and Android devices using a development or preview build (auth, Firestore-backed screens, Shopify store screens).
+2. Verify resolved Expo config:
+   ```bash
+   npx expo config --type public
+   ```
+3. Run regression tests:
+   ```bash
+   npm test
+   ```
+4. Run production build after the checks above:
+   ```bash
+   eas build -p ios --profile production
+   ```
 ### Project structure
 - `SplashScreen` - Launch and pre-load screen.
-- `LoginScreens` – authentication flows such as login, signup, and password reset.
-- `MainScreens` – primary application areas including calendar, chat, classroom, profile, and store.
-- `components` – reusable UI elements.
-- `assets` – images, video, and fonts used throughout the app.
+- `LoginScreens` - authentication flows such as login, signup, and password reset.
+- `MainScreens` - primary application areas including calendar, chat, classroom, profile, and store.
+- `components` - reusable UI elements.
+- `assets` - images, video, and fonts used throughout the app.
 
 The app persists user data with Firebase/Firestore and pulls product information from a Shopify store using keys defined in `app.config.ts`.
 

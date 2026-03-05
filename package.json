@@ -5,6 +5,10 @@
   "main": "expo/AppEntry",
   "scripts": {
     "start": "expo start",
+    "start:go": "expo start",
+    "start:dev-client": "expo start --dev-client",
+    "build:ios:dev": "npx eas build -p ios --profile development",
+    "build:android:dev": "npx eas build -p android --profile development",
     "test": "jest"
   },
   "repository": {
