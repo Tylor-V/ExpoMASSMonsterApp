@@ -68,10 +68,6 @@ const missingFirebaseConfigKeys = requiredFirebaseConfigKeys.filter(
 if (missingFirebaseConfigKeys.length > 0) {
   const message = `Missing required Firebase config keys: ${missingFirebaseConfigKeys.join(', ')}`;
   console.error(message);
-  Alert.alert(
-    'Firebase Configuration Missing',
-    'Required Firebase configuration is missing. The app cannot continue.',
-  );
   throw new Error(message);
 }
 

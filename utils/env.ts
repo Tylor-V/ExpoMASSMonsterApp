@@ -7,13 +7,12 @@ function getExpoExtra(): ExpoExtra {
   const expoClientExtra = (manifest2?.extra as { expoClient?: { extra?: ExpoExtra } } | undefined)
     ?.expoClient?.extra;
 
-  return (
-    Constants.expoConfig?.extra ??
-    expoClientExtra ??
-    manifest2?.extra ??
-    (Constants.manifest as { extra?: ExpoExtra } | undefined)?.extra ??
-    {}
-  );
+  return {
+    ...(Constants.expoConfig?.extra ?? {}),
+    ...(expoClientExtra ?? {}),
+    ...(manifest2?.extra ?? {}),
+    ...((Constants.manifest as { extra?: ExpoExtra } | undefined)?.extra ?? {}),
+  };
 }
 
 function getProcessEnvExtra(): ExpoExtra {

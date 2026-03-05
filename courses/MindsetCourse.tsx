@@ -660,7 +660,8 @@ export default function MindsetCourse({ onBack, restart = false }) {
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const pageCount = PAGES.length;
   const topPad = useCourseTopPad();
-  const isFullImagePage = !!PAGES[page].fullImage;
+  const currentPage = PAGES[page] ?? PAGES[0];
+  const isFullImagePage = !!currentPage?.fullImage;
 
   useEffect(() => {
     if (isFullImagePage && sidebarOpen) {
@@ -683,16 +684,18 @@ export default function MindsetCourse({ onBack, restart = false }) {
       setInitialSet(true);
       return;
     }
-    const last = user.mindsetChapterCompleted || 1;
+    const parsedChapter = Number(user.mindsetChapterCompleted ?? 1);
+    const last = Number.isFinite(parsedChapter)
+      ? Math.min(CHAPTER_COUNT, Math.max(1, Math.floor(parsedChapter)))
+      : 1;
     setChaptersCompleted(
       Array(CHAPTER_COUNT)
         .fill(false)
         .map((_, i) => i < last),
     );
-    const start = CHAPTER_PAGES[last - 1][0];
+    const start = CHAPTER_PAGES[last - 1]?.[0] ?? 0;
     maxPageRef.current = start;
     setPage(start);
-    if (last < 1 && hasUser) updateMindsetChapter(1);
     setInitialSet(true);
   }, [user, initialSet, restart, loading, hasUser]);
 
@@ -702,13 +705,14 @@ export default function MindsetCourse({ onBack, restart = false }) {
     }
   }, [initialSet, page]);
 
-  const currentChapter = PAGES[page].chapter;
-  const chapterPages = CHAPTER_PAGES[currentChapter - 1];
-  const pageIdxInChapter = chapterPages.indexOf(page);
-  const chapterProgress = (pageIdxInChapter + 1) / chapterPages.length;
+  const currentChapterRaw = currentPage?.chapter ?? 1;
+  const currentChapter = Math.min(CHAPTER_COUNT, Math.max(1, currentChapterRaw));
+  const chapterPages = CHAPTER_PAGES[currentChapter - 1] ?? [0];
+  const pageIdxInChapter = Math.max(0, chapterPages.indexOf(page));
+  const chapterProgress = (pageIdxInChapter + 1) / Math.max(1, chapterPages.length);
 
   useEffect(() => {
-    const p = PAGES[page];
+    const p = currentPage;
     if (p.fullImage) {
       setChaptersCompleted(prev => {
         if (prev[p.chapter - 1]) return prev;
@@ -741,8 +745,8 @@ export default function MindsetCourse({ onBack, restart = false }) {
   }, [problemComplete]);
 
   const handlePageChange = (idx: number) => {
-    const prevChapter = PAGES[page].chapter;
-    const nextChapter = PAGES[idx].chapter;
+    const prevChapter = (PAGES[page] ?? PAGES[0]).chapter;
+    const nextChapter = (PAGES[idx] ?? PAGES[page] ?? PAGES[0]).chapter;
     if (nextChapter !== prevChapter && idx > page) {
       setShowConfetti(true);
       setTimeout(() => setShowConfetti(false), 3000);
