@@ -59,7 +59,13 @@ jest.mock('../../firebase/firebase', () => {
         orderBy: () => ({
           limit: () => ({ get: () => Promise.resolve(emptyDocs) }),
         }),
-        where: () => ({ get: () => Promise.resolve(emptyDocs) }),
+        where: () => ({
+          get: () => Promise.resolve(emptyDocs),
+          onSnapshot: (cb: any) => {
+            cb(emptyDocs);
+            return jest.fn();
+          },
+        }),
       }),
     }),
   });

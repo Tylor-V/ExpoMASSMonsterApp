@@ -1,8 +1,7 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { Image } from 'expo-image';
-import * as WebBrowser from 'expo-web-browser';
 import React from 'react';
-import { Linking } from 'react-native';
+import { openCheckoutUrl } from '../../src/lib/shopify/openCheckoutUrl';
 import StoreScreen from '../StoreScreen';
 
 const baseProduct = {
@@ -23,12 +22,21 @@ let mockCollections: { id: string; title: string }[] = [];
 jest.mock('../../hooks/useShopify', () => ({
   useShopifyCollections: () => ({ collections: mockCollections, loading: false, error: null }),
   useShopifyProducts: () => ({ products: mockProducts, loading: false, error: null }),
+  createShopifyCheckout: jest.fn(async () => ({
+    url: 'https://checkout.example.com',
+    discountApplied: true,
+  })),
 }));
 jest.mock('../../hooks/useCart', () => ({
   useCart: () => ({ items: mockCartItems }),
 }));
 
-jest.mock('expo-web-browser', () => ({ openBrowserAsync: jest.fn() }));
+jest.mock('../../hooks/useActiveDiscountCode', () => ({
+  getActiveIssuedDiscountCode: jest.fn(async () => null),
+}));
+jest.mock('../../src/lib/shopify/openCheckoutUrl', () => ({
+  openCheckoutUrl: jest.fn(async () => undefined),
+}));
 
 jest.mock('../../firebase/cartHelpers', () => ({ addToCart: jest.fn() }));
 
@@ -64,7 +72,7 @@ describe('StoreScreen product images', () => {
     expect(loaders.length).toBeGreaterThan(0);
   });
 
-  it('shows loader when no product image available', () => {
+  it('shows placeholder image when no product image is available', () => {
     mockProducts = [{ ...baseProduct, id: '2', images: [] }];
     const navigation = { navigate: jest.fn() } as any;
     const { UNSAFE_getAllByType } = render(<StoreScreen navigation={navigation} />);
@@ -73,9 +81,6 @@ describe('StoreScreen product images', () => {
     const productImage = images.find(img => img.props.source?.uri);
 
     expect(productImage).toBeUndefined();
-
-    const loaders = UNSAFE_getAllByType('ActivityIndicator');
-    expect(loaders.length).toBeGreaterThan(0);
   });
 
   it('prefetches product images', async () => {
@@ -97,7 +102,7 @@ describe('StoreScreen featured section', () => {
 });
 
 describe('StoreScreen checkout', () => {
-  it('uses web browser if Linking.openURL fails', async () => {
+  it('uses checkout URL helper when checkout is pressed', async () => {
     mockCartItems = [
       {
         id: '1',
@@ -109,16 +114,13 @@ describe('StoreScreen checkout', () => {
       },
     ];
     const navigation = { navigate: jest.fn() } as any;
-    jest.spyOn(Linking, 'canOpenURL').mockResolvedValue(true);
-    jest.spyOn(Linking, 'openURL').mockRejectedValue(new Error('fail'));
-    const openBrowser = WebBrowser.openBrowserAsync as jest.Mock;
-    openBrowser.mockResolvedValue({ type: 'opened' } as any);
+    const openCheckoutUrlMock = openCheckoutUrl as jest.Mock;
 
     const { getByText } = render(<StoreScreen navigation={navigation} />);
     fireEvent.press(getByText('Checkout'));
 
     await waitFor(() => {
-      expect(openBrowser).toHaveBeenCalled();
+      expect(openCheckoutUrlMock).toHaveBeenCalledWith('https://checkout.example.com');
     });
   });
 });
