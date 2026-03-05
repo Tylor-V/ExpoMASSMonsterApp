@@ -1,0 +1,14 @@
+Use case: social ad for app installs
+Primary request: an 8-second high-conversion promo for MASS Monster fitness app, showing progress system, guided training, community support, and simple daily check-ins
+Scene/background: modern phone UI mockups over cinematic gym textures, black and gold brand palette, energetic but clean
+Subject: stylized smartphone interface (no real people), animated app cards for Workout Plan, Classroom, Chat, and Rewards
+Action: beat 1 (0-2s) dramatic phone reveal with text "Still skipping workouts?"; beat 2 (2-5s) quick sequence of app flows: choose split, log check-in, unlock course progress, open community chat; beat 3 (5-8s) progress ring fills, rewards icon lights up, final CTA appears
+Camera: vertical 9:16 composition, smooth push-in and lateral slide transitions, no shaky motion
+Lighting/mood: high-contrast motivational, premium athletic feel, confident and focused
+Color palette: matte black, MASS gold, white, graphite gray
+Style/format: polished mobile ad creative, social-first, crisp UI readability
+Timing/beats: 0-2s hook; 2-5s feature proof; 5-8s social proof + CTA
+Audio: punchy modern workout beat with whoosh transitions, no vocals
+Text (verbatim): "Still skipping workouts?", "Plan. Train. Track.", "Courses + Community + Rewards", "Start with MASS Monster"
+Constraints: no real people, no copyrighted music, no external brand logos, keep all text large and legible, suitable for under-18 audiences
+Avoid: blur, flicker, jitter, overbusy layouts, tiny text, fast unreadable cuts

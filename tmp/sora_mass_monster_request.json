@@ -1,0 +1,10 @@
+{
+  "dry_run": true,
+  "request": {
+    "endpoint": "/v1/videos",
+    "model": "sora-2-pro",
+    "prompt": "Use case: social ad for app installs\nPrimary request: an 8-second high-conversion promo for MASS Monster fitness app, showing progress system, guided training, community support, and simple daily check-ins\nScene/background: modern phone UI mockups over cinematic gym textures, black and gold brand palette, energetic but clean\nSubject: stylized smartphone interface (no real people), animated app cards for Workout Plan, Classroom, Chat, and Rewards\nAction: beat 1 (0-2s) dramatic phone reveal with text \"Still skipping workouts?\"; beat 2 (2-5s) quick sequence of app flows: choose split, log check-in, unlock course progress, open community chat; beat 3 (5-8s) progress ring fills, rewards icon lights up, final CTA appears\nCamera: vertical 9:16 composition, smooth push-in and lateral slide transitions, no shaky motion\nLighting/mood: high-contrast motivational, premium athletic feel, confident and focused\nColor palette: matte black, MASS gold, white, graphite gray\nStyle/format: polished mobile ad creative, social-first, crisp UI readability\nTiming/beats: 0-2s hook; 2-5s feature proof; 5-8s social proof + CTA\nAudio: punchy modern workout beat with whoosh transitions, no vocals\nText (verbatim): \"Still skipping workouts?\", \"Plan. Train. Track.\", \"Courses + Community + Rewards\", \"Start with MASS Monster\"\nConstraints: no real people, no copyrighted music, no external brand logos, keep all text large and legible, suitable for under-18 audiences\nAvoid: blur, flicker, jitter, overbusy layouts, tiny text, fast unreadable cuts",
+    "seconds": "8",
+    "size": "720x1280"
+  }
+}
