@@ -15,6 +15,7 @@ export type PublicUser = {
   showOnlineStatus?: boolean;
   timeoutUntil?: any;
   badges?: any;
+  isBanned?: boolean;
 };
 
 type RetryOptions = {
@@ -35,6 +36,7 @@ const PUBLIC_USER_FIELDS = [
   'showOnlineStatus',
   'timeoutUntil',
   'badges',
+  'isBanned',
 ] as const;
 
 export function buildPublicUserPayload(data: any): Partial<PublicUser> {
@@ -71,6 +73,7 @@ export function pickPublicUser(data: any, id: string) {
     showOnlineStatus: source.showOnlineStatus,
     accountabilityStreak: source.accountabilityStreak,
     timeoutUntil: source.timeoutUntil,
+    isBanned: source.isBanned === true,
   };
 }
 
