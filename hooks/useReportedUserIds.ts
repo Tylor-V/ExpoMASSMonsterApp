@@ -17,10 +17,11 @@ export function useReportedUserIds() {
     const unsubscribe = firestore()
       .collection('reports')
       .where('reportedBy', '==', currentUserId)
-      .where('targetType', '==', 'user')
       .onSnapshot(snapshot => {
         const ids = snapshot.docs
-          .map(doc => String(doc.data()?.targetId || ''))
+          .map(doc => doc.data())
+          .filter(data => data?.targetType === 'user')
+          .map(data => String(data?.targetId || ''))
           .filter(Boolean);
         setReportedUserIds(ids);
       });
@@ -35,3 +36,4 @@ export function useReportedUserIds() {
     reportedUserSet,
   };
 }
+

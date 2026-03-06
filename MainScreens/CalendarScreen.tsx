@@ -568,6 +568,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   );
   const PLAN_DRAWER_HEIGHT = windowHeight * 0.8;
   const WORKOUT_DRAWER_MAX_HEIGHT = windowHeight * 0.6;
+  const WORKOUT_DRAWER_BOTTOM = TAB_BAR_HEIGHT + 2;
 
   // Styles that depend on carousel width
   const carouselCardStyle = useMemo(
@@ -1815,7 +1816,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const summaryText = useMemo(() => {
     const eventCount = dayEvents.length;
     const eventLabel = `${eventCount} event${eventCount === 1 ? '' : 's'}`;
-    return selectedDayLabel ? `${selectedDayLabel} • ${eventLabel}` : eventLabel;
+    return selectedDayLabel ? `${selectedDayLabel} - ${eventLabel}` : eventLabel;
   }, [dayEvents.length, selectedDayLabel]);
 
   const ViewAllButton = ({
@@ -1908,6 +1909,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                 <TouchableOpacity
                   onPress={openWorkoutDrawer}
                   style={styles.zoomBtn}
+                  hitSlop={12}
+                  accessibilityRole="button"
+                  accessibilityLabel="Open today's workout details"
                 >
                   <Ionicons
                     name="information-circle-outline"
@@ -2442,6 +2446,9 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                       <TouchableOpacity
                         onPress={openWorkoutDrawer}
                         style={styles.zoomBtn}
+                        hitSlop={12}
+                        accessibilityRole="button"
+                        accessibilityLabel="Open today's workout details"
                       >
                         <Ionicons
                           name="information-circle-outline"
@@ -2903,7 +2910,11 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           <Animated.View
             style={[
               styles.workoutDrawer,
-              { transform: [{ translateY: drawerAnim }], maxHeight: WORKOUT_DRAWER_MAX_HEIGHT },
+              {
+                bottom: WORKOUT_DRAWER_BOTTOM,
+                transform: [{ translateY: drawerAnim }],
+                maxHeight: WORKOUT_DRAWER_MAX_HEIGHT,
+              },
             ]}
           >
             <Animated.ScrollView
@@ -2914,7 +2925,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                 { useNativeDriver: true },
               )}
               scrollEventThrottle={16}
-              contentContainerStyle={{ paddingBottom: insets.bottom }}
+              contentContainerStyle={{ paddingBottom: insets.bottom + TAB_BAR_HEIGHT + 8 }}
               showsVerticalScrollIndicator={false}
             >
               <Text style={styles.drawerHeader}>Today's Workouts</Text>

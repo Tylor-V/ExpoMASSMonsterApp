@@ -21,10 +21,11 @@ export function useHiddenContent({ containerId, targetType }: HiddenContentParam
       .doc(currentUserId)
       .collection('hiddenContent')
       .where('containerId', '==', containerId)
-      .where('targetType', '==', targetType)
       .onSnapshot(snapshot => {
         const ids = snapshot.docs
-          .map(doc => String(doc.data()?.targetId || ''))
+          .map(doc => doc.data())
+          .filter(data => data?.targetType === targetType)
+          .map(data => String(data?.targetId || ''))
           .filter(Boolean);
         setHiddenIds(ids);
       });
@@ -56,3 +57,4 @@ export function useHiddenContent({ containerId, targetType }: HiddenContentParam
     hideContent,
   };
 }
+
