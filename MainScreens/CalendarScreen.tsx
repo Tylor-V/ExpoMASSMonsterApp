@@ -109,7 +109,7 @@ const SectionHeader = React.memo(
           <Pressable
             onPress={onPrev}
             disabled={!canPrev}
-            hitSlop={10}
+            hitSlop={14}
             style={[styles.navBtn, !canPrev && styles.navBtnDisabled]}
           >
             <Ionicons name="chevron-back" size={20} color={colors.gray} />
@@ -130,7 +130,7 @@ const SectionHeader = React.memo(
           <Pressable
             onPress={onNext}
             disabled={!canNext}
-            hitSlop={10}
+            hitSlop={14}
             style={[styles.navBtn, !canNext && styles.navBtnDisabled]}
           >
             <Ionicons name="chevron-forward" size={20} color={colors.gray} />
@@ -666,6 +666,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
   const isCarouselAnimatingRef = useRef(false);
   const carouselMomentumStartedRef = useRef(false);
   const carouselSettleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settleCarouselAtOffsetRef = useRef<(offsetX: number) => void>(() => {});
 
   const startProgrammaticScroll = useCallback((targetIndex: number, direction: number) => {
     const clamped = clampValue(targetIndex, 0, carouselItems.length - 1);
@@ -680,6 +681,13 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       x: clamped * carouselViewportWidth,
       animated: true,
     });
+    // Fallback for platforms where momentum callbacks don't reliably fire after programmatic scroll.
+    if (carouselSettleTimeoutRef.current) {
+      clearTimeout(carouselSettleTimeoutRef.current);
+    }
+    carouselSettleTimeoutRef.current = setTimeout(() => {
+      settleCarouselAtOffsetRef.current(clamped * carouselViewportWidth);
+    }, 420);
   }, [carouselItems.length, carouselViewportWidth]);
 
   const goToIndex = useCallback(
@@ -1800,7 +1808,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
       <Pressable
         onPress={() => setAddNewsOpen(true)}
         style={styles.addNewsBtn}
-        hitSlop={10}
+        hitSlop={14}
         testID="add-news-btn"
       >
         <Ionicons name="add" size={20} color={colors.accent} />
@@ -1888,6 +1896,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                   onPress={toggleDayMenu}
                   onPressIn={handleChevronPressIn}
                   onPressOut={handleChevronPressOut}
+                  hitSlop={12}
+                  pressRetentionOffset={{ top: 18, bottom: 18, left: 18, right: 18 }}
                   style={styles.dayMenuBtn}
                 >
                   <AnimatedIcon
@@ -1910,6 +1920,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                   onPress={openWorkoutDrawer}
                   style={styles.zoomBtn}
                   hitSlop={12}
+                  pressRetentionOffset={{ top: 18, bottom: 18, left: 18, right: 18 }}
                   accessibilityRole="button"
                   accessibilityLabel="Open today's workout details"
                 >
@@ -2103,6 +2114,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
     },
     [carouselIndex, carouselItems.length, carouselViewportWidth, startProgrammaticScroll],
   );
+  settleCarouselAtOffsetRef.current = settleCarouselAtOffset;
 
   const handleCarouselScrollEnd = useCallback(
     (event: any) => {
@@ -2238,6 +2250,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                         snapToAlignment="start"
                         disableIntervalMomentum
                         disableScrollViewPanResponder={false}
+                        canCancelContentTouches={false}
+                        directionalLockEnabled
                         showsHorizontalScrollIndicator={false}
                         onScroll={handleCarouselAnimatedScroll}
                         onScrollBeginDrag={handleCarouselScrollBeginDrag}
@@ -2267,7 +2281,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                                 <Pressable
                                   onPress={() => goToIndex(cur => cur - 1)}
                                   disabled={!canPrev}
-                                  hitSlop={10}
+                                  hitSlop={14}
                                   style={[styles.navBtn, !canPrev && styles.navBtnDisabled]}
                                 >
                                   <Ionicons name="chevron-back" size={20} color={colors.gray} />
@@ -2279,7 +2293,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                                   <Pressable
                                     onPress={() => goToIndex(cur => cur + 1)}
                                     disabled={!canNext}
-                                    hitSlop={10}
+                                    hitSlop={14}
                                     style={[styles.navBtn, !canNext && styles.navBtnDisabled]}
                                   >
                                     <Ionicons name="chevron-forward" size={20} color={colors.gray} />
@@ -2425,6 +2439,8 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                         onPress={toggleDayMenu}
                         onPressIn={handleChevronPressIn}
                         onPressOut={handleChevronPressOut}
+                        hitSlop={12}
+                        pressRetentionOffset={{ top: 18, bottom: 18, left: 18, right: 18 }}
                         style={styles.dayMenuBtn}
                       >
                         <AnimatedIcon
@@ -2447,6 +2463,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                         onPress={openWorkoutDrawer}
                         style={styles.zoomBtn}
                         hitSlop={12}
+                        pressRetentionOffset={{ top: 18, bottom: 18, left: 18, right: 18 }}
                         accessibilityRole="button"
                         accessibilityLabel="Open today's workout details"
                       >
@@ -2719,8 +2736,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
           <KeyboardAvoidingView
             style={{ flex: 1, justifyContent: 'flex-end' }}
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+            pointerEvents={planDrawerInteractive ? 'auto' : 'none'}
           >
             <Animated.View
+              pointerEvents={planDrawerInteractive ? 'auto' : 'none'}
               style={[
                 styles.builderDrawer,
                 {
@@ -2911,6 +2930,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             pointerEvents={workoutDrawerInteractive ? 'auto' : 'none'}
           />
           <Animated.View
+            pointerEvents={workoutDrawerInteractive ? 'auto' : 'none'}
             style={[
               styles.workoutDrawer,
               {
@@ -3441,9 +3461,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   navBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(0,0,0,0.06)',
