@@ -873,7 +873,7 @@ function StoreScreen({ navigation, setTabSwipeEnabled }: StoreScreenProps) {
           <Pressable
             style={[styles.checkoutBarBtn, checkoutLoading && styles.checkoutBarBtnDisabled]}
             onPress={event => {
-              event.stopPropagation();
+              event?.stopPropagation?.();
               handleCheckout();
             }}
             accessibilityRole="button"
@@ -1211,4 +1211,3 @@ const styles = StyleSheet.create({
 });
 
 export default React.memo(StoreScreen);
-

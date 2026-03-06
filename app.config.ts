@@ -61,6 +61,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     'expo-video',
     'expo-audio',
+    'expo-asset',
     'expo-font',
     'expo-web-browser',
     'expo-notifications',
