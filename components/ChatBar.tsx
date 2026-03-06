@@ -628,7 +628,7 @@ const ChatBar: React.FC<ChatBarProps> = ({ isActive = true, onOpenDMInbox, onOpe
           {anyUnread && <View testID="channel-unread-dot" style={headerStyles.unreadDot} />}
         </Pressable>
         {selectedChannel.type !== 'video' && (
-          <TouchableOpacity onPress={togglePinnedDropdown} style={{ marginHorizontal: 8 }}>
+          <TouchableOpacity onPress={togglePinnedDropdown} style={{ marginHorizontal: 8, padding: 6, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
             <View style={{ position: 'relative' }}>
               <FontAwesome
                 testID="pinned-button"
@@ -646,7 +646,7 @@ const ChatBar: React.FC<ChatBarProps> = ({ isActive = true, onOpenDMInbox, onOpe
             </View>
           </TouchableOpacity>
         )}
-        <TouchableOpacity onPress={onOpenGymFeed} style={{ marginHorizontal: 8 }}>
+        <TouchableOpacity onPress={onOpenGymFeed} style={{ marginHorizontal: 8, padding: 6, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
           <Icon
             testID="gym-feed-button"
             name="film-outline"
@@ -654,10 +654,10 @@ const ChatBar: React.FC<ChatBarProps> = ({ isActive = true, onOpenDMInbox, onOpe
             color={colors.black}
           />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setOnlineUsersOpen(true)} style={{ marginHorizontal: 8 }}>
+        <TouchableOpacity onPress={() => setOnlineUsersOpen(true)} style={{ marginHorizontal: 8, padding: 6, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
           <Image source={UsersIcon} style={{ width: 32, height: 32 }} contentFit="contain" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={onOpenDMInbox} style={{ marginHorizontal: 8 }}>
+        <TouchableOpacity onPress={onOpenDMInbox} style={{ marginHorizontal: 8, padding: 6, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}>
           <View style={{ position: 'relative' }}>
             <Image source={InboxIcon} style={{ width: 32, height: 32 }} contentFit="contain" />
             {dmUnread && <View testID="dm-unread-dot" style={headerStyles.dmUnreadDot} />}
@@ -830,3 +830,4 @@ const ChatBar: React.FC<ChatBarProps> = ({ isActive = true, onOpenDMInbox, onOpe
 };
 
 export default React.memo(ChatBar);
+

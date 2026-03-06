@@ -872,7 +872,10 @@ function StoreScreen({ navigation, setTabSwipeEnabled }: StoreScreenProps) {
         {cartQuantity > 0 && (
           <Pressable
             style={[styles.checkoutBarBtn, checkoutLoading && styles.checkoutBarBtnDisabled]}
-            onPress={handleCheckout}
+            onPress={event => {
+              event.stopPropagation();
+              handleCheckout();
+            }}
             accessibilityRole="button"
             disabled={checkoutLoading}
           >
@@ -1208,3 +1211,4 @@ const styles = StyleSheet.create({
 });
 
 export default React.memo(StoreScreen);
+

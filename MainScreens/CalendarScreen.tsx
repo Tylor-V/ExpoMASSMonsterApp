@@ -2674,7 +2674,10 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
             style={styles.modalOverlay}
             onPress={() => setAddNewsOpen(false)}
           >
-            <View style={styles.modalBox} pointerEvents="box-none">
+            <Pressable
+              style={styles.modalBox}
+              onPress={event => event.stopPropagation()}
+            >
               <TextInput
                 style={styles.newsInput}
                 value={newsText}
@@ -2699,7 +2702,7 @@ function CalendarScreen({ news, newsLoaded, user, onNewsAdded }: CalendarScreenP
                   <Text style={styles.newsSaveTxt}>Save</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </Pressable>
           </Pressable>
         </Modal>
       )}
