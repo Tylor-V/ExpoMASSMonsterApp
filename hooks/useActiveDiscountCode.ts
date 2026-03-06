@@ -31,8 +31,7 @@ export async function getActiveIssuedDiscountCode(): Promise<string | null> {
     .doc(user.uid)
     .collection('redemptions')
     .where('fulfillmentStatus', '==', 'issued')
-    .orderBy('date', 'desc')
-    .limit(25)
+    .limit(50)
     .get({ suppressAlert: true });
 
   const now = Date.now();
@@ -63,3 +62,4 @@ export async function getActiveIssuedDiscountCode(): Promise<string | null> {
 
   return active[0]?.discountCode?.trim() || null;
 }
+
