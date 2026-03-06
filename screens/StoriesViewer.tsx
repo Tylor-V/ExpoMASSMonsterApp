@@ -37,7 +37,11 @@ const { width, height } = Dimensions.get('window');
 function StoryVideo({ uri }: { uri: string }) {
   const player = useVideoPlayer({ uri }, player => {
     player.loop = true;
-    player.play().catch(() => {});
+    try {
+      player.play();
+    } catch {
+      // Ignore transient playback errors; status listener logs terminal failures.
+    }
     player.addListener('statusChange', ({ status, error }) => {
       if (status === 'error') {
         console.error('Video playback error', error);
@@ -445,3 +449,4 @@ const styles = StyleSheet.create({
   },
   barActive: { backgroundColor: '#FFCC00' },
 });
+

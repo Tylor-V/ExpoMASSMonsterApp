@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Font from 'expo-font';
+import { Asset } from 'expo-asset';
 import { BADGE_CONFIG, type BadgeKey } from '../badges/UnlockableBadges';
 import { colors, fonts, gradients, radius } from '../theme';
 import * as Anim from './animations';

@@ -419,6 +419,7 @@ const AccountabilityFormScreen = ({navigation}) => {
             <>
               <Text style={styles.label}>Select Gym Location</Text>
               <MapView
+                style={styles.map}
                 testID="mapView"
                 region={
                   coords
@@ -659,3 +660,4 @@ const styles = StyleSheet.create({
 });
 
 export default AccountabilityFormScreen;
+
